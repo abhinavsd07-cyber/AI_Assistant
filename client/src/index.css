@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #06050C;
+  }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+}
+
+/* Custom scrollbar for cosmic dark aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 14, 25, 0.4);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.45);
+}
+
+@keyframes pulseSlow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.95;
+    filter: drop-shadow(0 0 25px rgba(168, 85, 247, 0.45));
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+    filter: drop-shadow(0 0 40px rgba(217, 70, 239, 0.65));
+  }
+}
+
+.animate-cosmic-orb {
+  animation: pulseSlow 6s ease-in-out infinite;
+}
