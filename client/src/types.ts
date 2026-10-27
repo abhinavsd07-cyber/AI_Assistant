@@ -3,6 +3,7 @@ export interface Message {
   sender: 'user' | 'assistant';
   text: string;
   timestamp: string;
+  imageUrl?: string;
 }
 
 export interface ChatSession {

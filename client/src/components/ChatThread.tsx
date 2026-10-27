@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Copy, Check, Sparkles } from 'lucide-react';
+import { Copy, Check, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import type { Message } from '../types';
 
 interface ChatThreadProps {
@@ -10,6 +10,7 @@ interface ChatThreadProps {
 export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -19,6 +20,29 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading }) =
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const toggleSpeech = (text: string, id: string) => {
+    if (!('speechSynthesis' in window)) {
+      alert('Speech synthesis is not supported in this browser.');
+      return;
+    }
+
+    if (speakingId === id) {
+      window.speechSynthesis.cancel();
+      setSpeakingId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    // Clean markdown code blocks from speech
+    const cleanText = text.replace(/```[\s\S]*?```/g, 'Code block omitted.');
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 1.0;
+    utterance.onend = () => setSpeakingId(null);
+    utterance.onerror = () => setSpeakingId(null);
+    setSpeakingId(id);
+    window.speechSynthesis.speak(utterance);
   };
 
   // Helper to format code blocks cleanly
@@ -95,31 +119,53 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading }) =
                   : 'bg-[#151126]/90 border border-white/[0.08] text-white/90 rounded-tl-sm backdrop-blur-xl'
               }`}
             >
+              {/* Optional Attached Image in user bubble */}
+              {message.imageUrl && (
+                <div className="mb-2.5 rounded-xl overflow-hidden border border-white/20 max-w-sm">
+                  <img src={message.imageUrl} alt="Attached" className="w-full max-h-60 object-cover" />
+                </div>
+              )}
+
               {renderMessageContent(message.text)}
 
-              {/* Timestamp & Copy button */}
+              {/* Timestamp, Copy & Audio buttons */}
               <div className={`flex items-center gap-2 mt-2 pt-1 border-t border-white/[0.04] text-[10.5px] ${
                 isUser ? 'text-purple-200/60 justify-end' : 'text-white/40 justify-between'
               }`}>
                 <span>{message.timestamp}</span>
 
                 {!isUser && (
-                  <button
-                    onClick={() => copyToClipboard(message.text, message.id)}
-                    className="opacity-0 group-hover:opacity-100 flex items-center gap-1 hover:text-white transition-all"
-                  >
-                    {copiedId === message.id ? (
-                      <>
-                        <Check size={11} className="text-emerald-400" />
-                        <span className="text-emerald-400">Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={11} />
-                        <span>Copy</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                    {/* Speaker Voice button */}
+                    <button
+                      onClick={() => toggleSpeech(message.text, message.id)}
+                      className={`flex items-center gap-1 transition-colors ${
+                        speakingId === message.id ? 'text-purple-300 animate-pulse' : 'hover:text-white'
+                      }`}
+                      title={speakingId === message.id ? "Stop voice" : "Read aloud"}
+                    >
+                      {speakingId === message.id ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                      <span>{speakingId === message.id ? 'Stop' : 'Listen'}</span>
+                    </button>
+
+                    {/* Copy button */}
+                    <button
+                      onClick={() => copyToClipboard(message.text, message.id)}
+                      className="flex items-center gap-1 hover:text-white transition-all ml-1"
+                    >
+                      {copiedId === message.id ? (
+                        <>
+                          <Check size={11} className="text-emerald-400" />
+                          <span className="text-emerald-400">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={11} />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

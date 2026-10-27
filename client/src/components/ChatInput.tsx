@@ -1,8 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Paperclip, Image as ImageIcon, Lightbulb, Mic, Send } from 'lucide-react';
+import { Paperclip, Image as ImageIcon, Lightbulb, Mic, Send, X } from 'lucide-react';
+
+export interface ImageAttachment {
+  data: string; // base64
+  mimeType: string;
+  previewUrl: string;
+}
 
 interface ChatInputProps {
-  onSendMessage: (text: string, isReasoning: boolean) => void;
+  onSendMessage: (text: string, isReasoning: boolean, image?: ImageAttachment | null) => void;
   isLoading: boolean;
 }
 
@@ -10,11 +16,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
   const [input, setInput] = useState('');
   const [isReasoning, setIsReasoning] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [imageAttachment, setImageAttachment] = useState<ImageAttachment | null>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Initialize real Web Speech API
+  // Initialize Web Speech API
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -22,7 +31,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = true;
-        recognition.lang = 'ml-IN'; // Recognizes Malayalam speech, falls back gracefully
+        recognition.lang = 'ml-IN';
 
         recognition.onresult = (event: any) => {
           const transcript = Array.from(event.results)
@@ -34,7 +43,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
         };
 
         recognition.onerror = (event: any) => {
-          console.warn('Speech recognition warning/error:', event.error);
+          console.warn('Speech recognition warning:', event.error);
           setIsRecording(false);
         };
 
@@ -44,7 +53,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
 
         recognitionRef.current = recognition;
       } catch (e) {
-        console.warn('Speech recognition initialization failed:', e);
+        console.warn('Speech recognition setup failed:', e);
       }
     }
   }, []);
@@ -59,10 +68,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && !imageAttachment) || isLoading) return;
 
-    onSendMessage(input.trim(), isReasoning);
+    onSendMessage(input.trim(), isReasoning, imageAttachment);
     setInput('');
+    setImageAttachment(null);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -91,14 +101,28 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
         recognitionRef.current.start();
         setIsRecording(true);
       } catch (err) {
-        console.warn('Could not start voice recognition:', err);
+        console.warn('Could not start recognition:', err);
         setIsRecording(false);
       }
     }
   };
 
-  const handleFileClick = () => {
-    fileInputRef.current?.click();
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64Data = result.split(',')[1];
+      setImageAttachment({
+        data: base64Data,
+        mimeType: file.type,
+        previewUrl: result,
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   return (
@@ -108,6 +132,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
         className="relative rounded-[22px] bg-[#171329]/95 hover:bg-[#19152D]/95 border border-white/[0.1] hover:border-purple-500/30 
           backdrop-blur-2xl shadow-2xl shadow-black/60 transition-all p-3 flex flex-col gap-2"
       >
+        {/* Hidden inputs */}
         <input 
           type="file" 
           ref={fileInputRef} 
@@ -119,13 +144,49 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
           }}
         />
 
+        <input 
+          type="file" 
+          ref={imageInputRef} 
+          accept="image/*"
+          className="hidden" 
+          onChange={handleImageSelect}
+        />
+
+        {/* Image Attachment Preview */}
+        {imageAttachment && (
+          <div className="relative inline-flex items-center gap-2 p-1.5 rounded-xl bg-purple-950/40 border border-purple-500/30 w-fit animate-in fade-in zoom-in-95">
+            <img 
+              src={imageAttachment.previewUrl} 
+              alt="Attachment" 
+              className="w-14 h-14 rounded-lg object-cover ring-1 ring-purple-400/40"
+            />
+            <div className="flex flex-col pr-2">
+              <span className="text-[11px] text-purple-200 font-medium">Image attached</span>
+              <span className="text-[10px] text-white/40">Ready for Multimodal Vision</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setImageAttachment(null)}
+              className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-colors"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
+
         {/* Input Text Area */}
         <textarea
           ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={isRecording ? "Listening to your voice... Speak now..." : "Send a message or drop a file..."}
+          placeholder={
+            isRecording 
+              ? "Listening to your voice... Speak now..." 
+              : imageAttachment 
+                ? "Ask a question about this image..." 
+                : "Send a message or drop a file..."
+          }
           rows={1}
           disabled={isLoading}
           className="w-full bg-transparent text-white placeholder-white/40 text-sm md:text-[14.5px] 
@@ -138,7 +199,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
           <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
             <button
               type="button"
-              onClick={handleFileClick}
+              onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium 
                 text-white/60 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-all"
             >
@@ -148,11 +209,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
 
             <button
               type="button"
-              onClick={handleFileClick}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium 
-                text-white/60 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-all"
+              onClick={() => imageInputRef.current?.click()}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                imageAttachment
+                  ? 'bg-purple-600/30 text-purple-200 border-purple-400/50 shadow-sm'
+                  : 'text-white/60 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.06]'
+              }`}
             >
-              <ImageIcon size={13} className="text-white/50" />
+              <ImageIcon size={13} className={imageAttachment ? 'text-purple-300' : 'text-white/50'} />
               <span>Images</span>
             </button>
 
@@ -190,9 +254,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
             {/* Send Button */}
             <button
               type="submit"
-              disabled={!input.trim() || isLoading}
+              disabled={(!input.trim() && !imageAttachment) || isLoading}
               className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                input.trim() && !isLoading
+                (input.trim() || imageAttachment) && !isLoading
                   ? 'bg-gradient-to-tr from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-900/40 active:scale-95'
                   : 'bg-white/[0.06] text-white/20 cursor-not-allowed'
               }`}

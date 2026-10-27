@@ -1,11 +1,15 @@
 import React from 'react';
-import { X, Server, Globe, Shield, Check } from 'lucide-react';
+import { X, Server, Globe, Shield, Database, User } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   apiUrl: string;
   setApiUrl: (url: string) => void;
+  userName: string;
+  setUserName: (name: string) => void;
+  userEmail: string;
+  setUserEmail: (email: string) => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -13,11 +17,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   apiUrl,
   setApiUrl,
+  userName,
+  setUserName,
+  userEmail,
+  setUserEmail,
 }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
       <div 
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-2xl bg-[#141024] border border-purple-500/25 shadow-2xl p-6 text-white flex flex-col gap-5 relative overflow-hidden"
@@ -30,7 +38,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center">
               <Server size={16} className="text-purple-300" />
             </div>
-            <h2 className="text-base font-semibold text-white">System Settings</h2>
+            <h2 className="text-base font-semibold text-white">Settings & Profile</h2>
           </div>
           <button 
             onClick={onClose}
@@ -41,9 +49,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Settings Form */}
-        <div className="flex flex-col gap-4 text-xs">
+        <div className="flex flex-col gap-3.5 text-xs">
+          {/* User Profile Customization */}
+          <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] flex flex-col gap-2.5">
+            <div className="flex items-center gap-2 text-purple-300 font-medium">
+              <User size={14} />
+              <span>User Profile</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-white/50 block text-[10.5px] mb-1">Name</label>
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 text-white text-xs outline-none focus:border-purple-400"
+                />
+              </div>
+              <div>
+                <label className="text-white/50 block text-[10.5px] mb-1">Email</label>
+                <input
+                  type="email"
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 text-white text-xs outline-none focus:border-purple-400"
+                />
+              </div>
+            </div>
+          </div>
+
           <div>
-            <label className="text-white/70 font-medium block mb-1.5">Backend API Endpoint</label>
+            <label className="text-white/70 font-medium block mb-1">Backend API Endpoint</label>
             <input
               type="text"
               value={apiUrl}
@@ -51,7 +87,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               placeholder="http://localhost:5000/api/chat"
               className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 text-white placeholder-white/30 text-xs focus:outline-none focus:border-purple-500"
             />
-            <p className="text-[11px] text-white/40 mt-1">Live Express backend running with Google Gemini</p>
+          </div>
+
+          {/* MongoDB Status Info */}
+          <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Database size={15} className="text-purple-300" />
+              <div>
+                <span className="font-medium text-white/80 block">Database Storage</span>
+                <span className="text-[11px] text-white/40">MongoDB Atlas / Local fallback</span>
+              </div>
+            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono">READY</span>
           </div>
 
           <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
@@ -62,9 +109,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <span className="text-[11px] text-white/40">Malayalam & English supported</span>
               </div>
             </div>
-            <div className="w-4 h-4 rounded-full bg-emerald-500/20 border border-emerald-400 flex items-center justify-center">
-              <Check size={10} className="text-emerald-400" />
-            </div>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono">ACTIVE</span>
           </div>
 
           <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
@@ -72,10 +117,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <Shield size={15} className="text-purple-300" />
               <div>
                 <span className="font-medium text-white/80 block">Active AI Engine</span>
-                <span className="text-[11px] text-white/40">Gemini 3.5 Flash + Fallback Pool</span>
+                <span className="text-[11px] text-white/40">Gemini 3.8 Flash + Multi-tier Fallback</span>
               </div>
             </div>
-            <span className="text-[10.5px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono">ONLINE</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono">ONLINE</span>
           </div>
         </div>
 

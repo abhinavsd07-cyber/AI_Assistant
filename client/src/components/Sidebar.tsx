@@ -8,6 +8,7 @@ import {
   ChevronDown, 
   ChevronUp, 
   ChevronsRight,
+  Trash2,
   X
 } from 'lucide-react';
 import type { ChatSession } from '../types';
@@ -17,10 +18,13 @@ interface SidebarProps {
   sessions: ChatSession[];
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
+  onDeleteSession: (id: string, e: React.MouseEvent) => void;
   onOpenSettings: () => void;
   onOpenUpgrade: () => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
+  userName?: string;
+  userEmail?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -28,10 +32,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   sessions,
   onSelectSession,
   onNewChat,
+  onDeleteSession,
   onOpenSettings,
   onOpenUpgrade,
   isOpenMobile,
   onCloseMobile,
+  userName = 'Linda Pewtersmith',
+  userEmail = 'linda.h13@gmail.com',
 }) => {
   const [showMore, setShowMore] = useState(false);
 
@@ -115,20 +122,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <div className="flex flex-col gap-0.5 mt-1">
               {visibleItems.map((item) => (
-                <button
+                <div
                   key={item.id}
                   onClick={() => {
                     onSelectSession(item.id);
                     onCloseMobile();
                   }}
-                  className={`text-left px-3 py-2 rounded-lg text-[13.5px] truncate transition-all ${
+                  className={`group flex items-center justify-between px-3 py-2 rounded-lg text-[13.5px] cursor-pointer transition-all ${
                     currentSessionId === item.id
                       ? 'bg-white/[0.08] text-white font-medium shadow-sm border border-purple-500/20'
                       : 'text-white/70 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
-                  {item.title}
-                </button>
+                  <span className="truncate flex-1">{item.title}</span>
+                  {sessions.some(s => s.id === item.id) && (
+                    <button
+                      onClick={(e) => onDeleteSession(item.id, e)}
+                      className="opacity-0 group-hover:opacity-100 p-1 text-white/40 hover:text-red-400 transition-all rounded"
+                      title="Delete chat"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
               ))}
 
               {displayList.length > 5 && (
@@ -196,25 +212,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* User Profile */}
-          <div className="flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-white/[0.04] transition-colors cursor-pointer">
+          <div 
+            onClick={onOpenSettings}
+            className="flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-white/[0.04] transition-colors cursor-pointer"
+          >
             <div className="flex items-center gap-2.5 min-w-0">
               <img 
                 src="/avatar.jpg" 
-                alt="Linda Pewtersmith"
+                alt={userName}
                 className="w-9 h-9 rounded-full object-cover ring-1 ring-purple-400/40"
               />
               <div className="min-w-0 flex flex-col">
-                <span className="text-[13px] font-medium text-white/90 truncate">Linda Pewtersmith</span>
-                <span className="text-[11px] text-white/40 truncate">linda.h13@gmail.com</span>
+                <span className="text-[13px] font-medium text-white/90 truncate">{userName}</span>
+                <span className="text-[11px] text-white/40 truncate">{userEmail}</span>
               </div>
             </div>
 
-            <button 
-              onClick={onOpenSettings}
-              className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-white/50 hover:text-white transition-colors"
-            >
+            <div className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-white/50 hover:text-white transition-colors">
               <ChevronsRight size={14} />
-            </button>
+            </div>
           </div>
         </div>
       </aside>
