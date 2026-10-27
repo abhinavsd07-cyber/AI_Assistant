@@ -42,21 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [showMore, setShowMore] = useState(false);
 
-  // Default recent items matching the screenshot
-  const defaultRecent = [
-    { id: 'rec-1', title: 'Explain this Code' },
-    { id: 'rec-2', title: 'Kyoto Solo Trip Itinerary' },
-    { id: 'rec-3', title: 'Podcast Ideas: Sustainable Tech' },
-    { id: 'rec-4', title: 'Debugging JavaScript snippet' },
-    { id: 'rec-5', title: 'How to shave my cat safely' },
-    { id: 'rec-6', title: 'Machine Learning Optimization' },
-    { id: 'rec-7', title: 'React 19 Server Actions guide' },
-  ];
-
-  const displayList = sessions.length > 0
-    ? sessions.map(s => ({ id: s.id, title: s.title }))
-    : defaultRecent;
-
+  const displayList = sessions.map(s => ({ id: s.id, title: s.title }));
   const visibleItems = showMore ? displayList : displayList.slice(0, 5);
 
   return (
@@ -121,21 +107,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
             <div className="flex flex-col gap-0.5 mt-1">
-              {visibleItems.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => {
-                    onSelectSession(item.id);
-                    onCloseMobile();
-                  }}
-                  className={`group flex items-center justify-between px-3 py-2 rounded-lg text-[13.5px] cursor-pointer transition-all ${
-                    currentSessionId === item.id
-                      ? 'bg-white/[0.08] text-white font-medium shadow-sm border border-purple-500/20'
-                      : 'text-white/70 hover:text-white hover:bg-white/[0.04]'
-                  }`}
-                >
-                  <span className="truncate flex-1">{item.title}</span>
-                  {sessions.some(s => s.id === item.id) && (
+              {visibleItems.length === 0 ? (
+                <div className="px-3 py-3 text-xs text-white/40 italic">
+                  No saved conversations yet
+                </div>
+              ) : (
+                visibleItems.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      onSelectSession(item.id);
+                      onCloseMobile();
+                    }}
+                    className={`group flex items-center justify-between px-3 py-2 rounded-lg text-[13.5px] cursor-pointer transition-all ${
+                      currentSessionId === item.id
+                        ? 'bg-white/[0.08] text-white font-medium shadow-sm border border-purple-500/20'
+                        : 'text-white/70 hover:text-white hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <span className="truncate flex-1">{item.title}</span>
                     <button
                       onClick={(e) => onDeleteSession(item.id, e)}
                       className="opacity-0 group-hover:opacity-100 p-1 text-white/40 hover:text-red-400 transition-all rounded"
@@ -143,9 +133,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     >
                       <Trash2 size={13} />
                     </button>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ))
+              )}
 
               {displayList.length > 5 && (
                 <button
