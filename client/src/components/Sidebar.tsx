@@ -9,9 +9,12 @@ import {
   ChevronUp, 
   ChevronsRight,
   Trash2,
-  X
+  X,
+  LogIn,
+  ShieldCheck
 } from 'lucide-react';
 import type { ChatSession } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   currentSessionId: string | null;
@@ -23,8 +26,6 @@ interface SidebarProps {
   onOpenUpgrade: () => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
-  userName?: string;
-  userEmail?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -37,13 +38,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenUpgrade,
   isOpenMobile,
   onCloseMobile,
-  userName = 'Linda Pewtersmith',
-  userEmail = 'linda.h13@gmail.com',
 }) => {
+  const { user, isAuthenticated, openLoginModal } = useAuth();
   const [showMore, setShowMore] = useState(false);
 
   const displayList = sessions.map(s => ({ id: s.id, title: s.title }));
-  const visibleItems = showMore ? displayList : displayList.slice(0, 5);
+  const visibleItems = showMore ? displayList : displayList.slice(0, 6);
+
+  const displayName = user?.name || 'Guest User';
+  const displayEmail = user?.email || 'Sign in to sync history';
+  const displayAvatar = user?.avatar || '/avatar.jpg';
 
   return (
     <>
@@ -73,7 +77,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <div className="w-4 h-4 rounded-sm rotate-45 bg-gradient-to-tr from-purple-500 to-fuchsia-400 shadow-sm" />
                 </div>
               </div>
-              <span className="font-semibold text-lg tracking-tight text-white/90">Nebula</span>
+              <div className="flex flex-col">
+                <span className="font-semibold text-lg tracking-tight text-white/90">Nebula</span>
+                <span className="text-[10px] text-purple-400 font-mono -mt-1">Cognitive AI</span>
+              </div>
             </div>
             
             {/* Mobile close button */}
@@ -93,23 +100,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }}
             className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium text-white 
               bg-gradient-to-r from-[#6D28D9]/90 to-[#4C1D95]/90 hover:from-[#7C3AED] hover:to-[#5B21B6] 
-              border border-purple-500/30 shadow-lg shadow-purple-900/40 transition-all duration-200 active:scale-[0.98]"
+              border border-purple-500/30 shadow-lg shadow-purple-900/40 transition-all duration-200 active:scale-[0.98] cursor-pointer"
           >
             <MessageSquarePlus size={18} className="text-purple-200" />
             <span>New Chat</span>
           </button>
 
-          {/* Recent Chats Section */}
-          <div className="flex flex-col gap-1 mt-2">
-            <div className="flex items-center gap-2 px-2 py-1 text-xs font-medium text-white/50 tracking-wider">
-              <Clock size={14} className="text-white/40" />
-              <span>Recent</span>
+          {/* Recent Conversations List */}
+          <div className="flex flex-col gap-1.5 mt-2">
+            <div className="flex items-center justify-between px-2 text-xs font-semibold text-white/40 tracking-wider uppercase">
+              <div className="flex items-center gap-1.5">
+                <Clock size={13} className="text-purple-400" />
+                <span>Recent Chats</span>
+              </div>
+              <span className="text-[11px] font-mono text-purple-400/80">{sessions.length}</span>
             </div>
 
             <div className="flex flex-col gap-0.5 mt-1">
               {visibleItems.length === 0 ? (
-                <div className="px-3 py-3 text-xs text-white/40 italic">
-                  No saved conversations yet
+                <div className="px-3 py-4 text-xs text-white/40 italic flex flex-col items-center justify-center text-center gap-1 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                  <span>No conversations yet</span>
+                  <span className="text-[10.5px] text-white/30">Start asking Nebula anything</span>
                 </div>
               ) : (
                 visibleItems.map((item) => (
@@ -121,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }}
                     className={`group flex items-center justify-between px-3 py-2 rounded-lg text-[13.5px] cursor-pointer transition-all ${
                       currentSessionId === item.id
-                        ? 'bg-white/[0.08] text-white font-medium shadow-sm border border-purple-500/20'
+                        ? 'bg-purple-600/25 text-white font-medium shadow-sm border border-purple-500/30'
                         : 'text-white/70 hover:text-white hover:bg-white/[0.04]'
                     }`}
                   >
@@ -129,7 +140,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       onClick={(e) => onDeleteSession(item.id, e)}
                       className="opacity-0 group-hover:opacity-100 p-1 text-white/40 hover:text-red-400 transition-all rounded"
-                      title="Delete chat"
+                      title="Delete Conversation"
                     >
                       <Trash2 size={13} />
                     </button>
@@ -137,39 +148,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 ))
               )}
 
-              {displayList.length > 5 && (
+              {displayList.length > 6 && (
                 <button
                   onClick={() => setShowMore(!showMore)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/50 hover:text-white/80 transition-colors mt-1"
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs text-purple-300/80 hover:text-purple-200 hover:bg-white/[0.03] rounded-lg transition-colors mt-0.5 cursor-pointer"
                 >
-                  <span>{showMore ? 'Less' : 'More'}</span>
-                  {showMore ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                  {showMore ? (
+                    <>
+                      <ChevronUp size={14} />
+                      <span>Show less</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown size={14} />
+                      <span>Show {displayList.length - 6} more</span>
+                    </>
+                  )}
                 </button>
               )}
             </div>
           </div>
 
-          {/* Settings & Help Navigation */}
+          {/* Quick Settings & Info */}
           <div className="flex flex-col gap-0.5 pt-2 border-t border-white/[0.06]">
             <button
               onClick={() => {
                 onOpenSettings();
                 onCloseMobile();
               }}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] text-white/70 hover:text-white hover:bg-white/[0.04] transition-colors"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-white/70 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
             >
               <Settings size={16} className="text-white/50" />
-              <span>Settings</span>
+              <span>Settings & API</span>
             </button>
-
             <button
               onClick={() => {
-                window.open('https://ai.google.dev/gemini-api/docs', '_blank');
+                alert('Nebula AI Assistant v2.0\nPowered by Google Gemini 3.8 Flash & MongoDB Atlas.');
               }}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] text-white/70 hover:text-white hover:bg-white/[0.04] transition-colors"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-white/70 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
             >
               <HelpCircle size={16} className="text-white/50" />
-              <span>Help & Updates</span>
+              <span>About Nebula</span>
             </button>
           </div>
         </div>
@@ -184,44 +203,65 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-400/30 flex items-center justify-center">
                 <Sparkles size={13} className="text-purple-300" />
               </div>
-              <span className="text-sm font-semibold text-white tracking-wide">Upgrade to Pro</span>
+              <span className="text-sm font-semibold text-white tracking-wide">
+                {user?.plan === 'pro' ? 'Nebula Pro Active' : 'Upgrade to Pro'}
+              </span>
             </div>
 
             <p className="text-[11.5px] leading-relaxed text-white/60 mb-3">
-              Unlock Nebula's full power with a 69% discount and get 3 months free! (first time user only)
+              {user?.plan === 'pro'
+                ? 'Enjoy unlimited Gemini 3.8 Pro reasoning and highest priority tokens.'
+                : 'Unlock Gemini 3.8 Pro, extended 2M tokens context, and instant high-load processing!'}
             </p>
 
             <button
               onClick={onOpenUpgrade}
               className="w-full py-2 px-3 rounded-xl text-xs font-semibold text-white 
                 bg-gradient-to-r from-purple-700 via-indigo-600 to-purple-800 hover:from-purple-600 hover:to-indigo-500
-                border border-purple-400/30 shadow-md shadow-purple-900/30 transition-all active:scale-[0.98]"
+                border border-purple-400/30 shadow-md shadow-purple-900/30 transition-all active:scale-[0.98] cursor-pointer"
             >
-              Upgrade today!
+              {user?.plan === 'pro' ? 'Manage Pro Plan' : 'Upgrade today!'}
             </button>
           </div>
 
-          {/* User Profile */}
-          <div 
-            onClick={onOpenSettings}
-            className="flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-white/[0.04] transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <img 
-                src="/avatar.jpg" 
-                alt={userName}
-                className="w-9 h-9 rounded-full object-cover ring-1 ring-purple-400/40"
-              />
-              <div className="min-w-0 flex flex-col">
-                <span className="text-[13px] font-medium text-white/90 truncate">{userName}</span>
-                <span className="text-[11px] text-white/40 truncate">{userEmail}</span>
+          {/* User Profile / Auth Sign In */}
+          {isAuthenticated && user ? (
+            <div 
+              onClick={onOpenSettings}
+              className="flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-white/[0.04] transition-colors cursor-pointer group"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <img 
+                  src={displayAvatar} 
+                  alt={displayName}
+                  className="w-9 h-9 rounded-full object-cover ring-1 ring-purple-400/40 shrink-0"
+                />
+                <div className="min-w-0 flex flex-col">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[13px] font-medium text-white/90 truncate">{displayName}</span>
+                    <ShieldCheck size={12} className="text-emerald-400 shrink-0" />
+                  </div>
+                  <span className="text-[11px] text-white/40 truncate">{displayEmail}</span>
+                </div>
+              </div>
+
+              <div className="w-7 h-7 rounded-lg bg-white/[0.04] group-hover:bg-white/[0.08] flex items-center justify-center text-white/50 group-hover:text-white transition-colors">
+                <ChevronsRight size={14} />
               </div>
             </div>
-
-            <div className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-white/50 hover:text-white transition-colors">
-              <ChevronsRight size={14} />
-            </div>
-          </div>
+          ) : (
+            <button
+              onClick={openLoginModal}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 
+                border border-purple-500/30 text-white transition-all active:scale-[0.98] cursor-pointer"
+            >
+              <div className="flex items-center gap-2 text-xs font-semibold">
+                <LogIn size={15} className="text-purple-300" />
+                <span>Sign In / Register</span>
+              </div>
+              <span className="text-[10px] text-purple-300/80 font-mono">Sync History</span>
+            </button>
+          )}
         </div>
       </aside>
     </>

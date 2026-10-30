@@ -1,5 +1,18 @@
-import React from 'react';
-import { X, Server, Globe, Shield, Database, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  X, 
+  Server, 
+  Globe, 
+  Database, 
+  User, 
+  LogOut, 
+  LogIn, 
+  Check, 
+  Cpu, 
+  Sparkles,
+  BarChart2
+} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -22,7 +35,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   userEmail,
   setUserEmail,
 }) => {
+  const { user, isAuthenticated, logout, openLoginModal, updateProfile } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
   if (!isOpen) return null;
+
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    setSaveSuccess(false);
+
+    if (isAuthenticated) {
+      await updateProfile({ name: userName });
+    } else {
+      localStorage.setItem('nebula_user_name', userName);
+      localStorage.setItem('nebula_user_email', userEmail);
+    }
+
+    setIsSaving(false);
+    setSaveSuccess(true);
+    setTimeout(() => {
+      setSaveSuccess(false);
+      onClose();
+    }, 600);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
@@ -38,7 +74,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center">
               <Server size={16} className="text-purple-300" />
             </div>
-            <h2 className="text-base font-semibold text-white">Settings & Profile</h2>
+            <h2 className="text-base font-semibold text-white">Settings & Account</h2>
           </div>
           <button 
             onClick={onClose}
@@ -49,16 +85,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Settings Form */}
-        <div className="flex flex-col gap-3.5 text-xs">
-          {/* User Profile Customization */}
-          <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] flex flex-col gap-2.5">
-            <div className="flex items-center gap-2 text-purple-300 font-medium">
-              <User size={14} />
-              <span>User Profile</span>
+        <div className="flex flex-col gap-3.5 text-xs max-h-[70vh] overflow-y-auto pr-1">
+          {/* User Account / Profile Box */}
+          <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-purple-300 font-semibold text-xs">
+                <User size={14} />
+                <span>Account Profile</span>
+              </div>
+              {isAuthenticated ? (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                  AUTHENTICATED ({user?.provider?.toUpperCase()})
+                </span>
+              ) : (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+                  GUEST SESSION
+                </span>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-2">
+
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="text-white/50 block text-[10.5px] mb-1">Name</label>
+                <label className="text-white/50 block text-[10.5px] mb-1">Display Name</label>
                 <input
                   type="text"
                   value={userName}
@@ -67,19 +115,74 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 />
               </div>
               <div>
-                <label className="text-white/50 block text-[10.5px] mb-1">Email</label>
+                <label className="text-white/50 block text-[10.5px] mb-1">Email Address</label>
                 <input
                   type="email"
                   value={userEmail}
+                  disabled={isAuthenticated}
                   onChange={(e) => setUserEmail(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 text-white text-xs outline-none focus:border-purple-400"
+                  className={`w-full px-2.5 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 text-white text-xs outline-none ${
+                    isAuthenticated ? 'opacity-60 cursor-not-allowed' : 'focus:border-purple-400'
+                  }`}
                 />
               </div>
             </div>
+
+            {/* Account Quick Actions */}
+            <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
+              {isAuthenticated ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    logout();
+                    onClose();
+                  }}
+                  className="flex items-center gap-1.5 text-[11px] text-red-300 hover:text-red-200 transition-colors cursor-pointer"
+                >
+                  <LogOut size={13} />
+                  <span>Sign Out of Account</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    openLoginModal();
+                  }}
+                  className="flex items-center gap-1.5 text-[11px] text-purple-300 hover:text-purple-200 font-medium transition-colors cursor-pointer"
+                >
+                  <LogIn size={13} />
+                  <span>Sign In or Register Now →</span>
+                </button>
+              )}
+
+              {user?.plan && (
+                <span className="text-[11px] text-white/50 flex items-center gap-1">
+                  <Sparkles size={11} className="text-purple-400" />
+                  Plan: <span className="font-semibold text-white uppercase">{user.plan}</span>
+                </span>
+              )}
+            </div>
           </div>
 
+          {/* Usage Metrics (if authenticated) */}
+          {isAuthenticated && user?.usage && (
+            <div className="p-3 rounded-xl bg-purple-500/[0.05] border border-purple-500/20 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart2 size={15} className="text-purple-300" />
+                <span className="text-white/70 text-xs">Total Usage</span>
+              </div>
+              <div className="flex items-center gap-3 text-[11px] font-mono text-white/80">
+                <span>{user.usage.totalRequests || 0} reqs</span>
+                <span className="text-white/30">•</span>
+                <span>{user.usage.totalTokens || 0} tokens</span>
+              </div>
+            </div>
+          )}
+
+          {/* Backend API Endpoint */}
           <div>
-            <label className="text-white/70 font-medium block mb-1">Backend API Endpoint</label>
+            <label className="text-white/70 font-medium block mb-1">Backend AI Endpoint</label>
             <input
               type="text"
               value={apiUrl}
@@ -95,18 +198,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <Database size={15} className="text-purple-300" />
               <div>
                 <span className="font-medium text-white/80 block">Database Storage</span>
-                <span className="text-[11px] text-white/40">MongoDB Atlas / Local fallback</span>
+                <span className="text-[11px] text-white/40">MongoDB Atlas Production Cluster</span>
               </div>
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono">READY</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono">CONNECTED</span>
           </div>
 
           <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Globe size={15} className="text-purple-300" />
               <div>
-                <span className="font-medium text-white/80 block">Language Auto-Detection</span>
-                <span className="text-[11px] text-white/40">Malayalam & English supported</span>
+                <span className="font-medium text-white/80 block">Language Support</span>
+                <span className="text-[11px] text-white/40">Malayalam & English native contextual synthesis</span>
               </div>
             </div>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono">ACTIVE</span>
@@ -114,10 +217,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Shield size={15} className="text-purple-300" />
+              <Cpu size={15} className="text-purple-300" />
               <div>
-                <span className="font-medium text-white/80 block">Active AI Engine</span>
-                <span className="text-[11px] text-white/40">Gemini 3.8 Flash + Multi-tier Fallback</span>
+                <span className="font-medium text-white/80 block">Active AI Models Pool</span>
+                <span className="text-[11px] text-white/40">Gemini 3.8 Flash, 3.5 Flash, 3.5 Pro, 1.5 Flash</span>
               </div>
             </div>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono">ONLINE</span>
@@ -125,10 +228,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <button
-          onClick={onClose}
-          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium text-xs shadow-lg shadow-purple-950/40 transition-all active:scale-[0.98]"
+          onClick={handleSaveProfile}
+          disabled={isSaving}
+          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium text-xs shadow-lg shadow-purple-950/40 transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
         >
-          Save & Close
+          {saveSuccess ? (
+            <>
+              <Check size={14} className="text-emerald-300" />
+              <span>Saved Successfully</span>
+            </>
+          ) : (
+            <span>Save Settings</span>
+          )}
         </button>
       </div>
     </div>

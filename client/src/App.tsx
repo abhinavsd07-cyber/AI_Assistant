@@ -6,9 +6,13 @@ import { ChatThread } from './components/ChatThread';
 import { ChatInput, type ImageAttachment } from './components/ChatInput';
 import { SettingsModal } from './components/SettingsModal';
 import { UpgradeModal } from './components/UpgradeModal';
+import { AuthModal } from './components/AuthModal';
+import { useAuth } from './context/AuthContext';
 import type { Message, ChatSession } from './types';
 
 export const App: React.FC = () => {
+  const { user, token, isAuthenticated } = useAuth();
+
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
     try {
       const saved = localStorage.getItem('nebula_sessions');
@@ -19,11 +23,19 @@ export const App: React.FC = () => {
   });
 
   const [userName, setUserName] = useState<string>(() => {
-    return localStorage.getItem('nebula_user_name') || 'Linda Pewtersmith';
+    return user?.name || localStorage.getItem('nebula_user_name') || 'Guest User';
   });
   const [userEmail, setUserEmail] = useState<string>(() => {
-    return localStorage.getItem('nebula_user_email') || 'linda.h13@gmail.com';
+    return user?.email || localStorage.getItem('nebula_user_email') || 'Sign in to sync history';
   });
+
+  // Keep state updated when user context changes
+  useEffect(() => {
+    if (user) {
+      setUserName(user.name);
+      setUserEmail(user.email);
+    }
+  }, [user]);
 
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -36,22 +48,28 @@ export const App: React.FC = () => {
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // Sync profile & sessions to localStorage
+  // Sync sessions to localStorage
   useEffect(() => {
     try {
       localStorage.setItem('nebula_sessions', JSON.stringify(sessions));
-      localStorage.setItem('nebula_user_name', userName);
-      localStorage.setItem('nebula_user_email', userEmail);
+      if (!isAuthenticated) {
+        localStorage.setItem('nebula_user_name', userName);
+        localStorage.setItem('nebula_user_email', userEmail);
+      }
     } catch (e) {
       console.error('Error saving storage:', e);
     }
-  }, [sessions, userName, userEmail]);
+  }, [sessions, userName, userEmail, isAuthenticated]);
 
-  // Sync from backend MongoDB sessions if available
+  // Sync from backend MongoDB sessions if available (with Authorization if logged in)
   useEffect(() => {
     const fetchMongoSessions = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/sessions');
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        const res = await fetch('http://localhost:5000/api/sessions', { headers });
         const data = await res.json();
         if (data.success && Array.isArray(data.sessions) && data.sessions.length > 0) {
           const mapped: ChatSession[] = data.sessions.map((s: any) => ({
@@ -70,7 +88,7 @@ export const App: React.FC = () => {
       }
     };
     fetchMongoSessions();
-  }, []);
+  }, [token]);
 
   // Load selected session messages
   const handleSelectSession = (id: string) => {
@@ -95,7 +113,11 @@ export const App: React.FC = () => {
       handleNewChat();
     }
     try {
-      await fetch(`http://localhost:5000/api/sessions/${id}`, { method: 'DELETE' });
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      await fetch(`http://localhost:5000/api/sessions/${id}`, { method: 'DELETE', headers });
     } catch (err) {
       // Handled silently
     }
@@ -130,11 +152,16 @@ export const App: React.FC = () => {
         ? `[DEEP REASONING ACTIVATED: Think step-by-step and provide deep insights] ${text}`
         : text;
 
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ 
           message: formattedMessage,
           model: selectedModel,
@@ -145,6 +172,7 @@ export const App: React.FC = () => {
             previewUrl: imageAttachment.previewUrl,
           } : null,
           sessionId: activeSessionId,
+          isReasoning,
         }),
       });
 
@@ -250,8 +278,6 @@ export const App: React.FC = () => {
           onOpenUpgrade={() => setIsUpgradeOpen(true)}
           isOpenMobile={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
-          userName={userName}
-          userEmail={userEmail}
         />
 
         {/* Right Main Chat Stage */}
@@ -262,6 +288,7 @@ export const App: React.FC = () => {
             onSelectModel={setSelectedModel}
             onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)}
             onClearChat={handleNewChat}
+            onOpenSettings={() => setIsSettingsOpen(true)}
           />
 
           {/* Center Stage: Hero Welcome Screen OR Chat Message Thread */}
@@ -298,6 +325,8 @@ export const App: React.FC = () => {
         isOpen={isUpgradeOpen}
         onClose={() => setIsUpgradeOpen(false)}
       />
+
+      <AuthModal />
     </div>
   );
 };
