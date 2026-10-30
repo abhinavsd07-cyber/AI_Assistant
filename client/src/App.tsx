@@ -6,12 +6,12 @@ import { ChatThread } from './components/ChatThread';
 import { ChatInput, type ImageAttachment } from './components/ChatInput';
 import { SettingsModal } from './components/SettingsModal';
 import { UpgradeModal } from './components/UpgradeModal';
-import { AuthModal } from './components/AuthModal';
+import { AuthPage } from './pages/AuthPage';
 import { useAuth } from './context/AuthContext';
 import type { Message, ChatSession } from './types';
 
 export const App: React.FC = () => {
-  const { user, token, isAuthenticated } = useAuth();
+  const { user, token, isAuthenticated, currentView } = useAuth();
 
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
     try {
@@ -250,61 +250,50 @@ export const App: React.FC = () => {
     }
   };
 
-  return (
-    <div 
-      className="h-screen w-screen flex items-center justify-center p-0 md:p-2 lg:p-3 relative overflow-hidden bg-[#06050C]"
-      style={{
-        backgroundImage: `radial-gradient(ellipse at 50% 0%, rgba(124, 58, 237, 0.15) 0%, transparent 70%), url('/mountain_bg.jpg')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center bottom',
-      }}
-    >
-      {/* Background dark atmosphere overlay */}
-      <div className="absolute inset-0 bg-[#06050C]/60 backdrop-blur-[1px] pointer-events-none" />
+  // Dedicated Full-Page Professional Authentication
+  if (currentView === 'login' || currentView === 'signup') {
+    return <AuthPage initialMode={currentView} />;
+  }
 
-      {/* Main Glass Application Container */}
-      <div className="relative z-10 w-full max-w-[1400px] h-full max-h-[96vh] rounded-none md:rounded-[24px] 
-        bg-[#0D0B1A]/90 backdrop-blur-2xl border-0 md:border border-white/[0.12] shadow-[0_25px_80px_rgba(0,0,0,0.85)]
-        flex overflow-hidden transition-all duration-300">
-        
-        {/* Left Sidebar */}
-        <Sidebar
-          currentSessionId={currentSessionId}
-          sessions={sessions}
-          onSelectSession={handleSelectSession}
-          onNewChat={handleNewChat}
-          onDeleteSession={handleDeleteSession}
+  return (
+    <div className="h-screen w-screen flex overflow-hidden bg-[#FCFCFC] text-[#0D0D0D]">
+      {/* Left Sidebar */}
+      <Sidebar
+        currentSessionId={currentSessionId}
+        sessions={sessions}
+        onSelectSession={handleSelectSession}
+        onNewChat={handleNewChat}
+        onDeleteSession={handleDeleteSession}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenUpgrade={() => setIsUpgradeOpen(true)}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+      />
+
+      {/* Right Main Chat Stage */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#FCFCFC]">
+        {/* Top Bar */}
+        <TopBar
+          selectedModel={selectedModel}
+          onSelectModel={setSelectedModel}
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)}
+          onClearChat={handleNewChat}
           onOpenSettings={() => setIsSettingsOpen(true)}
-          onOpenUpgrade={() => setIsUpgradeOpen(true)}
-          isOpenMobile={isMobileSidebarOpen}
-          onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
 
-        {/* Right Main Chat Stage */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden bg-gradient-to-b from-[#100D22]/60 to-[#0A0815]/90">
-          {/* Top Bar */}
-          <TopBar
-            selectedModel={selectedModel}
-            onSelectModel={setSelectedModel}
-            onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)}
-            onClearChat={handleNewChat}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-          />
+        {/* Center Stage: Hero Welcome Screen OR Chat Message Thread */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+          <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+            {messages.length === 0 ? (
+              <Hero onSelectSuggestion={(prompt) => handleSendMessage(prompt, false, null)} />
+            ) : (
+              <ChatThread messages={messages} isLoading={isLoading} />
+            )}
+          </div>
 
-          {/* Center Stage: Hero Welcome Screen OR Chat Message Thread */}
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
-            <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
-              {messages.length === 0 ? (
-                <Hero onSelectSuggestion={(prompt) => handleSendMessage(prompt, false, null)} />
-              ) : (
-                <ChatThread messages={messages} isLoading={isLoading} />
-              )}
-            </div>
-
-            {/* Bottom Floating Chat Input with Vision & Speech */}
-            <div className="flex-shrink-0">
-              <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
-            </div>
+          {/* Bottom Floating Chat Input with Vision & Speech */}
+          <div className="flex-shrink-0">
+            <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
           </div>
         </div>
       </div>
@@ -325,8 +314,6 @@ export const App: React.FC = () => {
         isOpen={isUpgradeOpen}
         onClose={() => setIsUpgradeOpen(false)}
       />
-
-      <AuthModal />
     </div>
   );
 };

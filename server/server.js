@@ -52,7 +52,7 @@ app.use("/api", modelRoutes);
 
 app.get("/", (req, res) => {
   res.json({
-    message: "Welcome to NEXORA AI",
+    message: "Welcome to Nebula AI",
     status: "Backend is running",
     database: isMongoConnected ? "Connected (MongoDB)" : "Local Storage Mode",
   });
@@ -61,7 +61,7 @@ app.get("/", (req, res) => {
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
-    message: "NEXORA AI server is healthy",
+    message: "Nebula AI server is healthy",
     database: isMongoConnected ? "Connected" : "Standby",
     modelsReady: true,
   });
@@ -137,7 +137,7 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
     ].filter(Boolean).filter((m, i, arr) => arr.indexOf(m) === i);
 
     const systemInstruction =
-      "You are NEXORA AI (Nebula), a helpful professional assistant. " +
+      "You are Nebula AI, a helpful, intelligent professional assistant. " +
       "Answer in Malayalam when the user uses Malayalam or asks for it. " +
       "Explain programming concepts step by step and provide " +
       "correct, practical examples. Be honest when uncertain.";
@@ -297,7 +297,7 @@ const PORT = process.env.PORT || 5000;
 
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`NEXORA AI running on port ${PORT}`);
+    console.log(`✨ Nebula AI server running on port ${PORT}`);
   });
 }
 

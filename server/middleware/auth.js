@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
-const JWT_SECRET = process.env.JWT_SECRET || "nexora_ai_assistant_jwt_secret_key_2026_super_secure";
+const JWT_SECRET = process.env.JWT_SECRET || "nebula_ai_assistant_jwt_secret_key_2026_super_secure";
 
 // Middleware that strictly requires authentication
 const requireAuth = async (req, res, next) => {

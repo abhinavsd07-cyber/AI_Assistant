@@ -1,17 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { UserProfile, AuthResponse } from '../types';
 
+export type ViewType = 'chat' | 'login' | 'signup';
+
 interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  isAuthModalOpen: boolean;
-  authModalMode: 'login' | 'signup';
-  openLoginModal: () => void;
-  openSignupModal: () => void;
-  closeAuthModal: () => void;
-  setAuthModalMode: (mode: 'login' | 'signup') => void;
+  currentView: ViewType;
+  navigateTo: (view: ViewType) => void;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: (credential?: string, profile?: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>;
@@ -22,6 +20,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const getViewFromHash = (): ViewType => {
+  const hash = window.location.hash.toLowerCase();
+  if (hash.includes('signup')) return 'signup';
+  if (hash.includes('login') || hash.includes('signin')) return 'login';
+  return 'chat';
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(() => {
@@ -38,8 +43,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
-  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
+  const [currentView, setCurrentView] = useState<ViewType>(getViewFromHash);
+
+  // Sync hash routing with state
+  useEffect(() => {
+    const handleHashChange = () => {
+      setCurrentView(getViewFromHash());
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const navigateTo = useCallback((view: ViewType) => {
+    setCurrentView(view);
+    if (view === 'login') {
+      window.location.hash = '#/login';
+    } else if (view === 'signup') {
+      window.location.hash = '#/signup';
+    } else {
+      window.location.hash = '#/';
+    }
+  }, []);
 
   // Verify token on mount with /api/auth/me
   useEffect(() => {
@@ -64,14 +89,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setToken(storedToken);
             localStorage.setItem('nebula_user', JSON.stringify(data.user));
           } else {
-            // Token rejected
             logout();
           }
         } else {
           logout();
         }
       } catch (err) {
-        // Backend offline or network error: retain local cache if present
         console.warn('Backend auth check skipped:', err);
       } finally {
         setIsLoading(false);
@@ -81,20 +104,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     verifySession();
   }, []);
 
-  const openLoginModal = useCallback(() => {
-    setAuthModalMode('login');
-    setIsAuthModalOpen(true);
-  }, []);
-
-  const openSignupModal = useCallback(() => {
-    setAuthModalMode('signup');
-    setIsAuthModalOpen(true);
-  }, []);
-
-  const closeAuthModal = useCallback(() => {
-    setIsAuthModalOpen(false);
-  }, []);
-
   const handleAuthSuccess = (newToken: string, newUser: UserProfile) => {
     setToken(newToken);
     setUser(newUser);
@@ -102,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('nebula_user', JSON.stringify(newUser));
     localStorage.setItem('nebula_user_name', newUser.name);
     localStorage.setItem('nebula_user_email', newUser.email);
-    setIsAuthModalOpen(false);
+    navigateTo('chat');
   };
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
@@ -206,12 +215,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         isAuthenticated: !!user && !!token,
         isLoading,
-        isAuthModalOpen,
-        authModalMode,
-        openLoginModal,
-        openSignupModal,
-        closeAuthModal,
-        setAuthModalMode,
+        currentView,
+        navigateTo,
         login,
         register,
         loginWithGoogle,
@@ -231,4 +236,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

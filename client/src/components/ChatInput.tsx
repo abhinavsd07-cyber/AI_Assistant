@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Paperclip, Image as ImageIcon, Lightbulb, Mic, Send, X } from 'lucide-react';
+import { Plus, Lightbulb, Mic, ArrowUp, X } from 'lucide-react';
 
 export interface ImageAttachment {
-  data: string; // base64
+  data: string;
   mimeType: string;
   previewUrl: string;
 }
@@ -20,10 +20,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Initialize Web Speech API
+  // Initialize Speech Recognition
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -42,8 +41,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
           }
         };
 
-        recognition.onerror = (event: any) => {
-          console.warn('Speech recognition warning:', event.error);
+        recognition.onerror = () => {
           setIsRecording(false);
         };
 
@@ -58,52 +56,42 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
     }
   }, []);
 
-  // Auto-resize textarea height
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 140)}px`;
+  const toggleRecording = () => {
+    if (!recognitionRef.current) {
+      alert('Speech recognition is not supported in this browser.');
+      return;
     }
-  }, [input]);
 
-  const handleSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if ((!input.trim() && !imageAttachment) || isLoading) return;
-
-    onSendMessage(input.trim(), isReasoning, imageAttachment);
-    setInput('');
-    setImageAttachment(null);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+    if (isRecording) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    } else {
+      setIsRecording(true);
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        setIsRecording(false);
+      }
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit();
+      handleSubmit(e);
     }
   };
 
-  const toggleRecording = () => {
-    if (!recognitionRef.current) {
-      alert('Your browser does not support voice input. Please use Google Chrome or Microsoft Edge.');
-      return;
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if ((!input.trim() && !imageAttachment) || isLoading) return;
 
-    if (isRecording) {
-      try {
-        recognitionRef.current.stop();
-      } catch (e) {}
-      setIsRecording(false);
-    } else {
-      try {
-        recognitionRef.current.start();
-        setIsRecording(true);
-      } catch (err) {
-        console.warn('Could not start recognition:', err);
-        setIsRecording(false);
-      }
+    onSendMessage(input.trim(), isReasoning, imageAttachment);
+    setInput('');
+    setImageAttachment(null);
+
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
     }
   };
 
@@ -126,150 +114,123 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 md:px-6 pb-4 pt-1">
+    <div className="w-full max-w-3xl mx-auto px-4 pb-3 pt-1 flex flex-col items-center">
+      {/* Floating Pill Input Box (Matching screenshot) */}
       <form
         onSubmit={handleSubmit}
-        className="relative rounded-[22px] bg-[#171329]/95 hover:bg-[#19152D]/95 border border-white/[0.1] hover:border-purple-500/30 
-          backdrop-blur-2xl shadow-2xl shadow-black/60 transition-all p-3 flex flex-col gap-2"
+        className="w-full relative rounded-[30px] bg-white border border-[#E5E5E5] hover:border-gray-400 
+          shadow-[0_2px_12px_rgba(0,0,0,0.04)] focus-within:shadow-[0_2px_16px_rgba(0,0,0,0.08)] 
+          transition-all px-4 py-2 flex flex-col gap-1.5"
       >
-        {/* Hidden inputs */}
         <input 
           type="file" 
           ref={fileInputRef} 
-          className="hidden" 
-          onChange={(e) => {
-            if (e.target.files?.[0]) {
-              setInput(prev => `${prev} [Attached file: ${e.target.files![0].name}] `);
-            }
-          }}
-        />
-
-        <input 
-          type="file" 
-          ref={imageInputRef} 
-          accept="image/*"
+          accept="image/*,.pdf,.doc,.docx,.txt"
           className="hidden" 
           onChange={handleImageSelect}
         />
 
-        {/* Image Attachment Preview */}
+        {/* Attachment preview */}
         {imageAttachment && (
-          <div className="relative inline-flex items-center gap-2 p-1.5 rounded-xl bg-purple-950/40 border border-purple-500/30 w-fit animate-in fade-in zoom-in-95">
+          <div className="relative inline-flex items-center gap-2 p-1.5 rounded-xl bg-gray-50 border border-gray-200 w-fit">
             <img 
               src={imageAttachment.previewUrl} 
               alt="Attachment" 
-              className="w-14 h-14 rounded-lg object-cover ring-1 ring-purple-400/40"
+              className="w-12 h-12 rounded-lg object-cover"
             />
-            <div className="flex flex-col pr-2">
-              <span className="text-[11px] text-purple-200 font-medium">Image attached</span>
-              <span className="text-[10px] text-white/40">Ready for Multimodal Vision</span>
-            </div>
             <button
               type="button"
               onClick={() => setImageAttachment(null)}
-              className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-colors"
+              className="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center justify-center transition-colors"
             >
               <X size={12} />
             </button>
           </div>
         )}
 
-        {/* Input Text Area */}
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={
-            isRecording 
-              ? "Listening to your voice... Speak now..." 
-              : imageAttachment 
-                ? "Ask a question about this image..." 
-                : "Send a message or drop a file..."
-          }
-          rows={1}
-          disabled={isLoading}
-          className="w-full bg-transparent text-white placeholder-white/40 text-sm md:text-[14.5px] 
-            resize-none outline-none px-2 py-1 leading-relaxed max-h-36 disabled:opacity-50"
-        />
+        <div className="flex items-center gap-2.5 w-full">
+          {/* Plus icon on the left (matches screenshot) */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-8 h-8 rounded-full hover:bg-gray-100 text-gray-700 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            title="Add files or photos"
+          >
+            <Plus size={19} />
+          </button>
 
-        {/* Bottom Actions Row */}
-        <div className="flex items-center justify-between pt-1 border-t border-white/[0.04]">
-          {/* Left Action Pill Chips */}
-          <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium 
-                text-white/60 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-all"
-            >
-              <Paperclip size={13} className="text-white/50" />
-              <span>Files</span>
-            </button>
+          {/* Text Area */}
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              e.target.style.height = 'auto';
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder={isRecording ? "Listening..." : "Ask Nebula AI..."}
+            rows={1}
+            disabled={isLoading}
+            className="flex-1 bg-transparent text-[#0D0D0D] placeholder-gray-400 text-[15px] 
+              resize-none outline-none py-1.5 leading-normal max-h-36 disabled:opacity-50"
+          />
 
-            <button
-              type="button"
-              onClick={() => imageInputRef.current?.click()}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                imageAttachment
-                  ? 'bg-purple-600/30 text-purple-200 border-purple-400/50 shadow-sm'
-                  : 'text-white/60 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.06]'
-              }`}
-            >
-              <ImageIcon size={13} className={imageAttachment ? 'text-purple-300' : 'text-white/50'} />
-              <span>Images</span>
-            </button>
-
+          {/* Right Controls */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Think Button (Reasoning) */}
             <button
               type="button"
               onClick={() => setIsReasoning(!isReasoning)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
-                isReasoning
-                  ? 'bg-purple-600/30 text-purple-200 border-purple-500/50 shadow-sm shadow-purple-500/20'
-                  : 'text-white/60 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.06]'
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
+                isReasoning 
+                  ? 'bg-black text-white' 
+                  : 'text-gray-500 hover:text-black hover:bg-gray-100'
               }`}
             >
-              <Lightbulb size={13} className={isReasoning ? 'text-purple-300' : 'text-white/50'} />
-              <span>Reasoning</span>
-              {isReasoning && <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse ml-0.5" />}
+              <Lightbulb size={14} className={isReasoning ? 'text-amber-300' : 'text-gray-500'} />
+              <span>Think</span>
             </button>
-          </div>
 
-          {/* Right Action Buttons */}
-          <div className="flex items-center gap-2">
-            {/* Mic Button */}
+            {/* Microphone Icon */}
             <button
               type="button"
               onClick={toggleRecording}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
                 isRecording 
-                  ? 'bg-red-500/25 text-red-400 border border-red-500/50 animate-pulse shadow-md shadow-red-500/30' 
-                  : 'text-white/50 hover:text-white hover:bg-white/[0.06]'
+                  ? 'bg-rose-100 text-rose-600 animate-pulse' 
+                  : 'text-gray-500 hover:text-black hover:bg-gray-100'
               }`}
-              title={isRecording ? 'Listening... click to stop' : 'Voice Input (Speech to text)'}
+              title="Voice dictation"
             >
-              <Mic size={17} />
+              <Mic size={18} />
             </button>
 
-            {/* Send Button */}
+            {/* Circular Action Button (Signature ChatGPT Black / Gray Pill) */}
             <button
               type="submit"
               disabled={(!input.trim() && !imageAttachment) || isLoading}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                 (input.trim() || imageAttachment) && !isLoading
-                  ? 'bg-gradient-to-tr from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-900/40 active:scale-95'
-                  : 'bg-white/[0.06] text-white/20 cursor-not-allowed'
+                  ? 'bg-[#0D0D0D] hover:bg-[#2F2F2F] text-white shadow-xs cursor-pointer active:scale-95'
+                  : 'bg-[#E5E5E5] text-[#8E8E93] cursor-not-allowed'
               }`}
+              title="Send message"
             >
               {isLoading ? (
-                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
               ) : (
-                <Send size={15} className="translate-x-[1px]" />
+                <ArrowUp size={17} strokeWidth={2.5} />
               )}
             </button>
           </div>
         </div>
       </form>
+
+      {/* Footer warning text */}
+      <div className="text-[11px] text-gray-400 mt-2 select-none text-center">
+        Nebula AI can make mistakes. Check important info.
+      </div>
     </div>
   );
 };

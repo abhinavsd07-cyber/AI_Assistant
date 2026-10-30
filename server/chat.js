@@ -6,7 +6,7 @@ const rl = readline.createInterface({
 });
 
 console.log("==========================================");
-console.log("🤖 NEXORA AI Chat CLI (Type 'exit' to quit)");
+console.log("✨ Nebula AI Chat CLI (Type 'exit' to quit)");
 console.log("==========================================\n");
 
 function askPrompt() {
@@ -37,7 +37,7 @@ function askPrompt() {
       const data = await response.json();
 
       if (data.success) {
-        console.log("\n🤖 NEXORA AI:\n" + data.reply + "\n");
+        console.log("\n✨ Nebula AI:\n" + data.reply + "\n");
       } else {
         console.log("\n❌ Error: " + (data.details || data.error) + "\n");
       }
