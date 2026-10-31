@@ -10,7 +10,14 @@ import {
   Compass,
   Code,
   Calendar,
-  AtSign
+  AtSign,
+  ChevronRight,
+  Sparkles,
+  Sliders,
+  User as UserIcon,
+  Settings as SettingsIcon,
+  HelpCircle,
+  LogOut
 } from 'lucide-react';
 import type { ChatSession } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -38,8 +45,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile,
   onCloseMobile,
 }) => {
-  const { user, isAuthenticated, navigateTo } = useAuth();
+  const { user, isAuthenticated, navigateTo, logout } = useAuth();
   const [showMore, setShowMore] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const displayList = sessions.map(s => ({ id: s.id, title: s.title }));
   const visibleItems = showMore ? displayList : displayList.slice(0, 10);
@@ -204,46 +212,172 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Bottom User Profile Section (Matching Screenshot) */}
-        <div className="p-3 border-t border-[#E5E5E5] flex flex-col gap-2 bg-[#FCFCFC]">
-          <div 
-            onClick={onOpenSettings}
-            className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-[#ECECEC]/60 transition-colors cursor-pointer"
-          >
-            {/* Green Initial Circle matching screenshot (AS in green) */}
-            <div className="w-8 h-8 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
-              {initials}
-            </div>
-            
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-[13px] font-semibold text-[#0D0D0D] truncate leading-tight">
-                {displayName}
-              </span>
-              <span 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenUpgrade();
-                }}
-                className="text-[11px] text-gray-500 hover:text-[#0D0D0D] truncate leading-tight transition-colors"
-                title="Upgrade Plan"
-              >
-                {displayEmail}
-              </span>
-            </div>
-          </div>
+        {/* Bottom User Profile Section with Popover (Matching media_1793362882078_d19f4231.png) */}
+        <div className="relative p-3 border-t border-[#E5E5E5] flex flex-col gap-2 bg-[#FCFCFC]">
+          {/* Popover Menu matching uploaded screenshot */}
+          {isUserMenuOpen && (
+            <>
+              {/* Invisible full-screen backdrop to close on outside click */}
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setIsUserMenuOpen(false)} 
+              />
 
-          {!isAuthenticated && (
-            <button
-              onClick={() => {
-                navigateTo('login');
-                onCloseMobile();
-              }}
-              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#0D0D0D] hover:bg-[#262626] text-white text-xs font-medium shadow-xs transition-colors cursor-pointer"
-            >
-              <LogIn size={13} />
-              <span>Sign In / Sync</span>
-            </button>
+              {/* Popover Card */}
+              <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 bg-white rounded-2xl border border-[#E5E5E5] shadow-2xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-2 duration-150 text-[#0D0D0D]">
+                {/* Top Profile Header inside Menu */}
+                <div 
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    onOpenSettings();
+                  }}
+                  className="flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                      {initials}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[13px] font-semibold text-[#0D0D0D] truncate leading-tight">
+                        {displayName}
+                      </span>
+                      <span className="text-[11px] text-gray-500 truncate leading-tight">
+                        {displayEmail}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight size={15} className="text-gray-400 shrink-0" />
+                </div>
+
+                <div className="h-[1px] bg-[#E5E5E5] my-1 mx-1" />
+
+                {/* Upgrade plan */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    onOpenUpgrade();
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] transition-colors cursor-pointer w-full text-left"
+                >
+                  <Sparkles size={15} className="text-gray-500 shrink-0" />
+                  <span>Upgrade plan</span>
+                </button>
+
+                {/* Personalization */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    onOpenSettings();
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] transition-colors cursor-pointer w-full text-left"
+                >
+                  <Sliders size={15} className="text-gray-500 shrink-0" />
+                  <span>Personalization</span>
+                </button>
+
+                {/* Profile */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    onOpenSettings();
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] transition-colors cursor-pointer w-full text-left"
+                >
+                  <UserIcon size={15} className="text-gray-500 shrink-0" />
+                  <span>Profile</span>
+                </button>
+
+                {/* Settings */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    onOpenSettings();
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] transition-colors cursor-pointer w-full text-left"
+                >
+                  <SettingsIcon size={15} className="text-gray-500 shrink-0" />
+                  <span>Settings</span>
+                </button>
+
+                <div className="h-[1px] bg-[#E5E5E5] my-1 mx-1" />
+
+                {/* Help */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    alert('Nebula AI Help & Documentation\nPowered by Google Gemini 3.8 Flash & MongoDB Atlas.');
+                  }}
+                  className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] transition-colors cursor-pointer w-full text-left"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <HelpCircle size={15} className="text-gray-500 shrink-0" />
+                    <span>Help</span>
+                  </div>
+                  <ChevronRight size={14} className="text-gray-400 shrink-0" />
+                </button>
+
+                {/* Log in / Sign up (only in guest mode) */}
+                {!isAuthenticated && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      navigateTo('login');
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] transition-colors cursor-pointer w-full text-left"
+                  >
+                    <LogIn size={15} className="text-gray-500 shrink-0" />
+                    <span>Log in / Sign up</span>
+                  </button>
+                )}
+
+                {/* Log out (Always present, matching reference screenshot) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false);
+                    logout();
+                    navigateTo('login');
+                  }}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] transition-colors cursor-pointer w-full text-left"
+                >
+                  <LogOut size={15} className="text-gray-500 shrink-0" />
+                  <span>Log out</span>
+                </button>
+              </div>
+            </>
           )}
+
+          {/* Trigger Row */}
+          <div 
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            className={`flex items-center justify-between px-2.5 py-2 rounded-xl transition-all cursor-pointer select-none ${
+              isUserMenuOpen ? 'bg-[#ECECEC]' : 'hover:bg-[#ECECEC]/70 active:scale-[0.99]'
+            }`}
+          >
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              {/* Green Initial Circle matching screenshot (AS in green) */}
+              <div className="w-8 h-8 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                {initials}
+              </div>
+              
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-[13px] font-semibold text-[#0D0D0D] truncate leading-tight">
+                  {displayName}
+                </span>
+                <span className="text-[11px] text-gray-500 truncate leading-tight">
+                  {displayEmail}
+                </span>
+              </div>
+            </div>
+
+            <ChevronRight size={14} className={`text-gray-400 transition-transform ${isUserMenuOpen ? 'rotate-90' : ''}`} />
+          </div>
         </div>
       </aside>
     </>

@@ -173,70 +173,158 @@ export const App: React.FC = () => {
           } : null,
           sessionId: activeSessionId,
           isReasoning,
+          stream: true,
         }),
       });
 
-      const data = await response.json();
-      setIsLoading(false);
-
-      let replyText = '';
-      if (data.success && data.reply) {
-        replyText = data.reply;
-      } else {
-        replyText = `❌ Error: ${data.details || data.error || 'Failed to get response from AI model.'}`;
-      }
-
-      // Smooth typewriter streaming animation
       const assistantId = `msg-${Date.now() + 1}`;
-      const initialAssistantMessage: Message = {
-        id: assistantId,
-        sender: 'assistant',
-        text: '',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
+      const assistantTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-      setMessages([...newMessages, initialAssistantMessage]);
+      // Handle Real-Time Server-Sent Events (SSE) Streaming
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('text/event-stream') && response.body) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+        let hasStarted = false;
 
-      let charIndex = 0;
-      const fullText = replyText;
-      const step = Math.max(3, Math.floor(fullText.length / 50));
-      
-      const streamTimer = setInterval(() => {
-        charIndex += step;
-        if (charIndex >= fullText.length) {
-          charIndex = fullText.length;
-          clearInterval(streamTimer);
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunkText = decoder.decode(value, { stream: true });
+          const lines = chunkText.split('\n');
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('data: ')) {
+              try {
+                const parsed = JSON.parse(trimmed.slice(6));
+                if (parsed.chunk) {
+                  if (!hasStarted) {
+                    hasStarted = true;
+                    setIsLoading(false);
+                    const streamStartMsg: Message = {
+                      id: assistantId,
+                      sender: 'assistant',
+                      text: parsed.chunk,
+                      timestamp: assistantTimestamp,
+                    };
+                    setMessages([
+                      ...newMessages,
+                      streamStartMsg,
+                    ]);
+                    fullText = parsed.chunk;
+                  } else {
+                    fullText += parsed.chunk;
+                    setMessages((prev) =>
+                      prev.map((m) =>
+                        m.id === assistantId ? { ...m, text: fullText } : m
+                      )
+                    );
+                  }
+                } else if (parsed.error) {
+                  throw new Error(parsed.error);
+                }
+              } catch (e: any) {
+                if (e.message && e.message.includes('Failed to generate')) {
+                  throw e;
+                }
+              }
+            }
+          }
         }
 
-        const currentStream = fullText.slice(0, charIndex);
+        setIsLoading(false);
 
-        setMessages((prev) => {
-          const updated = prev.map((m) =>
-            m.id === assistantId ? { ...m, text: currentStream } : m
+        // Update local session storage
+        setSessions((sessionList) => {
+          const existing = sessionList.find((s) => s.id === activeSessionId);
+          const finalAssistantMsg: Message = {
+            id: assistantId,
+            sender: 'assistant',
+            text: fullText,
+            timestamp: assistantTimestamp,
+          };
+          const finalMessages: Message[] = [
+            ...newMessages,
+            finalAssistantMsg,
+          ];
+          if (!existing) {
+            const newSession: ChatSession = {
+              id: activeSessionId,
+              title: text.length > 28 ? `${text.slice(0, 28)}...` : text || 'Image Analysis',
+              messages: finalMessages,
+              updatedAt: new Date().toISOString(),
+            };
+            return [newSession, ...sessionList];
+          }
+          return sessionList.map((s) =>
+            s.id === activeSessionId ? { ...s, messages: finalMessages } : s
           );
+        });
 
-          // Update session storage on completion
+      } else {
+        // Standard JSON Fallback
+        const data = await response.json();
+        setIsLoading(false);
+
+        let replyText = '';
+        if (data.success && data.reply) {
+          replyText = data.reply;
+        } else {
+          replyText = `❌ Error: ${data.details || data.error || 'Failed to get response from AI model.'}`;
+        }
+
+        const initialAssistantMessage: Message = {
+          id: assistantId,
+          sender: 'assistant',
+          text: '',
+          timestamp: assistantTimestamp,
+        };
+
+        setMessages([...newMessages, initialAssistantMessage]);
+
+        let charIndex = 0;
+        const fullText = replyText;
+        const step = Math.max(4, Math.floor(fullText.length / 30));
+        
+        const streamTimer = setInterval(() => {
+          charIndex += step;
           if (charIndex >= fullText.length) {
-            setSessions((sessionList) => {
-              const existing = sessionList.find((s) => s.id === activeSessionId);
-              if (!existing) {
-                const newSession: ChatSession = {
-                  id: activeSessionId,
-                  title: text.length > 28 ? `${text.slice(0, 28)}...` : text || 'Image Analysis',
-                  messages: updated,
-                  updatedAt: new Date().toISOString(),
-                };
-                return [newSession, ...sessionList];
-              }
-              return sessionList.map((s) =>
-                s.id === activeSessionId ? { ...s, messages: updated } : s
-              );
-            });
+            charIndex = fullText.length;
+            clearInterval(streamTimer);
           }
 
-          return updated;
-        });
-      }, 18);
+          const currentStream = fullText.slice(0, charIndex);
+
+          setMessages((prev) => {
+            const updated = prev.map((m) =>
+              m.id === assistantId ? { ...m, text: currentStream } : m
+            );
+
+            if (charIndex >= fullText.length) {
+              setSessions((sessionList) => {
+                const existing = sessionList.find((s) => s.id === activeSessionId);
+                if (!existing) {
+                  const newSession: ChatSession = {
+                    id: activeSessionId,
+                    title: text.length > 28 ? `${text.slice(0, 28)}...` : text || 'Image Analysis',
+                    messages: updated,
+                    updatedAt: new Date().toISOString(),
+                  };
+                  return [newSession, ...sessionList];
+                }
+                return sessionList.map((s) =>
+                  s.id === activeSessionId ? { ...s, messages: updated } : s
+                );
+              });
+            }
+
+            return updated;
+          });
+        }, 12);
+      }
 
     } catch (err: any) {
       setIsLoading(false);

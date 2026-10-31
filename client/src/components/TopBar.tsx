@@ -20,11 +20,10 @@ interface TopBarProps {
 }
 
 const DEFAULT_MODELS = [
-  { id: 'Nebula 4.0e', name: 'Nebula 4.0e (Gemini 3.8)', tag: 'Fast & Smart', badge: 'Default' },
+  { id: 'Nebula 4.0e', name: 'Nebula 4.0e (Gemini 3.5 Flash)', tag: 'Instant & Multimodal', badge: 'Default' },
+  { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite', tag: 'Ultralight Latency (<1s)', badge: 'Instant' },
   { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', tag: 'High Speed Assistant', badge: 'Fast' },
-  { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite', tag: 'Ultralight Latency', badge: 'Instant' },
-  { id: 'gemini-3.5-pro', name: 'Gemini 3.5 Pro', tag: 'Deep Reasoning & Code', badge: 'Pro' },
-  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', tag: '1M Context Champion', badge: 'Stable' },
+  { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', tag: 'Deep Thinking Preview', badge: 'Heavy' },
 ];
 
 export const TopBar: React.FC<TopBarProps> = ({

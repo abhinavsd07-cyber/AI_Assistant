@@ -7,14 +7,10 @@ import {
   ArrowLeft,
   Eye, 
   EyeOff, 
-  Sparkles, 
   AlertCircle, 
-  CheckCircle2,
-  Loader2,
-  ShieldCheck,
-  Zap,
-  Database,
-  Check
+  CheckCircle2, 
+  Loader2, 
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -25,7 +21,18 @@ interface AuthPageProps {
 export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
   const { currentView, navigateTo, login, register, loginWithGoogle } = useAuth();
   
-  const mode = currentView === 'signup' ? 'signup' : (currentView === 'login' ? 'login' : initialMode);
+  // Track active mode: 'login' | 'signup'
+  const [internalMode, setInternalMode] = useState<'login' | 'signup'>(
+    currentView === 'signup' ? 'signup' : (currentView === 'login' ? 'login' : initialMode)
+  );
+
+  useEffect(() => {
+    if (currentView === 'signup' || currentView === 'login') {
+      setInternalMode(currentView);
+    }
+  }, [currentView]);
+
+  const mode = internalMode;
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -40,12 +47,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
   const googleBtnRef = useRef<HTMLDivElement>(null);
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
-  // Clear feedback when mode changes
-  useEffect(() => {
+  // Clear alerts on mode switch
+  const switchMode = (newMode: 'login' | 'signup') => {
+    setInternalMode(newMode);
     setErrorMessage(null);
     setSuccessMessage(null);
     setIsSubmitting(false);
-  }, [mode]);
+  };
 
   // Google Identity Services (GIS) button initialization
   useEffect(() => {
@@ -80,7 +88,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
         console.warn('Google One Tap notice:', err);
       }
     }
-  }, [mode, googleClientId]);
+  }, [mode, googleClientId, loginWithGoogle]);
 
   // Password Strength calculation
   const getPasswordStrength = (pass: string): { score: number; label: string; color: string } => {
@@ -97,7 +105,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
       case 2:
         return { score: 2, label: 'Fair', color: 'bg-amber-500' };
       case 3:
-        return { score: 3, label: 'Good', color: 'bg-blue-500' };
+        return { score: 3, label: 'Good', color: 'bg-indigo-500' };
       case 4:
       default:
         return { score: 4, label: 'Strong', color: 'bg-emerald-500' };
@@ -199,409 +207,338 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#F8FAFC] text-slate-800 relative overflow-x-hidden selection:bg-purple-100 selection:text-purple-900">
-      {/* Subtle light ambient glow */}
+    <div className="min-h-screen w-full flex flex-col justify-between bg-[#FCFCFC] text-[#0D0D0D] relative overflow-x-hidden selection:bg-[#E5E5E5] selection:text-[#0D0D0D]">
+      {/* Ambient background glow matching the Cosmic Orb */}
       <div 
-        className="fixed inset-0 pointer-events-none opacity-60"
+        className="fixed inset-0 pointer-events-none opacity-40 select-none"
         style={{
-          backgroundImage: `radial-gradient(ellipse at 15% 10%, rgba(168, 85, 247, 0.08) 0%, transparent 50%), radial-gradient(ellipse at 85% 90%, rgba(99, 102, 241, 0.06) 0%, transparent 50%)`,
+          backgroundImage: `radial-gradient(circle at 50% 28%, rgba(147, 51, 234, 0.05) 0%, rgba(59, 130, 246, 0.03) 40%, transparent 70%)`,
         }}
       />
 
-      {/* ============================================================== */}
-      {/* LEFT COLUMN: Feature Showcase & AI Identity                    */}
-      {/* Clean White & Slate aesthetic on desktop (>= 1150px)           */}
-      {/* ============================================================== */}
-      <div className="hidden xl:flex xl:w-1/2 relative z-10 flex-col justify-between p-8 2xl:p-14 border-r border-slate-200/80 bg-white/90 backdrop-blur-xl">
-        {/* Brand Header */}
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-fuchsia-500 p-[1.5px] shadow-md shadow-purple-500/20">
-            <div className="w-full h-full bg-white rounded-[9px] flex items-center justify-center">
-              <div className="w-4 h-4 rounded-sm rotate-45 bg-gradient-to-tr from-purple-600 to-indigo-600" />
-            </div>
+      {/* Top Navigation Bar */}
+      <header className="relative z-20 w-full px-6 py-2.5 md:px-10 flex items-center justify-between border-b border-[#E5E5E5]/60 bg-white/70 backdrop-blur-md">
+        {/* Brand identity */}
+        <div 
+          onClick={() => navigateTo('chat')}
+          className="flex items-center gap-2.5 cursor-pointer group select-none"
+        >
+          <div className="w-7 h-7 rounded-lg overflow-hidden border border-gray-200 group-hover:border-black transition-colors shrink-0">
+            <img src="/cosmic_orb.jpg" alt="Nebula Logo" className="w-full h-full object-cover" />
           </div>
-          <div>
-            <h1 className="font-bold text-lg tracking-tight text-slate-900 flex items-center gap-2">
-              Nebula AI
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-semibold uppercase">
-                v2.0
-              </span>
-            </h1>
-            <p className="text-[11px] text-slate-500">Cognitive Co-pilot & Intelligent Workspace</p>
-          </div>
+          <span className="font-bold text-base tracking-tight text-[#0D0D0D]">Nebula AI</span>
         </div>
 
-        {/* Center Presentation: Balanced Height Showcase */}
-        <div className="flex flex-col gap-6 my-auto max-w-lg py-4">
-          <div className="flex flex-col gap-2.5">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-50 border border-purple-200/80 text-purple-700 text-xs font-medium w-fit">
-              <Sparkles size={12} className="text-purple-600" />
-              <span>Next-Generation Intelligence</span>
-            </div>
-            <h2 className="text-2xl 2xl:text-3xl font-extrabold tracking-tight text-slate-900 leading-snug">
-              A cognitive partner engineered for clarity, code, and reasoning.
-            </h2>
-            <p className="text-xs 2xl:text-sm text-slate-600 leading-relaxed">
-              Equipped with Google Gemini 3.8 Flash, native multimodal vision, real-time voice, and continuous MongoDB Atlas persistence.
-            </p>
-          </div>
+        {/* Guest access action */}
+        <button
+          type="button"
+          onClick={() => navigateTo('chat')}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-black py-1.5 px-3.5 rounded-full bg-white border border-[#E5E5E5] hover:border-gray-400 hover:bg-gray-50 active:scale-95 transition-all cursor-pointer shadow-2xs"
+        >
+          <ArrowLeft size={13} />
+          <span>Explore as Guest</span>
+        </button>
+      </header>
 
-          {/* Interactive Simulation Card */}
-          <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 shadow-sm flex flex-col gap-2.5">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200 text-xs">
-              <div className="flex items-center gap-2 text-slate-800 font-semibold">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[11.5px]">Gemini 3.8 Flash • Deep Reasoning</span>
-              </div>
-              <span className="text-[10px] font-mono text-purple-700 bg-purple-100/60 px-1.5 py-0.5 rounded">1M Context</span>
-            </div>
-
-            <div className="flex flex-col gap-2 text-xs">
-              <div className="p-2.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11.5px] shadow-xs">
-                <span className="text-purple-700 font-semibold block text-[10.5px]">User Query</span>
-                "Explain production-grade auth flow with MongoDB Atlas and stateless JWT."
-              </div>
-              <div className="p-2.5 rounded-lg bg-purple-50/70 border border-purple-200 text-purple-950 text-[11.5px] leading-relaxed flex flex-col gap-1">
-                <div className="flex items-center gap-1.5 text-[10px] text-purple-700 font-mono font-medium">
-                  <Check size={11} className="text-emerald-600" />
-                  <span>Synthesis Complete • 420 tokens</span>
-                </div>
-                <p className="text-[11px] text-slate-700">
-                  "Use atomic Mongoose schemas with bcrypt salt rounds of 10, signed stateless JWT tokens, and resilient multi-tier fallback between Gemini 3.8 Flash and Flash Lite."
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* 3 Pillars */}
-          <div className="grid grid-cols-3 gap-3 pt-1">
-            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-slate-200 shadow-xs">
-              <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
-                <Zap size={14} />
-              </div>
-              <div className="min-w-0">
-                <h4 className="text-[11px] font-semibold text-slate-900 truncate">Sub-second</h4>
-                <p className="text-[9.5px] text-slate-500 truncate">Fast Streaming</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-slate-200 shadow-xs">
-              <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
-                <Database size={14} />
-              </div>
-              <div className="min-w-0">
-                <h4 className="text-[11px] font-semibold text-slate-900 truncate">Cloud Synced</h4>
-                <p className="text-[9.5px] text-slate-500 truncate">MongoDB Atlas</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-slate-200 shadow-xs">
-              <div className="w-7 h-7 rounded-lg bg-fuchsia-100 text-fuchsia-700 flex items-center justify-center shrink-0">
-                <Sparkles size={14} />
-              </div>
-              <div className="min-w-0">
-                <h4 className="text-[11px] font-semibold text-slate-900 truncate">Multimodal</h4>
-                <p className="text-[9.5px] text-slate-500 truncate">Vision & Speech</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Trust & Security */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-200 text-[11px] text-slate-500">
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck size={14} className="text-emerald-600" />
-            <span>256-bit TLS Encryption</span>
-          </div>
-          <span>© 2026 Nebula AI</span>
-        </div>
-      </div>
-
-      {/* ============================================================== */}
-      {/* RIGHT COLUMN: Pure White Responsive Auth Studio                */}
-      {/* ============================================================== */}
-      <div className="w-full xl:w-1/2 flex flex-col justify-between p-4 sm:p-6 md:p-8 xl:p-10 relative z-10 min-h-screen bg-white">
-        {/* Top Navigation Bar */}
-        <div className="w-full max-w-sm sm:max-w-md mx-auto flex items-center justify-between pb-3 sm:pb-4 border-b border-slate-200">
-          {/* Mobile & Tablet Brand */}
-          <div className="flex items-center gap-2 xl:hidden">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 p-[1px] flex items-center justify-center shadow-sm">
-              <div className="w-full h-full bg-white rounded-[7px] flex items-center justify-center">
-                <div className="w-3 h-3 rounded-xs rotate-45 bg-gradient-to-tr from-purple-600 to-indigo-600" />
-              </div>
-            </div>
-            <span className="font-bold text-sm tracking-tight text-slate-900">Nebula AI</span>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => navigateTo('chat')}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 active:scale-95 cursor-pointer ml-auto sm:ml-0"
-          >
-            <ArrowLeft size={13} />
-            <span>Explore as Guest</span>
-          </button>
-
-          {/* Quick toggle link */}
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500">
-            <span>{mode === 'login' ? "New here?" : "Have an account?"}</span>
-            <button
-              type="button"
-              onClick={() => navigateTo(mode === 'login' ? 'signup' : 'login')}
-              className="text-[#0D0D0D] hover:underline font-semibold transition-colors cursor-pointer"
-            >
-              {mode === 'login' ? 'Sign up' : 'Sign in'}
-            </button>
-          </div>
-        </div>
-
-        {/* Main Authentication Form Container */}
-        <div className="w-full max-w-sm sm:max-w-md mx-auto my-auto py-4 sm:py-6 flex flex-col gap-3.5 sm:gap-4">
-          {/* Header */}
-          <div className="flex flex-col gap-1">
-            <h2 className="text-xl sm:text-2xl 2xl:text-3xl font-extrabold tracking-tight text-slate-900">
-              {mode === 'login' ? 'Welcome back' : 'Create an account'}
-            </h2>
-            <p className="text-xs text-slate-500">
-              {mode === 'login' 
-                ? 'Sign in to access your saved conversations and models.' 
-                : 'Start exploring cognitive AI with persistent memory.'}
-            </p>
-          </div>
-
-          {/* Alerts */}
-          {errorMessage && (
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs animate-in fade-in">
-              <AlertCircle size={15} className="text-rose-600 shrink-0 mt-0.5" />
-              <span className="leading-relaxed font-medium">{errorMessage}</span>
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs animate-in fade-in">
-              <CheckCircle2 size={15} className="text-emerald-600 shrink-0 mt-0.5" />
-              <span className="leading-relaxed font-medium">{successMessage}</span>
-            </div>
-          )}
-
-          {/* Google SSO Button */}
-          <div className="flex flex-col gap-1.5">
-            {googleClientId && <div ref={googleBtnRef} className="w-full flex justify-center mb-0.5" />}
-
-            <button
-              type="button"
-              onClick={handleGoogleClick}
-              disabled={isSubmitting}
-              className="w-full h-10 sm:h-11 flex items-center justify-center gap-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 
-                bg-white hover:bg-slate-50 border border-slate-300 hover:border-slate-400 
-                shadow-xs transition-all duration-200 active:scale-[0.99] disabled:opacity-50 cursor-pointer"
-            >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                />
-              </svg>
-              <span>Continue with Google</span>
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div className="flex items-center gap-2.5 text-[10px] text-slate-400 uppercase tracking-widest font-mono">
-            <div className="flex-1 h-[1px] bg-slate-200" />
-            <span>or with email</span>
-            <div className="flex-1 h-[1px] bg-slate-200" />
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3 text-xs">
-            {/* Full Name (Sign Up only) */}
-            {mode === 'signup' && (
-              <div className="flex flex-col gap-1 animate-in fade-in">
-                <label className="text-[11.5px] font-semibold text-slate-700">Full Name</label>
-                <div className="relative flex items-center">
-                  <User size={14} className="absolute left-3 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Linda Pewtersmith"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full h-10 pl-9 pr-3 rounded-xl bg-white border border-[#E5E5E5] text-[#0D0D0D] placeholder-gray-400 text-xs focus:outline-none focus:border-[#0D0D0D] focus:ring-1 focus:ring-[#0D0D0D]/10 transition-all"
+      {/* Main Centered Auth Studio */}
+      <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-3 sm:py-5">
+        <div className="w-full max-w-[410px] mx-auto flex flex-col items-center">
+          
+          {/* Card Container */}
+          <div className="w-full bg-white rounded-3xl border border-[#E5E5E5] shadow-xl shadow-black/[0.03] p-5 sm:p-7 flex flex-col gap-3.5">
+            
+            {/* Centered Brand & Glowing Orb */}
+            <div className="flex flex-col items-center text-center">
+              <div className="relative mb-2 group cursor-pointer" onClick={() => navigateTo('chat')}>
+                <div className="absolute -inset-2 bg-gradient-to-tr from-purple-500/20 via-indigo-500/15 to-blue-500/20 rounded-full blur-xl opacity-75 group-hover:opacity-100 transition-opacity" />
+                <div className="relative w-12 h-12 rounded-full overflow-hidden p-0.5 bg-gradient-to-b from-purple-400/30 via-indigo-500/15 to-transparent border border-gray-200 shadow-md">
+                  <img
+                    src="/cosmic_orb.jpg"
+                    alt="Nebula Cosmic Orb"
+                    className="w-full h-full rounded-full object-cover animate-cosmic-orb"
                   />
                 </div>
               </div>
-            )}
 
-            {/* Email Address */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[11.5px] font-semibold text-slate-700">Email Address</label>
-              <div className="relative flex items-center">
-                <Mail size={14} className="absolute left-3 text-slate-400" />
-                <input
-                  type="email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full h-10 pl-9 pr-3 rounded-xl bg-white border border-[#E5E5E5] text-[#0D0D0D] placeholder-gray-400 text-xs focus:outline-none focus:border-[#0D0D0D] focus:ring-1 focus:ring-[#0D0D0D]/10 transition-all"
-                />
-              </div>
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-[#0D0D0D]">
+                {mode === 'login' ? 'Welcome back' : 'Create your account'}
+              </h1>
+              <p className="text-[11.5px] text-gray-500 mt-0.5">
+                {mode === 'login'
+                  ? 'Sign in to access your saved conversations and models'
+                  : 'Start exploring next-generation cognitive intelligence'}
+              </p>
             </div>
 
-            {/* Password */}
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <label className="text-[11.5px] font-semibold text-slate-700">Password</label>
-                {mode === 'login' && (
-                  <button
-                    type="button"
-                    onClick={() => alert('Password reset instructions sent to your email.')}
-                    className="text-[10.5px] text-[#0D0D0D] hover:underline font-medium transition-colors"
-                  >
-                    Forgot password?
-                  </button>
-                )}
-              </div>
-              <div className="relative flex items-center">
-                <Lock size={14} className="absolute left-3 text-slate-400" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-10 pl-9 pr-9 rounded-xl bg-white border border-[#E5E5E5] text-[#0D0D0D] placeholder-gray-400 text-xs focus:outline-none focus:border-[#0D0D0D] focus:ring-1 focus:ring-[#0D0D0D]/10 transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-                >
-                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-              </div>
+            {/* Segmented Switcher Pill: Sign In / Create Account */}
+            <div className="grid grid-cols-2 p-1 bg-[#F4F4F5] rounded-xl text-xs font-medium">
+              <button
+                type="button"
+                onClick={() => switchMode('login')}
+                className={`py-1 rounded-lg transition-all cursor-pointer text-center ${
+                  mode === 'login'
+                    ? 'bg-white text-[#0D0D0D] font-semibold shadow-xs'
+                    : 'text-gray-500 hover:text-[#0D0D0D]'
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => switchMode('signup')}
+                className={`py-1 rounded-lg transition-all cursor-pointer text-center ${
+                  mode === 'signup'
+                    ? 'bg-white text-[#0D0D0D] font-semibold shadow-xs'
+                    : 'text-gray-500 hover:text-[#0D0D0D]'
+                }`}
+              >
+                Create Account
+              </button>
+            </div>
 
-              {/* Password Strength Meter (Signup only) */}
-              {mode === 'signup' && password && (
-                <div className="flex flex-col gap-1 mt-0.5">
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-slate-500">Strength:</span>
-                    <span className="font-semibold text-slate-700">{passwordStrength.label}</span>
-                  </div>
-                  <div className="grid grid-cols-4 gap-1 h-1">
-                    {[1, 2, 3, 4].map((step) => (
-                      <div
-                        key={step}
-                        className={`h-full rounded-full transition-all duration-300 ${
-                          step <= passwordStrength.score ? passwordStrength.color : 'bg-slate-200'
-                        }`}
-                      />
-                    ))}
+            {/* Google Authentication Button */}
+            <div className="flex flex-col gap-1 w-full">
+              <div ref={googleBtnRef} className="w-full hidden" />
+              <button
+                type="button"
+                onClick={handleGoogleClick}
+                disabled={isSubmitting}
+                className="w-full h-9.5 rounded-xl bg-white hover:bg-[#F9FAFB] border border-[#E5E5E5] hover:border-gray-300 text-xs font-semibold text-[#0D0D0D] shadow-2xs transition-all duration-150 active:scale-[0.99] flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60"
+              >
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
+                <span>Continue with Google</span>
+              </button>
+            </div>
+
+            {/* Subtle Divider */}
+            <div className="flex items-center gap-2.5 text-[9.5px] text-gray-400 font-medium tracking-wider uppercase select-none">
+              <div className="flex-1 h-[1px] bg-[#E5E5E5]" />
+              <span>or with email</span>
+              <div className="flex-1 h-[1px] bg-[#E5E5E5]" />
+            </div>
+
+            {/* Error & Success Feedback Alerts */}
+            {errorMessage && (
+              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 animate-in fade-in duration-150">
+                <AlertCircle size={14} className="shrink-0 text-rose-600" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+            {successMessage && (
+              <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 animate-in fade-in duration-150">
+                <CheckCircle2 size={14} className="shrink-0 text-emerald-600" />
+                <span>{successMessage}</span>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-2.5 text-xs">
+              {/* Full Name (Sign Up only) */}
+              {mode === 'signup' && (
+                <div className="flex flex-col gap-1 animate-in fade-in">
+                  <label className="text-[11px] font-semibold text-gray-700">Full Name</label>
+                  <div className="relative flex items-center">
+                    <User size={13} className="absolute left-3.5 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Linda Pewtersmith"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full h-9.5 pl-9.5 pr-3 rounded-xl bg-[#FBFBFB] hover:bg-white focus:bg-white border border-[#E5E5E5] text-[#0D0D0D] placeholder-gray-400 text-xs focus:outline-none focus:border-black focus:ring-1 focus:ring-black/10 transition-all"
+                    />
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Confirm Password (Sign Up only) */}
-            {mode === 'signup' && (
-              <div className="flex flex-col gap-1 animate-in fade-in">
-                <label className="text-[11.5px] font-semibold text-slate-700">Confirm Password</label>
+              {/* Email Address */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-semibold text-gray-700">Email Address</label>
                 <div className="relative flex items-center">
-                  <Lock size={14} className="absolute left-3 text-slate-400" />
+                  <Mail size={13} className="absolute left-3.5 text-gray-400" />
+                  <input
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full h-9.5 pl-9.5 pr-3 rounded-xl bg-[#FBFBFB] hover:bg-white focus:bg-white border border-[#E5E5E5] text-[#0D0D0D] placeholder-gray-400 text-xs focus:outline-none focus:border-black focus:ring-1 focus:ring-black/10 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-semibold text-gray-700">Password</label>
+                  {mode === 'login' && (
+                    <button
+                      type="button"
+                      onClick={() => alert('Password reset instructions sent to your email.')}
+                      className="text-[10.5px] text-gray-500 hover:text-black hover:underline transition-colors cursor-pointer"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                <div className="relative flex items-center">
+                  <Lock size={13} className="absolute left-3.5 text-gray-400" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full h-10 pl-9 pr-3 rounded-xl bg-white border border-[#E5E5E5] text-[#0D0D0D] placeholder-gray-400 text-xs focus:outline-none focus:border-[#0D0D0D] focus:ring-1 focus:ring-[#0D0D0D]/10 transition-all"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full h-9.5 pl-9.5 pr-9.5 rounded-xl bg-[#FBFBFB] hover:bg-white focus:bg-white border border-[#E5E5E5] text-[#0D0D0D] placeholder-gray-400 text-xs focus:outline-none focus:border-black focus:ring-1 focus:ring-black/10 transition-all"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
+                  </button>
                 </div>
-              </div>
-            )}
 
-            {/* Remember me (Login only) */}
-            {mode === 'login' && (
-              <div className="flex items-center gap-2 pt-0.5">
-                <input
-                  type="checkbox"
-                  id="rememberMeCheckbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded border-slate-300 accent-[#0D0D0D] cursor-pointer"
-                />
-                <label htmlFor="rememberMeCheckbox" className="text-[11.5px] text-slate-600 cursor-pointer select-none">
-                  Remember my session on this device
-                </label>
+                {/* Password Strength Meter (Signup only) */}
+                {mode === 'signup' && password && (
+                  <div className="flex flex-col gap-1 mt-0.5">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-gray-500">Strength:</span>
+                      <span className="font-semibold text-gray-700">{passwordStrength.label}</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1 h-1">
+                      {[1, 2, 3, 4].map((step) => (
+                        <div
+                          key={step}
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            step <= passwordStrength.score ? passwordStrength.color : 'bg-gray-200'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full h-10 sm:h-11 mt-1 rounded-xl text-xs sm:text-sm font-semibold text-white 
-                bg-[#0D0D0D] hover:bg-[#262626] shadow-xs transition-all duration-200 active:scale-[0.98] 
-                flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 size={15} className="animate-spin text-white" />
-                  <span>Processing...</span>
-                </>
-              ) : (
-                <>
-                  <span>{mode === 'login' ? 'Sign In to Nebula' : 'Create Free Account'}</span>
-                  <ArrowRight size={14} className="text-white" />
-                </>
+              {/* Confirm Password (Sign Up only) */}
+              {mode === 'signup' && (
+                <div className="flex flex-col gap-1 animate-in fade-in">
+                  <label className="text-[11px] font-semibold text-gray-700">Confirm Password</label>
+                  <div className="relative flex items-center">
+                    <Lock size={13} className="absolute left-3.5 text-gray-400" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full h-9.5 pl-9.5 pr-3 rounded-xl bg-[#FBFBFB] hover:bg-white focus:bg-white border border-[#E5E5E5] text-[#0D0D0D] placeholder-gray-400 text-xs focus:outline-none focus:border-black focus:ring-1 focus:ring-black/10 transition-all"
+                    />
+                  </div>
+                </div>
               )}
-            </button>
-          </form>
 
-          {/* Mode Switcher */}
-          <div className="text-center text-xs text-slate-500 pt-1">
-            {mode === 'login' ? (
-              <span>
-                Don't have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => navigateTo('signup')}
-                  className="text-[#0D0D0D] font-semibold hover:underline transition-colors cursor-pointer"
-                >
-                  Sign up for free →
-                </button>
-              </span>
-            ) : (
-              <span>
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => navigateTo('login')}
-                  className="text-[#0D0D0D] font-semibold hover:underline transition-colors cursor-pointer"
-                >
-                  Sign in here →
-                </button>
-              </span>
-            )}
+              {/* Remember me (Login only) */}
+              {mode === 'login' && (
+                <div className="flex items-center gap-2 pt-0.5">
+                  <input
+                    type="checkbox"
+                    id="rememberMeCheckbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded border-gray-300 accent-[#0D0D0D] cursor-pointer"
+                  />
+                  <label htmlFor="rememberMeCheckbox" className="text-[11px] text-gray-600 cursor-pointer select-none">
+                    Remember my session on this device
+                  </label>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full h-10 mt-1 rounded-xl text-xs font-semibold text-white 
+                  bg-[#0D0D0D] hover:bg-[#262626] shadow-xs transition-all duration-200 active:scale-[0.98] 
+                  flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin text-white" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{mode === 'login' ? 'Sign In to Nebula' : 'Create Free Account'}</span>
+                    <ArrowRight size={13} className="text-white" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Mode Switcher Footer */}
+            <div className="text-center text-xs text-gray-500 pt-1 border-t border-[#E5E5E5]/60">
+              {mode === 'login' ? (
+                <span>
+                  Don't have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => switchMode('signup')}
+                    className="text-[#0D0D0D] font-semibold hover:underline transition-colors cursor-pointer"
+                  >
+                    Sign up for free →
+                  </button>
+                </span>
+              ) : (
+                <span>
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => switchMode('login')}
+                    className="text-[#0D0D0D] font-semibold hover:underline transition-colors cursor-pointer"
+                  >
+                    Sign in here →
+                  </button>
+                </span>
+              )}
+            </div>
+
           </div>
-        </div>
 
-        {/* Footer Legal Terms */}
-        <div className="w-full max-w-sm sm:max-w-md mx-auto text-center text-[10.5px] text-slate-400 pt-3 pb-1">
-          By continuing, you agree to Nebula's{' '}
-          <span className="underline hover:text-slate-600 cursor-pointer">Terms</span> and{' '}
-          <span className="underline hover:text-slate-600 cursor-pointer">Privacy Policy</span>.
+          {/* Trust and Security Details */}
+          <div className="flex flex-col items-center gap-1.5 mt-4 text-center">
+            <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
+              <ShieldCheck size={13} className="text-emerald-600" />
+              <span>256-bit TLS Encryption • Cloud Synced with MongoDB Atlas</span>
+            </div>
+            <p className="text-[10px] text-gray-400 max-w-xs">
+              By continuing, you agree to Nebula's{' '}
+              <span className="underline hover:text-gray-600 cursor-pointer">Terms</span> and{' '}
+              <span className="underline hover:text-gray-600 cursor-pointer">Privacy Policy</span>.
+            </p>
+          </div>
+
         </div>
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="relative z-10 w-full py-2.5 text-center text-[10.5px] text-gray-400 border-t border-[#E5E5E5]/50">
+        © 2026 Nebula AI • Powered by Google Gemini 3.8 Flash
+      </footer>
     </div>
   );
 };

@@ -121,19 +121,20 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
       });
     }
 
-    // Map UI model names to official API model IDs if needed
-    const normalizedModel =
-      requestedModel === "Nebula 4.0e"
-        ? (process.env.GEMINI_MODEL || "gemini-3.8-flash")
-        : requestedModel;
+    // Map UI model names to official API model IDs with high-speed defaults
+    let primaryModel = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+    if (requestedModel === "Nebula 4.0e" || !requestedModel) {
+      primaryModel = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+    } else {
+      primaryModel = requestedModel;
+    }
 
+    // High-performance candidate models chain prioritizing fast, low-latency models
     const candidateModels = [
-      normalizedModel,
-      process.env.GEMINI_MODEL || "gemini-3.8-flash",
-      "gemini-3.8-flash",
-      "gemini-3.5-flash-lite",
+      primaryModel,
       "gemini-3.5-flash",
-      "gemini-1.5-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3.8-flash",
     ].filter(Boolean).filter((m, i, arr) => arr.indexOf(m) === i);
 
     const systemInstruction =
@@ -175,9 +176,123 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
       parts: currentParts,
     });
 
+    // Helper for saving session and usage analytics to MongoDB
+    const saveSession = async (replyText, modelUsed, latency) => {
+      if (!isMongoConnected || !sessionId) return;
+      try {
+        const userMsg = {
+          id: `msg-${Date.now()}`,
+          sender: "user",
+          text: message.trim(),
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          imageUrl: image ? image.previewUrl || null : null,
+          isReasoning: !!isReasoning,
+        };
+        const assistantMsg = {
+          id: `msg-${Date.now() + 1}`,
+          sender: "assistant",
+          text: replyText,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+
+        const updateData = {
+          $setOnInsert: {
+            title: message.trim().slice(0, 32),
+            userId: req.user ? req.user._id : null,
+            userEmail: req.user ? req.user.email : null,
+          },
+          $set: { model: modelUsed },
+          $push: { messages: { $each: [userMsg, assistantMsg] } },
+        };
+
+        await ChatSession.findOneAndUpdate({ sessionId }, updateData, {
+          upsert: true,
+          new: true,
+        });
+
+        if (req.user) {
+          await User.findByIdAndUpdate(req.user._id, {
+            $inc: {
+              "usage.totalRequests": 1,
+              "usage.totalTokens": Math.round((message.length + replyText.length) / 4),
+            },
+            $set: { "usage.lastActive": new Date() },
+          });
+        }
+
+        await UsageLog.create({
+          userId: req.user ? req.user._id : null,
+          sessionId,
+          model: modelUsed,
+          promptLength: message.length,
+          replyLength: replyText.length,
+          estimatedTokens: Math.round((message.length + replyText.length) / 4),
+          latencyMs: latency,
+          hasImage: !!image,
+          isReasoning: !!isReasoning,
+          status: "success",
+        });
+      } catch (dbErr) {
+        console.warn("Could not save chat/usage to MongoDB:", dbErr.message);
+      }
+    };
+
+    // If client requested real-time streaming (SSE)
+    if (req.body.stream) {
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      if (typeof res.flushHeaders === "function") {
+        res.flushHeaders();
+      }
+
+      let streamSuccess = false;
+      let fullReply = "";
+      let usedModel = primaryModel;
+
+      for (const model of candidateModels) {
+        try {
+          const responseStream = await ai.models.generateContentStream({
+            model,
+            contents,
+            config: { systemInstruction },
+          });
+
+          for await (const chunk of responseStream) {
+            if (chunk.text) {
+              fullReply += chunk.text;
+              res.write(`data: ${JSON.stringify({ chunk: chunk.text })}\n\n`);
+            }
+          }
+
+          if (fullReply) {
+            usedModel = model;
+            streamSuccess = true;
+            break;
+          }
+        } catch (streamErr) {
+          console.warn(`Stream model '${model}' error: ${streamErr.message}. Trying next model...`);
+        }
+      }
+
+      if (!streamSuccess) {
+        res.write(`data: ${JSON.stringify({ error: "Failed to generate AI response" })}\n\n`);
+        return res.end();
+      }
+
+      const latencyMs = Date.now() - startTime;
+      res.write(`data: ${JSON.stringify({ done: true, modelUsed: usedModel, latencyMs })}\n\n`);
+      res.end();
+
+      // Persist to MongoDB asynchronously
+      await saveSession(fullReply, usedModel, latencyMs);
+      return;
+    }
+
+    // Standard Non-Streaming JSON Response Fallback
     let response;
     let lastError;
-    let usedModel = normalizedModel;
+    let usedModel = primaryModel;
 
     for (const model of candidateModels) {
       try {
@@ -196,13 +311,6 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
         console.warn(
           `Model '${model}' unavailable: ${err.message}. Trying next available model...`
         );
-
-        if (
-          err.message?.includes("503") ||
-          err.message?.includes("high demand")
-        ) {
-          await new Promise((resolve) => setTimeout(resolve, 800));
-        }
       }
     }
 
@@ -214,73 +322,13 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
     }
 
     const latencyMs = Date.now() - startTime;
-
-    // Persist conversation to MongoDB if database is connected
-    if (isMongoConnected && sessionId) {
-      try {
-        const userMsg = {
-          id: `msg-${Date.now()}`,
-          sender: "user",
-          text: message.trim(),
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          imageUrl: image ? image.previewUrl || null : null,
-          isReasoning: !!isReasoning,
-        };
-        const assistantMsg = {
-          id: `msg-${Date.now() + 1}`,
-          sender: "assistant",
-          text: response.text,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        };
-
-        const updateData = {
-          $setOnInsert: {
-            title: message.trim().slice(0, 32),
-            userId: req.user ? req.user._id : null,
-            userEmail: req.user ? req.user.email : null,
-          },
-          $set: { model: usedModel },
-          $push: { messages: { $each: [userMsg, assistantMsg] } },
-        };
-
-        await ChatSession.findOneAndUpdate({ sessionId }, updateData, {
-          upsert: true,
-          new: true,
-        });
-
-        // Update user usage statistics if authenticated
-        if (req.user) {
-          await User.findByIdAndUpdate(req.user._id, {
-            $inc: {
-              "usage.totalRequests": 1,
-              "usage.totalTokens": Math.round((message.length + response.text.length) / 4),
-            },
-            $set: { "usage.lastActive": new Date() },
-          });
-        }
-
-        // Log usage in UsageLog model
-        await UsageLog.create({
-          userId: req.user ? req.user._id : null,
-          sessionId,
-          model: usedModel,
-          promptLength: message.length,
-          replyLength: response.text.length,
-          estimatedTokens: Math.round((message.length + response.text.length) / 4),
-          latencyMs,
-          hasImage: !!image,
-          isReasoning: !!isReasoning,
-          status: "success",
-        });
-      } catch (dbErr) {
-        console.warn("Could not save chat/usage to MongoDB:", dbErr.message);
-      }
-    }
+    await saveSession(response.text, usedModel, latencyMs);
 
     res.json({
       success: true,
       reply: response.text,
       modelUsed: usedModel,
+      latencyMs,
     });
   } catch (error) {
     console.error("AI request failed:", error.message);
