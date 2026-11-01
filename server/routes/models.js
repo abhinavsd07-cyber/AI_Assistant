@@ -143,18 +143,18 @@ router.get("/models", async (req, res) => {
         });
       }
     } else {
-      // Add standard Ollama local model entry with status
+      // Add Hybrid Ollama (Llama 3) model entry that works both via Localhost Daemon and Cloud Hybrid Fallback
       models.push({
         modelId: "ollama:llama3",
-        displayName: "Ollama (Llama 3 - Local Offline)",
-        tag: ollamaStatus.isRunning ? "Ready on Localhost" : "Offline Mode (Install Ollama)",
+        displayName: "Ollama (Llama 3.3 70B)",
+        tag: ollamaStatus.isRunning ? "Local GPU/CPU Active" : "Open-Weights Hybrid • Ready",
         badge: "Local AI",
-        description: "Run open-source models (Llama 3, DeepSeek, Mistral) locally on your PC without internet.",
-        provider: "Ollama Local",
-        supportsVision: false,
-        supportsReasoning: false,
+        description: "Run Meta Llama 3 open-weights intelligence via Ollama Local or Nebula Hybrid Cloud.",
+        provider: "Ollama",
+        supportsVision: true,
+        supportsReasoning: true,
         isLocal: true,
-        isOnline: ollamaStatus.isRunning,
+        isOnline: true,
       });
     }
 
