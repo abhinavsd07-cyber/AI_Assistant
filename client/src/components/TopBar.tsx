@@ -11,7 +11,6 @@ import {
   Sun,
   Moon,
   Mic,
-  Bot,
   Settings,
   Share2
 } from 'lucide-react';
@@ -21,8 +20,8 @@ import type { AiModelInfo, PersonaType } from '../types';
 interface TopBarProps {
   selectedModel: string;
   onSelectModel: (model: string) => void;
-  selectedPersona: PersonaType;
-  onSelectPersona: (persona: PersonaType) => void;
+  selectedPersona?: PersonaType;
+  onSelectPersona?: (persona: PersonaType) => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onOpenVoiceMode?: () => void;
@@ -41,21 +40,11 @@ const DEFAULT_MODELS = [
   { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', tag: 'Deep Thinking Preview', badge: 'Reasoning' },
 ];
 
-const PERSONAS: { id: PersonaType; name: string; icon: string; desc: string }[] = [
-  { id: 'general', name: 'General AI', icon: '🤖', desc: 'Standard balanced assistant' },
-  { id: 'coder', name: 'Code Architect', icon: '💻', desc: 'Production TypeScript, Python, Clean Architecture' },
-  { id: 'kerala_scholar', name: 'Kerala Scholar', icon: '🌴', desc: 'Kerala History, Politics & 2026 Facts' },
-  { id: 'malayalam_writer', name: 'Malayalam Writer', icon: '✍️', desc: 'Creative Malayalam literary writer' },
-  { id: 'math_tutor', name: 'Math & Science', icon: '📐', desc: 'Step-by-step formulas & STEM tutor' },
-];
-
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const TopBar: React.FC<TopBarProps> = ({
   selectedModel,
   onSelectModel,
-  selectedPersona,
-  onSelectPersona,
   theme,
   onToggleTheme,
   onOpenVoiceMode,
@@ -69,12 +58,9 @@ export const TopBar: React.FC<TopBarProps> = ({
 }) => {
   const { isAuthenticated, navigateTo, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isPersonaOpen, setIsPersonaOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isShareCopied, setIsShareCopied] = useState(false);
   const [models, setModels] = useState(DEFAULT_MODELS);
-
-  const currentPersona = PERSONAS.find(p => p.id === selectedPersona) || PERSONAS[0];
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -113,10 +99,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         {/* Model Selector Dropdown */}
         <div className="relative">
           <button
-            onClick={() => {
-              setIsDropdownOpen(!isDropdownOpen);
-              setIsPersonaOpen(false);
-            }}
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-[#ECECEC]/70 dark:hover:bg-[#252525] text-sm font-semibold text-[#0D0D0D] dark:text-[#ECECEC] transition-colors cursor-pointer"
           >
             <span className="text-base font-bold">Nebula AI</span>
@@ -171,61 +154,6 @@ export const TopBar: React.FC<TopBarProps> = ({
                       <span className="text-[11px] text-gray-500 dark:text-gray-400">{m.tag}</span>
                     </div>
                     {selectedModel === m.id && <Check size={14} className="text-[#0D0D0D] dark:text-white shrink-0" />}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Persona Selector Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => {
-              setIsPersonaOpen(!isPersonaOpen);
-              setIsDropdownOpen(false);
-            }}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F0F0F0] dark:bg-[#222222] hover:bg-[#E5E5E5] dark:hover:bg-[#2B2B2B] text-xs font-medium text-[#222222] dark:text-[#E0E0E0] border border-gray-200 dark:border-gray-750 transition-colors cursor-pointer"
-            title="Select AI Persona & Role"
-          >
-            <span>{currentPersona.icon}</span>
-            <span className="hidden sm:inline font-semibold">{currentPersona.name}</span>
-            <ChevronDown size={12} className={`text-gray-400 transition-transform ${isPersonaOpen ? 'rotate-180' : ''}`} />
-          </button>
-
-          {isPersonaOpen && (
-            <>
-              <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setIsPersonaOpen(false)} 
-              />
-              
-              <div className="absolute left-0 mt-2 w-72 rounded-2xl bg-white dark:bg-[#1E1E1E] border border-[#E5E5E5] dark:border-[#2E2E2E] shadow-xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100">
-                <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider flex items-center justify-between">
-                  <span>AI Persona / Role</span>
-                  <Bot size={12} className="text-blue-500" />
-                </div>
-                {PERSONAS.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => {
-                      onSelectPersona(p.id);
-                      setIsPersonaOpen(false);
-                    }}
-                    className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs text-left transition-colors cursor-pointer ${
-                      selectedPersona === p.id
-                        ? 'bg-[#F4F4F4] dark:bg-[#2A2A2A] text-[#0D0D0D] dark:text-white font-semibold'
-                        : 'text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-[#F9F9F9] dark:hover:bg-[#252525]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-base">{p.icon}</span>
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-sm">{p.name}</span>
-                        <span className="text-[11px] text-gray-500 dark:text-gray-400">{p.desc}</span>
-                      </div>
-                    </div>
-                    {selectedPersona === p.id && <Check size={14} className="text-[#0D0D0D] dark:text-white shrink-0 ml-1" />}
                   </button>
                 ))}
               </div>
