@@ -332,7 +332,8 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
       `${personaInstruction} The current year is 2026. Following the May 2026 Kerala Legislative Assembly elections, V. D. Satheesan (UDF) assumed office as the Chief Minister of Kerala on May 18, 2026. ` +
       "Always rely on live search results for current leaders, elections, and recent events. " +
       "Answer in Malayalam when the user uses Malayalam or asks for it. " +
-      "Be concise, direct, step-by-step, and provide practical examples. Be honest when uncertain.";
+      "Be concise, direct, step-by-step, and provide practical examples. Be honest when uncertain. " +
+      "IMPORTANT: Do not hallucinate or output markdown image links like ![...](https://res.cloudinary.com/...) yourself.";
 
     // Build multi-turn context
     const contents = [];
