@@ -9,6 +9,7 @@ const { ChatSession, User, UsageLog } = require("./models");
 const authRoutes = require("./routes/auth");
 const { router: modelRoutes, seedDefaultsIfNeeded } = require("./routes/models");
 const { optionalAuth } = require("./middleware/auth");
+const { uploadToCloudinary } = require("./services/cloudinary");
 
 const app = express();
 
@@ -93,6 +94,26 @@ app.get("/api/health", (req, res) => {
     database: isMongoConnected ? "Connected" : "Standby",
     modelsReady: true,
   });
+});
+
+// Upload media or image asset to Cloudinary CDN
+app.post("/api/upload", optionalAuth, async (req, res) => {
+  try {
+    const { data, folder } = req.body;
+    if (!data) {
+      return res.status(400).json({ success: false, error: "Image data is required" });
+    }
+    const secureUrl = await uploadToCloudinary(data, folder || "nebula_ai/uploads");
+    if (!secureUrl) {
+      return res.status(500).json({
+        success: false,
+        error: "Cloudinary upload failed or CLOUDINARY_API_SECRET is missing in .env.",
+      });
+    }
+    return res.json({ success: true, url: secureUrl });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Fetch all saved chat sessions from MongoDB
@@ -280,12 +301,22 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
     const saveSession = async (replyText, modelUsed, latency) => {
       if (!isMongoConnected || !sessionId) return;
       try {
+        let cdnImageUrl = image && image.previewUrl && image.mimeType?.startsWith("image/") ? image.previewUrl : null;
+        if (image && image.data && image.mimeType?.startsWith("image/")) {
+          try {
+            const uploaded = await uploadToCloudinary(image.data, "nebula_ai/chat_images");
+            if (uploaded) cdnImageUrl = uploaded;
+          } catch (uploadErr) {
+            console.warn("Cloudinary upload fallback:", uploadErr.message);
+          }
+        }
+
         const userMsg = {
           id: `msg-${Date.now()}`,
           sender: "user",
           text: trimmedMsg || `[Attached: ${image?.name || "file"}]`,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          imageUrl: image && image.previewUrl && image.mimeType?.startsWith("image/") ? image.previewUrl : null,
+          imageUrl: cdnImageUrl,
           fileName: image ? image.name || null : null,
           fileType: image ? image.mimeType || null : null,
           isReasoning: !!isReasoning,

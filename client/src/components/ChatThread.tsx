@@ -18,9 +18,10 @@ import type { Message } from '../types';
 interface ChatThreadProps {
   messages: Message[];
   isLoading: boolean;
+  onRegenerate?: (messageId: string) => void;
 }
 
-export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading }) => {
+export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onRegenerate }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
@@ -255,7 +256,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading }) =
                   </button>
 
                   <button
-                    onClick={() => alert('Regenerating response...')}
+                    onClick={() => onRegenerate && onRegenerate(message.id)}
                     className="p-1.5 rounded-md hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
                     title="Regenerate response"
                   >

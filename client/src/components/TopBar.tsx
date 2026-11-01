@@ -6,7 +6,9 @@ import {
   Check, 
   Share, 
   LogOut,
-  Zap
+  Zap,
+  Download,
+  Printer
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { AiModelInfo } from '../types';
@@ -17,6 +19,8 @@ interface TopBarProps {
   onToggleMobileSidebar: () => void;
   onClearChat: () => void;
   onOpenSettings?: () => void;
+  onExportMarkdown?: () => void;
+  onExportText?: () => void;
 }
 
 const DEFAULT_MODELS = [
@@ -31,6 +35,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   onToggleMobileSidebar,
   onClearChat,
   onOpenSettings,
+  onExportMarkdown,
+  onExportText,
 }) => {
   const { isAuthenticated, navigateTo, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -164,7 +170,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 onClick={() => setIsMenuOpen(false)} 
               />
               
-              <div className="absolute right-0 mt-2 w-48 rounded-2xl bg-white border border-[#E5E5E5] shadow-xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-white border border-[#E5E5E5] shadow-xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100">
                 <button
                   onClick={() => {
                     onClearChat();
@@ -175,13 +181,50 @@ export const TopBar: React.FC<TopBarProps> = ({
                   Clear active conversation
                 </button>
 
+                {onExportMarkdown && (
+                  <button
+                    onClick={() => {
+                      onExportMarkdown();
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] rounded-xl transition-colors cursor-pointer flex items-center justify-between"
+                  >
+                    <span>Export as Markdown (.md)</span>
+                    <Download size={13} className="text-gray-400" />
+                  </button>
+                )}
+
+                {onExportText && (
+                  <button
+                    onClick={() => {
+                      onExportText();
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] rounded-xl transition-colors cursor-pointer flex items-center justify-between"
+                  >
+                    <span>Export as Text (.txt)</span>
+                    <Download size={13} className="text-gray-400" />
+                  </button>
+                )}
+
+                <button
+                  onClick={() => {
+                    window.print();
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] rounded-xl transition-colors cursor-pointer flex items-center justify-between"
+                >
+                  <span>Print / Save as PDF</span>
+                  <Printer size={13} className="text-gray-400" />
+                </button>
+
                 {onOpenSettings && (
                   <button
                     onClick={() => {
                       onOpenSettings();
                       setIsMenuOpen(false);
                     }}
-                    className="w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] rounded-xl transition-colors cursor-pointer"
+                    className="w-full text-left px-3 py-2 text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] rounded-xl transition-colors cursor-pointer border-t border-gray-100 mt-1 pt-1.5"
                   >
                     API & Model Settings
                   </button>

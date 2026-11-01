@@ -335,6 +335,66 @@ export const App: React.FC = () => {
     }
   };
 
+  // Regenerate assistant response
+  const handleRegenerate = (assistantMsgId: string) => {
+    if (isLoading) return;
+    const msgIndex = messages.findIndex((m) => m.id === assistantMsgId);
+    if (msgIndex <= 0) return;
+
+    const prevUserMessage = messages[msgIndex - 1];
+    if (prevUserMessage && prevUserMessage.sender === 'user') {
+      const historyUntilPrompt = messages.slice(0, msgIndex);
+      setMessages(historyUntilPrompt);
+      handleSendMessage(
+        prevUserMessage.text,
+        !!prevUserMessage.isReasoning,
+        null,
+        false
+      );
+    }
+  };
+
+  // Export Chat as Markdown (.md)
+  const handleExportMarkdown = () => {
+    if (messages.length === 0) {
+      alert('No messages to export.');
+      return;
+    }
+    const title = sessions.find((s) => s.id === currentSessionId)?.title || 'Nebula AI Conversation';
+    const content = `# 🌌 ${title}\n\n*Exported on ${new Date().toLocaleString()}*\n\n---\n\n` +
+      messages.map((m) => {
+        const author = m.sender === 'user' ? `**You (${m.timestamp})**` : `**Nebula AI (${m.timestamp})**`;
+        return `${author}:\n\n${m.text}\n`;
+      }).join('\n---\n\n');
+
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase()}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Export Chat as Plain Text (.txt)
+  const handleExportText = () => {
+    if (messages.length === 0) {
+      alert('No messages to export.');
+      return;
+    }
+    const title = sessions.find((s) => s.id === currentSessionId)?.title || 'Nebula AI Conversation';
+    const content = `${title}\nExported on ${new Date().toLocaleString()}\n\n` +
+      messages.map((m) => `[${m.timestamp}] ${m.sender === 'user' ? 'You' : 'Nebula AI'}:\n${m.text}\n`).join('\n----------------------------------------\n\n');
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Dedicated Full-Page Professional Authentication
   if (currentView === 'login' || currentView === 'signup') {
     return <AuthPage initialMode={currentView} />;
@@ -364,6 +424,8 @@ export const App: React.FC = () => {
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)}
           onClearChat={handleNewChat}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onExportMarkdown={handleExportMarkdown}
+          onExportText={handleExportText}
         />
 
         {/* Center Stage: Hero Welcome Screen OR Chat Message Thread */}
@@ -372,7 +434,11 @@ export const App: React.FC = () => {
             {messages.length === 0 ? (
               <Hero onSelectSuggestion={(prompt) => handleSendMessage(prompt, false, null)} />
             ) : (
-              <ChatThread messages={messages} isLoading={isLoading} />
+              <ChatThread
+                messages={messages}
+                isLoading={isLoading}
+                onRegenerate={handleRegenerate}
+              />
             )}
           </div>
 
