@@ -13,7 +13,8 @@ import {
   ExternalLink,
   FileText,
   Pencil,
-  Download
+  Download,
+  Sparkles
 } from 'lucide-react';
 import type { Message } from '../types';
 
@@ -22,13 +23,15 @@ interface ChatThreadProps {
   isLoading: boolean;
   onRegenerate?: (messageId: string) => void;
   onEditMessage?: (messageId: string, newText: string) => void;
+  onOpenCanvas?: (code: string, language: string, title?: string) => void;
 }
 
 export const ChatThread: React.FC<ChatThreadProps> = ({ 
   messages, 
   isLoading, 
   onRegenerate,
-  onEditMessage 
+  onEditMessage,
+  onOpenCanvas
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -290,6 +293,14 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                                 {language || 'code'}
                               </span>
                               <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => onOpenCanvas?.(codeString, language || 'html', `Artifact: ${language || 'Code'}`)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-all text-[11px] font-sans font-medium cursor-pointer"
+                                  title="Open in Interactive Canvas Preview"
+                                >
+                                  <Sparkles size={12} className="text-emerald-400" />
+                                  <span>Canvas</span>
+                                </button>
                                 <button
                                   onClick={() => handleDownloadCode(codeString, language)}
                                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-gray-800/70 hover:bg-gray-700 text-gray-300 hover:text-white transition-all text-[11px] font-sans cursor-pointer"
