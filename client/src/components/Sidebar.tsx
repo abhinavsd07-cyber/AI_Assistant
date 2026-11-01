@@ -31,6 +31,7 @@ interface SidebarProps {
   onOpenLibrary: () => void;
   onOpenExplore: () => void;
   onOpenCodex: () => void;
+  onOpenFluxStudio?: () => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
 }
@@ -46,6 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenLibrary,
   onOpenExplore,
   onOpenCodex,
+  onOpenFluxStudio,
   isOpenMobile,
   onCloseMobile,
 }) => {
@@ -122,6 +124,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <SquarePen size={16} className="text-[#5D5D5D] dark:text-[#A0A0A0]" />
               <span>New chat</span>
             </button>
+
+            {onOpenFluxStudio && (
+              <button
+                onClick={() => {
+                  onOpenFluxStudio();
+                  onCloseMobile();
+                }}
+                className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 hover:from-blue-500/20 hover:to-purple-500/20 border border-blue-500/20 transition-all cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Sparkles size={16} className="text-blue-600 dark:text-blue-400" />
+                  <span className="font-semibold text-blue-700 dark:text-blue-300">FLUX Node Studio</span>
+                </div>
+                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-600 text-white">
+                  NEW
+                </span>
+              </button>
+            )}
 
             <button
               onClick={() => {

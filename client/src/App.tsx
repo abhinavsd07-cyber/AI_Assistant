@@ -9,6 +9,7 @@ import { UpgradeModal } from './components/UpgradeModal';
 import { VoiceModal } from './components/VoiceModal';
 import { CanvasStudio } from './components/CanvasStudio';
 import { HubModal } from './components/HubModal';
+import { FluxWorkflowStudio } from './components/FluxWorkflowStudio';
 import { AuthPage } from './pages/AuthPage';
 import { useAuth } from './context/AuthContext';
 import type { Message, ChatSession, PersonaType } from './types';
@@ -137,6 +138,7 @@ export const App: React.FC = () => {
   const [canvasLanguage, setCanvasLanguage] = useState('html');
   const [canvasTitle, setCanvasTitle] = useState('Interactive Canvas');
   const [hubView, setHubView] = useState<'library' | 'explore' | null>(null);
+  const [isFluxStudioOpen, setIsFluxStudioOpen] = useState(false);
 
   const handleOpenCanvas = (code: string, language: string, title?: string) => {
     setCanvasCode(code);
@@ -555,6 +557,7 @@ export const App: React.FC = () => {
         onOpenLibrary={() => setHubView('library')}
         onOpenExplore={() => setHubView('explore')}
         onOpenCodex={handleOpenCodex}
+        onOpenFluxStudio={() => setIsFluxStudioOpen(true)}
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
@@ -651,6 +654,22 @@ export const App: React.FC = () => {
           handleSendMessage(prompt, false, null);
         }}
         onOpenCanvas={handleOpenCanvas}
+      />
+
+      {/* FLUX.1 ComfyGraph Visual Node Studio */}
+      <FluxWorkflowStudio
+        isOpen={isFluxStudioOpen}
+        onClose={() => setIsFluxStudioOpen(false)}
+        onSendToChat={(markdownText, imageUrl) => {
+          const newMsg: Message = {
+            id: `msg-${Date.now()}`,
+            sender: 'assistant',
+            text: markdownText,
+            imageUrl,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          };
+          setMessages((prev) => [...prev, newMsg]);
+        }}
       />
     </div>
   );
