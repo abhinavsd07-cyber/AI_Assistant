@@ -26,62 +26,116 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
   const [isWebSearch, setIsWebSearch] = useState(false);
   const [isImageGen, setIsImageGen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [speechLang, setSpeechLang] = useState<'ml-IN' | 'en-US'>('ml-IN');
+  const [micError, setMicError] = useState<string | null>(null);
   const [attachment, setAttachment] = useState<FileAttachment | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
+  const baseInputRef = useRef<string>('');
 
-  // Initialize Speech Recognition
-  useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
+  const stopRecording = React.useCallback(() => {
+    if (recognitionRef.current) {
       try {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.lang = 'ml-IN';
-
-        recognition.onresult = (event: any) => {
-          const transcript = Array.from(event.results)
-            .map((result: any) => result[0].transcript)
-            .join('');
-          if (transcript) {
-            setInput(transcript);
-          }
-        };
-
-        recognition.onerror = () => {
-          setIsRecording(false);
-        };
-
-        recognition.onend = () => {
-          setIsRecording(false);
-        };
-
-        recognitionRef.current = recognition;
-      } catch (e) {
-        console.warn('Speech recognition setup failed:', e);
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+      } catch {
+        // Ignore stop errors
       }
+      recognitionRef.current = null;
     }
+    setIsRecording(false);
   }, []);
 
-  const toggleRecording = () => {
-    if (!recognitionRef.current) {
-      alert('Speech recognition is not supported in this browser.');
+  useEffect(() => {
+    return () => {
+      stopRecording();
+    };
+  }, [stopRecording]);
+
+  const startRecording = (lang: 'ml-IN' | 'en-US') => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setMicError('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
       return;
     }
 
-    if (isRecording) {
-      recognitionRef.current.stop();
-      setIsRecording(false);
-    } else {
-      setIsRecording(true);
-      try {
-        recognitionRef.current.start();
-      } catch {
+    stopRecording();
+    setMicError(null);
+    baseInputRef.current = input.trim() ? `${input.trim()} ` : '';
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      recognition.lang = lang;
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript) {
+          const nextValue = `${baseInputRef.current}${transcript}`;
+          setInput(nextValue);
+          if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 140)}px`;
+          }
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        if (event.error === 'aborted') return;
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setMicError('Microphone permission denied. Allow mic access in your browser address bar.');
+        } else if (event.error === 'network') {
+          setMicError('Speech network error: Use Google Chrome or Microsoft Edge (Brave/Firefox block Web Speech API).');
+        } else if (event.error === 'audio-capture') {
+          setMicError('No microphone detected. Check your Windows microphone settings.');
+        } else if (event.error === 'no-speech') {
+          setMicError(lang === 'ml-IN' ? 'ശബ്ദം ലഭിച്ചില്ല (No speech detected). Please speak clearly.' : 'No speech detected.');
+        } else {
+          setMicError(`Mic error: ${event.error}`);
+        }
         setIsRecording(false);
-      }
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+        recognitionRef.current = null;
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (e: any) {
+      console.warn('Speech recognition start failed:', e);
+      setMicError(e.message || 'Could not start microphone.');
+      setIsRecording(false);
+    }
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording(speechLang);
+    }
+  };
+
+  const toggleSpeechLang = () => {
+    const nextLang = speechLang === 'ml-IN' ? 'en-US' : 'ml-IN';
+    setSpeechLang(nextLang);
+    if (isRecording) {
+      startRecording(nextLang);
     }
   };
 
@@ -96,6 +150,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
     e.preventDefault();
     if ((!input.trim() && !attachment) || isLoading) return;
 
+    if (isRecording) {
+      stopRecording();
+    }
+    setMicError(null);
     onSendMessage(input.trim(), isReasoning, attachment, isWebSearch, isImageGen);
     setInput('');
     setAttachment(null);
@@ -212,7 +270,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
             onKeyDown={handleKeyDown}
             placeholder={
               isRecording 
-                ? 'സംസാരിക്കൂ, ഞാൻ കേൾക്കുന്നുണ്ട്... (Listening in Malayalam)' 
+                ? (speechLang === 'ml-IN' ? 'സംസാരിക്കൂ, ഞാൻ കേൾക്കുന്നുണ്ട്... (Listening in Malayalam)' : 'Listening in English...')
                 : isImageGen 
                 ? 'Describe the image to generate with AI...' 
                 : 'Ask Nebula anything... (മലയാളത്തിലും ചോദിക്കാം)'
@@ -268,6 +326,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
               <span className="hidden sm:inline">Thinking</span>
             </button>
 
+            {/* Voice Language Switcher (ML / EN) */}
+            <button
+              type="button"
+              onClick={toggleSpeechLang}
+              className="px-2 py-1 rounded-full text-[11px] font-bold bg-gray-200/80 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+              title={`Voice recognition language: ${speechLang === 'ml-IN' ? 'Malayalam (ml-IN)' : 'English (en-US)'}. Click to switch.`}
+            >
+              {speechLang === 'ml-IN' ? 'മല' : 'EN'}
+            </button>
+
             {/* Voice Mic Button */}
             <button
               type="button"
@@ -277,7 +345,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
                   ? 'bg-red-500 text-white animate-pulse'
                   : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
-              title="Speak in Malayalam or English"
+              title={speechLang === 'ml-IN' ? 'Speak in Malayalam (മലയാളത്തിൽ സംസാരിക്കാം)' : 'Speak in English'}
             >
               <Mic size={17} />
             </button>
@@ -297,6 +365,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
             </button>
           </div>
         </div>
+
+        {micError && (
+          <div className="mt-2 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 flex items-center justify-between text-xs text-rose-600 dark:text-rose-400">
+            <span>{micError}</span>
+            <button
+              type="button"
+              onClick={() => setMicError(null)}
+              className="ml-2 text-rose-500 hover:text-rose-700 dark:hover:text-rose-200 cursor-pointer"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );

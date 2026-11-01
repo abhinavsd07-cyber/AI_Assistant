@@ -12,17 +12,27 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
   const [transcript, setTranscript] = useState('');
   const [lastAiReply, setLastAiReply] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [voiceLang, setVoiceLang] = useState<'en-US' | 'ml-IN'>('en-US');
+  const [voiceLang, setVoiceLang] = useState<'en-US' | 'ml-IN'>('ml-IN');
 
   const recognitionRef = useRef<any>(null);
+  const transcriptRef = useRef<string>('');
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const isMountedRef = useRef(true);
+  const restartTimerRef = useRef<number | null>(null);
 
   const stopAll = React.useCallback(() => {
+    if (restartTimerRef.current) {
+      window.clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
     try {
       if (recognitionRef.current) {
+        recognitionRef.current.onstart = null;
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
         recognitionRef.current.onend = null;
-        recognitionRef.current.stop();
+        recognitionRef.current.abort();
+        recognitionRef.current = null;
       }
     } catch {
       // Ignore
@@ -44,24 +54,38 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
     };
   }, [stopAll]);
 
-  const startListening = () => {
+  const startListening = React.useCallback((langOverride?: 'en-US' | 'ml-IN') => {
     setErrorMessage('');
+    const activeLang = langOverride || voiceLang;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setErrorMessage('Speech recognition is not supported in this browser. Please try Chrome or Edge.');
+      setErrorMessage('Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.');
       setStatus('idle');
       return;
     }
 
     try {
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        recognitionRef.current.onstart = null;
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        try {
+          recognitionRef.current.abort();
+        } catch {
+          // Ignore abort error
+        }
+        recognitionRef.current = null;
       }
+
+      transcriptRef.current = '';
+      setTranscript('');
 
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = true;
-      recognition.lang = voiceLang;
+      recognition.maxAlternatives = 1;
+      recognition.lang = activeLang;
 
       recognition.onstart = () => {
         if (isMountedRef.current) setStatus('listening');
@@ -75,22 +99,38 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         }
 
         let currentText = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        for (let i = 0; i < event.results.length; i++) {
           currentText += event.results[i][0].transcript;
         }
+        transcriptRef.current = currentText;
         if (isMountedRef.current) setTranscript(currentText);
       };
 
       recognition.onerror = (event: any) => {
-        if (event.error !== 'no-speech' && isMountedRef.current) {
+        if (!isMountedRef.current) return;
+        if (event.error === 'aborted') return;
+        if (event.error === 'no-speech') {
+          setErrorMessage(
+            activeLang === 'ml-IN'
+              ? 'ശബ്ദം ലഭിച്ചില്ല. മൈക്കിന് അരികിൽ വ്യക്തമായി സംസാരിക്കുക (No speech detected).'
+              : 'No speech detected. Please speak clearly into your microphone.'
+          );
+        } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setErrorMessage('Microphone permission denied. Please allow microphone access in your browser address bar.');
+        } else if (event.error === 'network') {
+          setErrorMessage('Network error: Browser speech service blocked or offline. Use Google Chrome or Edge with internet.');
+        } else if (event.error === 'audio-capture') {
+          setErrorMessage('No microphone found. Please check your system audio input settings.');
+        } else {
           setErrorMessage(`Mic error: ${event.error}`);
         }
       };
 
       recognition.onend = async () => {
         if (!isMountedRef.current) return;
-        const finalPrompt = transcript.trim();
+        const finalPrompt = transcriptRef.current.trim();
         if (finalPrompt) {
+          transcriptRef.current = '';
           await processUserSpeech(finalPrompt);
         } else {
           setStatus('idle');
@@ -105,7 +145,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         setStatus('idle');
       }
     }
-  };
+  }, [voiceLang]);
 
   const processUserSpeech = async (speechText: string) => {
     setStatus('thinking');
@@ -141,7 +181,8 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.rate = 1.05;
-    utterance.lang = voiceLang;
+    const hasMalayalam = /[\u0D00-\u0D7F]/.test(cleanText);
+    utterance.lang = hasMalayalam ? 'ml-IN' : voiceLang;
 
     utterance.onstart = () => {
       if (isMountedRef.current) setStatus('speaking');
@@ -149,10 +190,11 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
 
     utterance.onend = () => {
       if (!isMountedRef.current) return;
+      transcriptRef.current = '';
       setTranscript('');
       setStatus('idle');
       // Auto-listen again for hands-free natural back-and-forth conversation
-      setTimeout(() => {
+      restartTimerRef.current = window.setTimeout(() => {
         if (isMountedRef.current && isOpen) {
           startListening();
         }
@@ -170,19 +212,26 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
     if (synthRef.current) {
       synthRef.current.cancel();
     }
+    transcriptRef.current = '';
     setTranscript('');
     startListening();
   };
 
   useEffect(() => {
     if (isOpen) {
+      stopAll();
+      transcriptRef.current = '';
       setTranscript('');
       setLastAiReply('');
-      startListening();
+      restartTimerRef.current = window.setTimeout(() => {
+        if (isMountedRef.current) {
+          startListening(voiceLang);
+        }
+      }, 150);
     } else {
       stopAll();
     }
-  }, [isOpen, voiceLang]);
+  }, [isOpen, voiceLang, startListening, stopAll]);
 
   if (!isOpen) return null;
 
@@ -306,7 +355,11 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
           <button
             onClick={() => {
               if (status === 'listening') {
-                stopAll();
+                if (transcriptRef.current.trim() && recognitionRef.current) {
+                  recognitionRef.current.stop();
+                } else {
+                  stopAll();
+                }
               } else {
                 startListening();
               }
