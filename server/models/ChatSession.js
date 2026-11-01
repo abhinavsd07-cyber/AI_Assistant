@@ -6,6 +6,8 @@ const MessageSchema = new mongoose.Schema({
   text: { type: String, required: true },
   timestamp: { type: String, required: true },
   imageUrl: { type: String, default: null },
+  fileName: { type: String, default: null },
+  fileType: { type: String, default: null },
   isReasoning: { type: Boolean, default: false },
   tokens: { type: Number, default: 0 },
 });

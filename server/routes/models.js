@@ -3,16 +3,16 @@ const { AiModel, PromptPreset } = require("../models");
 
 const router = express.Router();
 
-// Default AI model configurations
+// Default AI model configurations prioritized by lowest latency
 const DEFAULT_MODELS = [
   {
-    modelId: "gemini-3.5-flash",
-    displayName: "Nebula 4.0e (Gemini 3.5 Flash)",
-    tag: "Instant & Smart",
+    modelId: "gemini-3.5-flash-lite",
+    displayName: "Nebula 4.0e (Instant Lite)",
+    tag: "Ultralight Latency (<1s)",
     badge: "Default",
     description: "Google's ultra-responsive multimodal intelligence engine with lightning-fast sub-second latency.",
     provider: "Google Gemini",
-    contextWindow: "1M tokens",
+    contextWindow: "500K tokens",
     maxOutputTokens: 8192,
     supportsVision: true,
     supportsVoice: true,
@@ -21,14 +21,14 @@ const DEFAULT_MODELS = [
     sortOrder: 1,
   },
   {
-    modelId: "gemini-3.5-flash-lite",
-    displayName: "Gemini 3.5 Flash Lite",
-    tag: "Ultralight Latency",
-    badge: "Instant",
-    description: "Lightweight, ultra-low latency model engineered for sub-second chat responses.",
+    modelId: "gemini-3.5-flash",
+    displayName: "Gemini 3.5 Flash",
+    tag: "Balanced Speed & Depth",
+    badge: "Balanced",
+    description: "High-performance multimodal model with balanced speed and reasoning.",
     provider: "Google Gemini",
-    contextWindow: "500K tokens",
-    maxOutputTokens: 4096,
+    contextWindow: "1M tokens",
+    maxOutputTokens: 8192,
     supportsVision: true,
     supportsVoice: true,
     supportsReasoning: false,
@@ -39,7 +39,7 @@ const DEFAULT_MODELS = [
     modelId: "gemini-3.8-flash",
     displayName: "Gemini 3.8 Flash (Deep Thinking)",
     tag: "Reasoning Preview",
-    badge: "Preview",
+    badge: "Thinking",
     description: "Deep thinking preview model with extensive step-by-step reasoning tokens.",
     provider: "Google Gemini",
     contextWindow: "1M tokens",
@@ -138,4 +138,3 @@ module.exports = {
   seedDefaultsIfNeeded,
   DEFAULT_MODELS,
 };
-

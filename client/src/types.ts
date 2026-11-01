@@ -24,6 +24,8 @@ export interface Message {
   text: string;
   timestamp: string;
   imageUrl?: string;
+  fileName?: string;
+  fileType?: string;
   isReasoning?: boolean;
 }
 
