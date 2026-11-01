@@ -19,13 +19,25 @@ function getAi() {
 
 /**
  * Fast synchronous check to detect if text likely contains an image generation intent
- * Handles typos like 'generte', 'imge', 'drw', 'foto', 'varakkumo', etc.
+ * Handles typos, visual descriptions, scene prompts, and explicit keywords.
  */
 function isImagePrompt(text) {
   if (!text || typeof text !== "string") return false;
   const t = text.trim();
   if (/^\/(?:image|img)\b/i.test(t)) return true;
-  return /(?:img|imag|pict|pik|foto|phot|drw|draw|pain|gener|creat|mak|varakk|padam|chithr|wallpaper|ചിത്രം|ഫോട്ടോ|പടം|വര)/i.test(t);
+
+  // Direct image/creation keywords & typos
+  const hasImageKeywords = /(?:img|imag|pict|pik|foto|phot|drw|draw|pain|gener|creat|mak|varakk|padam|chithr|wallpaper|ചിത്രം|ഫോട്ടോ|പടം|വര)/i.test(t);
+  if (hasImageKeywords) return true;
+
+  // Visual scene / character / vehicle / art descriptors without explicit question words
+  const isQuestion = /^(?:what|why|how|when|where|who|which|explain|tell|is|are|can|could|should|do|does|did|ആരാണ്|എന്താണ്|എങ്ങനെ|എവിടെ)/i.test(t);
+  if (!isQuestion && t.length < 150) {
+    const hasVisualScene = /(?:car|cars|superhero|superheroes|super heros|batman|spiderman|superman|portrait|landscape|illustration|anime|cyberpunk|futuristic|cinematic|vintage|retro|neon|sunset|ocean|nature|space|galaxy|robot|animal|cat|dog|lion|tiger|dragon|castle|city|street|room|building|driving|flying|running|standing|sitting|wearing)/i.test(t);
+    if (hasVisualScene) return true;
+  }
+
+  return false;
 }
 
 /**
