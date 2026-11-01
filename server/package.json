@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "chat": "node chat.js"
+    "chat": "node chat.js",
+    "test:eval": "node tests/eval_suite.js",
+    "test": "node tests/eval_suite.js"
   },
   "keywords": [],
   "author": "",

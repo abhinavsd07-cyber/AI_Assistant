@@ -46,6 +46,27 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleDownloadCode = (code: string, lang: string) => {
+    const extMap: Record<string, string> = {
+      python: 'py', py: 'py',
+      javascript: 'js', js: 'js',
+      typescript: 'ts', ts: 'ts',
+      tsx: 'tsx', jsx: 'jsx',
+      html: 'html', css: 'css',
+      json: 'json', markdown: 'md', md: 'md',
+      sql: 'sql', sh: 'sh', bash: 'sh',
+      c: 'c', cpp: 'cpp', java: 'java', rust: 'rs',
+    };
+    const ext = extMap[lang.toLowerCase()] || 'txt';
+    const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nebula_${lang || 'code'}_${Date.now()}.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const toggleSpeech = (text: string, id: string) => {
     if (!('speechSynthesis' in window)) {
       alert('Speech synthesis is not supported in this browser.');
@@ -268,22 +289,32 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                               <span className="uppercase tracking-wider font-semibold text-gray-300">
                                 {language || 'code'}
                               </span>
-                              <button
-                                onClick={() => copyToClipboard(codeString, codeId)}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-800/70 hover:bg-gray-700 text-gray-300 hover:text-white transition-all text-[11px] font-sans cursor-pointer"
-                              >
-                                {copiedId === codeId ? (
-                                  <>
-                                    <Check size={12} className="text-emerald-400" />
-                                    <span className="text-emerald-400 font-medium">Copied!</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy size={12} />
-                                    <span>Copy code</span>
-                                  </>
-                                )}
-                              </button>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => handleDownloadCode(codeString, language)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-gray-800/70 hover:bg-gray-700 text-gray-300 hover:text-white transition-all text-[11px] font-sans cursor-pointer"
+                                  title="Download code as file"
+                                >
+                                  <Download size={12} />
+                                  <span>Save file</span>
+                                </button>
+                                <button
+                                  onClick={() => copyToClipboard(codeString, codeId)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-800/70 hover:bg-gray-700 text-gray-300 hover:text-white transition-all text-[11px] font-sans cursor-pointer"
+                                >
+                                  {copiedId === codeId ? (
+                                    <>
+                                      <Check size={12} className="text-emerald-400" />
+                                      <span className="text-emerald-400 font-medium">Copied!</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy size={12} />
+                                      <span>Copy code</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
                             </div>
                             <pre className="p-4 overflow-x-auto text-[13.5px] font-mono leading-relaxed text-[#E6EDF3]">
                               <code>{codeString}</code>
