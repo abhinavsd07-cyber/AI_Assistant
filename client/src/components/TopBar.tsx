@@ -145,7 +145,18 @@ export const TopBar: React.FC<TopBarProps> = ({
                     }`}
                   >
                     <div className="flex flex-col">
-                      <span className="font-semibold text-sm">{m.name}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-sm">{m.name}</span>
+                        {m.badge && (
+                          <span className={`text-[9px] px-1.5 py-0.2 rounded font-medium ${
+                            m.badge === 'Local AI'
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300/40 dark:border-amber-700/40'
+                              : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                          }`}>
+                            {m.badge}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[11px] text-gray-500 dark:text-gray-400">{m.tag}</span>
                     </div>
                     {selectedModel === m.id && <Check size={14} className="text-[#0D0D0D] dark:text-white shrink-0" />}
