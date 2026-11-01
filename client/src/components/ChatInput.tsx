@@ -72,7 +72,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
       setIsRecording(true);
       try {
         recognitionRef.current.start();
-      } catch (e) {
+      } catch {
         setIsRecording(false);
       }
     }
