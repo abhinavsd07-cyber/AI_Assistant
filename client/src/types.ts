@@ -68,3 +68,14 @@ export interface AuthResponse {
   token?: string;
   user?: UserProfile;
 }
+
+export type PersonaType = 'general' | 'coder' | 'kerala_scholar' | 'malayalam_writer' | 'math_tutor';
+
+export interface PersonaInfo {
+  id: PersonaType;
+  name: string;
+  description: string;
+  icon: string;
+  badge?: string;
+}
+

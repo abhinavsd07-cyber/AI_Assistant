@@ -11,7 +11,9 @@ import {
   Share, 
   MoreHorizontal,
   ExternalLink,
-  FileText
+  FileText,
+  Pencil,
+  Download
 } from 'lucide-react';
 import type { Message } from '../types';
 
@@ -19,12 +21,20 @@ interface ChatThreadProps {
   messages: Message[];
   isLoading: boolean;
   onRegenerate?: (messageId: string) => void;
+  onEditMessage?: (messageId: string, newText: string) => void;
 }
 
-export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onRegenerate }) => {
+export const ChatThread: React.FC<ChatThreadProps> = ({ 
+  messages, 
+  isLoading, 
+  onRegenerate,
+  onEditMessage 
+}) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState<string>('');
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -58,6 +68,23 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onR
     window.speechSynthesis.speak(utterance);
   };
 
+  const handleStartEdit = (message: Message) => {
+    setEditingId(message.id);
+    setEditText(message.text);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditText('');
+  };
+
+  const handleSaveEdit = (messageId: string) => {
+    if (editText.trim() && onEditMessage) {
+      onEditMessage(messageId, editText.trim());
+    }
+    setEditingId(null);
+  };
+
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-12 py-8 space-y-7 max-w-3xl mx-auto w-full">
       {messages.map((message) => {
@@ -72,136 +99,193 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onR
           >
             {/* User message */}
             {isUser ? (
-              <div className="max-w-[85%] md:max-w-[75%] rounded-[24px] px-5 py-2.5 text-[15px] leading-relaxed bg-[#F4F4F4] text-[#0D0D0D] border border-[#E5E5E5]/60 shadow-2xs">
-                {message.imageUrl ? (
-                  <div className="mb-2 rounded-xl overflow-hidden max-w-sm">
-                    <img src={message.imageUrl} alt="Attached" className="w-full max-h-60 object-cover" />
+              <div className="relative group max-w-[85%] md:max-w-[75%] flex flex-col items-end">
+                {editingId === message.id ? (
+                  <div className="w-full min-w-[280px] md:min-w-[420px] rounded-[20px] p-3 bg-white dark:bg-[#1E1E1E] border border-blue-500 shadow-md flex flex-col gap-2">
+                    <textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      rows={Math.min(6, Math.max(2, editText.split('\n').length))}
+                      className="w-full text-[14.5px] leading-relaxed bg-transparent text-[#0D0D0D] dark:text-[#ECECEC] outline-hidden resize-none p-1"
+                      autoFocus
+                    />
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-gray-100 dark:border-gray-800">
+                      <button
+                        onClick={handleCancelEdit}
+                        className="px-3 py-1 rounded-lg text-xs font-medium text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleSaveEdit(message.id)}
+                        disabled={!editText.trim() || isLoading}
+                        className="px-3.5 py-1 rounded-lg text-xs font-semibold bg-black dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity disabled:opacity-40 cursor-pointer"
+                      >
+                        Save & Submit
+                      </button>
+                    </div>
                   </div>
-                ) : message.fileName ? (
-                  <div className="mb-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/90 border border-gray-200 text-xs text-gray-800">
-                    <FileText size={16} className="text-blue-600" />
-                    <span className="font-semibold truncate max-w-[200px]">{message.fileName}</span>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    {onEditMessage && !isLoading && (
+                      <button
+                        onClick={() => handleStartEdit(message)}
+                        title="Edit Prompt"
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-gray-800 transition-all cursor-pointer"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                    )}
+                    <div className="rounded-[24px] px-5 py-2.5 text-[15px] leading-relaxed bg-[#F4F4F4] dark:bg-[#252525] text-[#0D0D0D] dark:text-[#ECECEC] border border-[#E5E5E5]/60 dark:border-[#383838] shadow-2xs">
+                      {message.imageUrl ? (
+                        <div className="mb-2 rounded-xl overflow-hidden max-w-sm">
+                          <img src={message.imageUrl} alt="Attached" className="w-full max-h-60 object-cover" />
+                        </div>
+                      ) : message.fileName ? (
+                        <div className="mb-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/90 dark:bg-black/40 border border-gray-200 dark:border-gray-750 text-xs text-gray-800 dark:text-gray-200">
+                          <FileText size={16} className="text-blue-600" />
+                          <span className="font-semibold truncate max-w-[200px]">{message.fileName}</span>
+                        </div>
+                      ) : null}
+                      <div className="whitespace-pre-wrap">{message.text}</div>
+                    </div>
                   </div>
-                ) : null}
-                <div className="whitespace-pre-wrap">{message.text}</div>
+                )}
               </div>
             ) : (
               /* Assistant message with rich Markdown rendering */
-              <div className="w-full text-[#0D0D0D] leading-relaxed group">
+              <div className="w-full text-[#0D0D0D] dark:text-[#ECECEC] leading-relaxed group">
                 <div className="text-[15px] leading-relaxed markdown-content">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
                       h1: ({ children }) => (
-                        <h1 className="text-xl md:text-2xl font-bold mt-4 mb-2 text-[#0D0D0D] tracking-tight">
+                        <h1 className="text-xl md:text-2xl font-bold mt-4 mb-2 text-[#0D0D0D] dark:text-[#F0F0F0] tracking-tight">
                           {children}
                         </h1>
                       ),
                       h2: ({ children }) => (
-                        <h2 className="text-lg md:text-xl font-bold mt-3.5 mb-2 text-[#0D0D0D] tracking-tight">
+                        <h2 className="text-lg md:text-xl font-bold mt-3.5 mb-2 text-[#0D0D0D] dark:text-[#F0F0F0] tracking-tight">
                           {children}
                         </h2>
                       ),
                       h3: ({ children }) => (
-                        <h3 className="text-base font-semibold mt-3 mb-1 text-[#0D0D0D]">
+                        <h3 className="text-base font-semibold mt-3 mb-1 text-[#0D0D0D] dark:text-[#F0F0F0]">
                           {children}
                         </h3>
                       ),
                       p: ({ children }) => (
-                        <p className="mb-3.5 last:mb-0 leading-relaxed text-[#1A1A1A]">
+                        <p className="my-2 leading-relaxed text-[#212121] dark:text-[#D8D8D8] text-[15px]">
                           {children}
                         </p>
                       ),
                       ul: ({ children }) => (
-                        <ul className="list-disc pl-5 mb-3.5 space-y-1 text-[#1A1A1A]">
+                        <ul className="list-disc pl-5 my-2.5 space-y-1 text-[#212121] dark:text-[#D8D8D8]">
                           {children}
                         </ul>
                       ),
                       ol: ({ children }) => (
-                        <ol className="list-decimal pl-5 mb-3.5 space-y-1 text-[#1A1A1A]">
+                        <ol className="list-decimal pl-5 my-2.5 space-y-1 text-[#212121] dark:text-[#D8D8D8]">
                           {children}
                         </ol>
                       ),
                       li: ({ children }) => (
-                        <li className="leading-relaxed">{children}</li>
+                        <li className="leading-relaxed pl-1">{children}</li>
                       ),
                       blockquote: ({ children }) => (
-                        <blockquote className="border-l-4 border-gray-300 pl-4 py-1 my-3 bg-[#F9F9FB] rounded-r-lg italic text-gray-700">
+                        <blockquote className="border-l-3 border-gray-300 dark:border-gray-700 pl-4 py-1 my-3 text-gray-600 dark:text-gray-400 italic bg-gray-50/60 dark:bg-gray-900/40 rounded-r-lg">
                           {children}
                         </blockquote>
                       ),
                       table: ({ children }) => (
-                        <div className="overflow-x-auto my-4 rounded-xl border border-[#E5E5E5]">
-                          <table className="w-full text-left text-xs md:text-sm border-collapse">
+                        <div className="my-4 overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+                          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800 text-sm">
                             {children}
                           </table>
                         </div>
                       ),
                       thead: ({ children }) => (
-                        <thead className="bg-[#F4F4F6] border-b border-[#E5E5E5] text-[#0D0D0D] font-semibold">
+                        <thead className="bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 font-semibold text-xs uppercase tracking-wider">
                           {children}
                         </thead>
                       ),
-                      tbody: ({ children }) => (
-                        <tbody className="divide-y divide-[#EFEFEF] bg-white">
-                          {children}
-                        </tbody>
-                      ),
-                      tr: ({ children }) => (
-                        <tr className="hover:bg-gray-50/70 transition-colors">{children}</tr>
-                      ),
                       th: ({ children }) => (
-                        <th className="px-3 py-2.5 font-semibold text-gray-800">{children}</th>
+                        <th className="px-4 py-2.5 text-left">{children}</th>
                       ),
                       td: ({ children }) => (
-                        <td className="px-3 py-2 text-gray-700">{children}</td>
+                        <td className="px-4 py-2 border-t border-gray-100 dark:border-gray-850 text-gray-700 dark:text-gray-300">{children}</td>
                       ),
                       a: ({ href, children }) => (
                         <a
                           href={href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-700 underline inline-flex items-center gap-0.5"
+                          className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline font-medium"
                         >
-                          {children}
-                          <ExternalLink size={12} className="inline ml-0.5 opacity-70" />
+                          <span>{children}</span>
+                          <ExternalLink size={12} className="opacity-70" />
                         </a>
+                      ),
+                      img: ({ src, alt }) => (
+                        <div className="my-3 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm max-w-lg">
+                          <img src={src} alt={alt || 'Generated visual'} className="w-full object-cover max-h-96" />
+                          <div className="p-2 bg-gray-50 dark:bg-gray-900 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                            <span className="truncate max-w-[300px]">{alt || 'AI Visual'}</span>
+                            {src && (
+                              <a 
+                                href={src} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                download 
+                                className="inline-flex items-center gap-1 hover:text-black dark:hover:text-white"
+                              >
+                                <Download size={13} />
+                                <span>Save</span>
+                              </a>
+                            )}
+                          </div>
+                        </div>
                       ),
                       code: ({ className, children, ...props }) => {
                         const match = /language-(\w+)/.exec(className || '');
+                        const language = match ? match[1] : '';
                         const codeString = String(children).replace(/\n$/, '');
-                        const isInline = !className && !codeString.includes('\n');
+                        const isBlock = match || codeString.includes('\n');
 
-                        if (isInline) {
+                        if (!isBlock) {
                           return (
-                            <code className="px-1.5 py-0.5 bg-[#F0F0F2] text-[#0D0D0D] rounded-md font-mono text-[13px] border border-[#E5E5E5]/70" {...props}>
+                            <code className="px-1.5 py-0.5 rounded-md text-[13px] font-mono bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 border border-gray-200/80 dark:border-gray-700" {...props}>
                               {children}
                             </code>
                           );
                         }
 
-                        const language = match ? match[1] : '';
-                        const codeBlockId = `code-${message.id}-${Math.random().toString(36).substring(7)}`;
+                        const codeId = `code-${Math.random().toString(36).substring(2, 9)}`;
 
                         return (
-                          <div className="my-3 rounded-2xl overflow-hidden border border-[#E5E5E5] bg-[#F7F7F8] shadow-2xs text-[#0D0D0D]">
-                            <div className="flex items-center justify-between px-4 py-2 bg-[#EFEFEF] border-b border-[#E5E5E5] text-xs text-gray-600">
-                              <span className="font-mono text-[11px] uppercase tracking-wider font-semibold">
+                          <div className="relative my-4 rounded-2xl overflow-hidden border border-gray-800 bg-[#0D1117] text-gray-100 shadow-md">
+                            <div className="flex items-center justify-between px-4 py-2 bg-[#161B22] border-b border-gray-800/80 text-xs text-gray-400 font-mono">
+                              <span className="uppercase tracking-wider font-semibold text-gray-300">
                                 {language || 'code'}
                               </span>
                               <button
-                                onClick={() => copyToClipboard(codeString, codeBlockId)}
-                                className="flex items-center gap-1 hover:text-black transition-colors cursor-pointer"
+                                onClick={() => copyToClipboard(codeString, codeId)}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-800/70 hover:bg-gray-700 text-gray-300 hover:text-white transition-all text-[11px] font-sans cursor-pointer"
                               >
-                                {copiedId === codeBlockId ? (
-                                  <Check size={12} className="text-emerald-600" />
+                                {copiedId === codeId ? (
+                                  <>
+                                    <Check size={12} className="text-emerald-400" />
+                                    <span className="text-emerald-400 font-medium">Copied!</span>
+                                  </>
                                 ) : (
-                                  <Copy size={12} />
+                                  <>
+                                    <Copy size={12} />
+                                    <span>Copy code</span>
+                                  </>
                                 )}
-                                <span>{copiedId === codeBlockId ? 'Copied' : 'Copy code'}</span>
                               </button>
                             </div>
-                            <pre className="p-4 text-xs md:text-sm font-mono text-[#0D0D0D] overflow-x-auto leading-relaxed bg-[#F7F7F8]">
+                            <pre className="p-4 overflow-x-auto text-[13.5px] font-mono leading-relaxed text-[#E6EDF3]">
                               <code>{codeString}</code>
                             </pre>
                           </div>
@@ -213,19 +297,22 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onR
                   </ReactMarkdown>
                 </div>
 
-                {/* Bottom Action Icon Bar */}
-                <div className="flex items-center gap-1.5 mt-3 text-gray-400">
+                {/* Bottom Action Toolbar */}
+                <div className="flex items-center gap-1 mt-3 text-gray-400 dark:text-gray-500">
                   <button
                     onClick={() => copyToClipboard(message.text, message.id)}
-                    className="p-1.5 rounded-md hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
-                    title="Copy"
+                    className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 transition-colors cursor-pointer"
+                    title="Copy response"
                   >
-                    {copiedId === message.id ? <Check size={15} className="text-emerald-600" /> : <Copy size={15} />}
+                    {copiedId === message.id ? (
+                      <Check size={15} className="text-emerald-600" />
+                    ) : (
+                      <Copy size={15} />
+                    )}
                   </button>
 
                   <button
-                    onClick={() => alert('Feedback noted.')}
-                    className="p-1.5 rounded-md hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 transition-colors cursor-pointer"
                     title="Bad response"
                   >
                     <ThumbsDown size={15} />
@@ -233,8 +320,8 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onR
 
                   <button
                     onClick={() => toggleSpeech(message.text, message.id)}
-                    className={`p-1.5 rounded-md hover:bg-gray-100 transition-colors cursor-pointer ${
-                      speakingId === message.id ? 'text-[#0D0D0D] font-bold animate-pulse' : 'hover:text-gray-700'
+                    className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer ${
+                      speakingId === message.id ? 'text-[#0D0D0D] dark:text-white font-bold animate-pulse' : 'hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
                     title={speakingId === message.id ? "Stop voice" : "Read aloud"}
                   >
@@ -249,7 +336,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onR
                         copyToClipboard(message.text, `share-${message.id}`);
                       }
                     }}
-                    className="p-1.5 rounded-md hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 transition-colors cursor-pointer"
                     title="Share response"
                   >
                     <Share size={15} />
@@ -257,7 +344,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onR
 
                   <button
                     onClick={() => onRegenerate && onRegenerate(message.id)}
-                    className="p-1.5 rounded-md hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 transition-colors cursor-pointer"
                     title="Regenerate response"
                   >
                     <RotateCw size={15} />
@@ -265,7 +352,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onR
 
                   <button
                     onClick={() => copyToClipboard(message.text, `more-${message.id}`)}
-                    className="p-1.5 rounded-md hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 transition-colors cursor-pointer"
                     title="More actions"
                   >
                     <MoreHorizontal size={15} />
@@ -280,9 +367,9 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onR
       {/* Typing Indicator */}
       {isLoading && (
         <div className="flex items-center gap-2 text-sm text-gray-500 animate-in fade-in duration-200">
-          <div className="w-2 h-2 rounded-full bg-[#0D0D0D] animate-bounce" style={{ animationDelay: '0ms' }} />
-          <div className="w-2 h-2 rounded-full bg-[#0D0D0D] animate-bounce" style={{ animationDelay: '150ms' }} />
-          <div className="w-2 h-2 rounded-full bg-[#0D0D0D] animate-bounce" style={{ animationDelay: '300ms' }} />
+          <div className="w-2 h-2 rounded-full bg-[#0D0D0D] dark:bg-white animate-bounce" style={{ animationDelay: '0ms' }} />
+          <div className="w-2 h-2 rounded-full bg-[#0D0D0D] dark:bg-white animate-bounce" style={{ animationDelay: '150ms' }} />
+          <div className="w-2 h-2 rounded-full bg-[#0D0D0D] dark:bg-white animate-bounce" style={{ animationDelay: '300ms' }} />
         </div>
       )}
 
