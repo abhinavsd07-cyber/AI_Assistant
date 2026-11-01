@@ -21,8 +21,24 @@ const { applyGuardrails } = require("./services/guardrails");
 const { isImagePrompt, classifyUserIntent, generateAndUploadImage } = require("./services/imageGen");
 const { checkOllamaStatus, streamOllamaChat, OLLAMA_HOST } = require("./services/ollama");
 const { getUserMemories, extractAndSaveMemories } = require("./services/memory");
+const { securityHeaders, createRateLimiter } = require("./middleware/security");
 
 const app = express();
+
+// Enterprise Security Headers (Helmet standard)
+app.use(securityHeaders);
+
+// Rate Limiters
+const chatLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: "Rate limit exceeded (60 messages/min). Please wait a moment or upgrade to Nebula Pro.",
+});
+const authLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 25,
+  message: "Too many authentication attempts. Please try again in 15 minutes.",
+});
 
 // Cross-Origin Resource Sharing
 app.use(
@@ -87,7 +103,7 @@ async function fetchLiveWebResults(query) {
 }
 
 // Mount Routes
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api", modelRoutes);
 
 app.get("/", (req, res) => {
@@ -101,9 +117,13 @@ app.get("/", (req, res) => {
 app.get("/api/health", (req, res) => {
   res.json({
     success: true,
+    status: "healthy",
+    version: "4.0.0",
+    uptimeSeconds: Math.floor(process.uptime()),
     message: "Nebula AI server is healthy",
     database: isMongoConnected ? "Connected" : "Standby",
     modelsReady: true,
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -184,6 +204,31 @@ app.get("/api/sessions", optionalAuth, async (req, res) => {
   }
 });
 
+// Public Shareable Chat Endpoint (Read-only view for shared links)
+app.get("/api/sessions/share/:sessionId", async (req, res) => {
+  try {
+    if (!isMongoConnected) {
+      return res.status(404).json({ success: false, error: "Shared session not found" });
+    }
+    const session = await ChatSession.findOne({ sessionId: req.params.sessionId });
+    if (!session) {
+      return res.status(404).json({ success: false, error: "Shared session not found" });
+    }
+    res.json({
+      success: true,
+      session: {
+        sessionId: session.sessionId,
+        title: session.title,
+        model: session.model,
+        messages: session.messages,
+        updatedAt: session.updatedAt,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Delete a session from MongoDB
 app.delete("/api/sessions/:sessionId", optionalAuth, async (req, res) => {
   try {
@@ -204,6 +249,37 @@ app.get("/api/memories", optionalAuth, async (req, res) => {
       userEmail: req.user ? req.user.email : null,
     });
     res.json({ success: true, memories });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/memories - Manually add a user memory
+app.post("/api/memories", optionalAuth, async (req, res) => {
+  try {
+    const { category = "preference", key, value } = req.body;
+    if (!key || !value) {
+      return res.status(400).json({ success: false, error: "key and value are required" });
+    }
+    const { Memory } = require("./models");
+    const mem = await Memory.findOneAndUpdate(
+      {
+        userEmail: req.user ? req.user.email : "guest@nebula.local",
+        key: key.toLowerCase().trim(),
+      },
+      {
+        $set: {
+          userId: req.user ? req.user._id : null,
+          userEmail: req.user ? req.user.email : "guest@nebula.local",
+          category,
+          key: key.toLowerCase().trim(),
+          value: value.trim(),
+          confidence: 1.0,
+        },
+      },
+      { upsert: true, returnDocument: "after" }
+    );
+    res.json({ success: true, memory: mem });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -234,8 +310,34 @@ app.delete("/api/memories", optionalAuth, async (req, res) => {
   }
 });
 
+// POST /api/payments/upgrade - Sandbox Stripe / Razorpay Checkout Processing
+app.post("/api/payments/upgrade", optionalAuth, async (req, res) => {
+  try {
+    const { plan = "pro", billingCycle = "monthly", paymentMethod = "razorpay" } = req.body;
+    const receiptId = `rcpt_nebula_${Date.now()}_${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+
+    if (isMongoConnected && req.user) {
+      await User.findByIdAndUpdate(req.user._id, {
+        $set: { role: "pro", "preferences.plan": plan },
+      }).catch(() => {});
+    }
+
+    res.json({
+      success: true,
+      plan,
+      billingCycle,
+      paymentMethod,
+      receiptId,
+      activatedAt: new Date().toISOString(),
+      message: "Nebula Pro subscription activated successfully!",
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Main Chat endpoint with Contextual History, Documents, Live Web Search Grounding & Sub-Second Latency
-app.post("/api/chat", optionalAuth, async (req, res) => {
+app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
   const startTime = Date.now();
   try {
     const { 

@@ -12,7 +12,8 @@ import {
   Moon,
   Mic,
   Bot,
-  Settings
+  Settings,
+  Share2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { AiModelInfo, PersonaType } from '../types';
@@ -30,6 +31,8 @@ interface TopBarProps {
   onOpenSettings?: () => void;
   onExportMarkdown?: () => void;
   onExportText?: () => void;
+  onShareChat?: () => void;
+  isPro?: boolean;
 }
 
 const DEFAULT_MODELS = [
@@ -61,11 +64,14 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenSettings,
   onExportMarkdown,
   onExportText,
+  onShareChat,
+  isPro,
 }) => {
   const { isAuthenticated, navigateTo, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isPersonaOpen, setIsPersonaOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isShareCopied, setIsShareCopied] = useState(false);
   const [models, setModels] = useState(DEFAULT_MODELS);
 
   const currentPersona = PERSONAS.find(p => p.id === selectedPersona) || PERSONAS[0];
@@ -114,6 +120,11 @@ export const TopBar: React.FC<TopBarProps> = ({
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-[#ECECEC]/70 dark:hover:bg-[#252525] text-sm font-semibold text-[#0D0D0D] dark:text-[#ECECEC] transition-colors cursor-pointer"
           >
             <span className="text-base font-bold">Nebula AI</span>
+            {isPro && (
+              <span className="px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[9px] font-extrabold uppercase tracking-wider shadow-xs">
+                PRO
+              </span>
+            )}
             <ChevronDown size={14} className={`text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
 
@@ -225,6 +236,31 @@ export const TopBar: React.FC<TopBarProps> = ({
 
       {/* Right Controls */}
       <div className="flex items-center gap-1.5 md:gap-2">
+        {/* Share Chat Button */}
+        {onShareChat && (
+          <button
+            onClick={() => {
+              onShareChat();
+              setIsShareCopied(true);
+              setTimeout(() => setIsShareCopied(false), 2000);
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-[#222222] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#2C2C2C] text-xs font-semibold transition-all cursor-pointer"
+            title="Copy Public Shareable Chat Link"
+          >
+            {isShareCopied ? (
+              <>
+                <Check size={13} className="text-emerald-500" />
+                <span className="hidden sm:inline text-emerald-600 dark:text-emerald-400">Link Copied!</span>
+              </>
+            ) : (
+              <>
+                <Share2 size={13} />
+                <span className="hidden sm:inline">Share</span>
+              </>
+            )}
+          </button>
+        )}
+
         {/* Real-time Voice Mode Trigger */}
         {onOpenVoiceMode && (
           <button

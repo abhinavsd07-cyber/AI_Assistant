@@ -82,6 +82,53 @@ export const App: React.FC = () => {
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isPro, setIsPro] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('nebula_is_pro') === 'true' || (user as any)?.plan === 'pro';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    if ((user as any)?.plan === 'pro') {
+      setIsPro(true);
+      localStorage.setItem('nebula_is_pro', 'true');
+    }
+  }, [user]);
+
+  // Check if URL contains a shared session link (?share=<sessionId>)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const shareId = params.get('share');
+    if (!shareId) return;
+
+    const loadSharedSession = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/sessions/share/${shareId}`);
+        const data = await res.json();
+        if (data.success && data.session) {
+          setCurrentSessionId(data.session.id);
+          setMessages(data.session.messages || []);
+          return;
+        }
+      } catch {
+        // Fallback to local sessions if offline
+      }
+      const localMatch = sessions.find((s) => s.id === shareId);
+      if (localMatch) {
+        setCurrentSessionId(localMatch.id);
+        setMessages(localMatch.messages);
+      }
+    };
+    loadSharedSession();
+  }, []);
+
+  const handleShareChat = () => {
+    if (!currentSessionId || messages.length === 0) return;
+    const shareUrl = `${window.location.origin}/?share=${encodeURIComponent(currentSessionId)}`;
+    navigator.clipboard.writeText(shareUrl);
+  };
 
   // Interactive Canvas Studio state
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
@@ -499,6 +546,8 @@ export const App: React.FC = () => {
           onOpenSettings={() => setIsSettingsOpen(true)}
           onExportMarkdown={handleExportMarkdown}
           onExportText={handleExportText}
+          onShareChat={messages.length > 0 ? handleShareChat : undefined}
+          isPro={isPro}
         />
 
         {/* Center Stage: Hero Welcome Screen OR Chat Message Thread + Split-Screen Canvas */}
@@ -559,6 +608,7 @@ export const App: React.FC = () => {
       <UpgradeModal
         isOpen={isUpgradeOpen}
         onClose={() => setIsUpgradeOpen(false)}
+        onUpgradeSuccess={() => setIsPro(true)}
       />
     </div>
   );
