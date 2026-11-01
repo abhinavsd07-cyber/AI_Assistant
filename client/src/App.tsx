@@ -8,6 +8,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { UpgradeModal } from './components/UpgradeModal';
 import { VoiceModal } from './components/VoiceModal';
 import { CanvasStudio } from './components/CanvasStudio';
+import { HubModal } from './components/HubModal';
 import { AuthPage } from './pages/AuthPage';
 import { useAuth } from './context/AuthContext';
 import type { Message, ChatSession, PersonaType } from './types';
@@ -135,11 +136,36 @@ export const App: React.FC = () => {
   const [canvasCode, setCanvasCode] = useState('');
   const [canvasLanguage, setCanvasLanguage] = useState('html');
   const [canvasTitle, setCanvasTitle] = useState('Interactive Canvas');
+  const [hubView, setHubView] = useState<'library' | 'explore' | null>(null);
 
   const handleOpenCanvas = (code: string, language: string, title?: string) => {
     setCanvasCode(code);
     setCanvasLanguage(language);
     setCanvasTitle(title || `Artifact: ${language.toUpperCase()}`);
+    setIsCanvasOpen(true);
+  };
+
+  const handleOpenCodex = () => {
+    if (!canvasCode) {
+      setCanvasLanguage('html');
+      setCanvasTitle('Nebula Codex Interactive Starter');
+      setCanvasCode(`<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex items-center justify-center p-6 font-sans">
+  <div class="max-w-md w-full bg-slate-900/90 border border-purple-500/30 rounded-2xl p-6 shadow-2xl text-center">
+    <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 mx-auto mb-4 flex items-center justify-center text-xl font-bold">N</div>
+    <h1 class="text-xl font-bold mb-2">Nebula Codex Live Studio</h1>
+    <p class="text-xs text-slate-400 mb-5">Edit HTML, Tailwind CSS, React, or Python code in the Code tab and preview it live!</p>
+    <button onclick="document.getElementById('counter').innerText = Number(document.getElementById('counter').innerText) + 1" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 font-semibold text-sm transition cursor-pointer">
+      Interactive Clicks: <span id="counter">0</span>
+    </button>
+  </div>
+</body>
+</html>`);
+    }
     setIsCanvasOpen(true);
   };
 
@@ -526,6 +552,9 @@ export const App: React.FC = () => {
         onDeleteSession={handleDeleteSession}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenUpgrade={() => setIsUpgradeOpen(true)}
+        onOpenLibrary={() => setHubView('library')}
+        onOpenExplore={() => setHubView('explore')}
+        onOpenCodex={handleOpenCodex}
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
@@ -609,6 +638,19 @@ export const App: React.FC = () => {
         isOpen={isUpgradeOpen}
         onClose={() => setIsUpgradeOpen(false)}
         onUpgradeSuccess={() => setIsPro(true)}
+      />
+
+      {/* Library & Explore Agents Hub Modal */}
+      <HubModal
+        isOpen={hubView !== null}
+        activeView={hubView || 'library'}
+        onClose={() => setHubView(null)}
+        sessions={sessions}
+        onLaunchPrompt={(prompt, persona) => {
+          if (persona) setSelectedPersona(persona);
+          handleSendMessage(prompt, false, null);
+        }}
+        onOpenCanvas={handleOpenCanvas}
       />
     </div>
   );
