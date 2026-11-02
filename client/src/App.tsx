@@ -99,40 +99,7 @@ export const App: React.FC = () => {
     }
   }, [user]);
 
-  // Check if URL contains a shared session link (?share=<sessionId>)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const shareId = params.get('share');
-    if (!shareId) return;
-
-    const loadSharedSession = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/sessions/share/${shareId}`);
-        const data = await res.json();
-        if (data.success && data.session) {
-          setCurrentSessionId(data.session.id);
-          setMessages(data.session.messages || []);
-          return;
-        }
-      } catch {
-        // Fallback to local sessions if offline
-      }
-      const localMatch = sessions.find((s) => s.id === shareId);
-      if (localMatch) {
-        setCurrentSessionId(localMatch.id);
-        setMessages(localMatch.messages);
-      }
-    };
-    loadSharedSession();
-  }, []);
-
-  const handleShareChat = () => {
-    if (!currentSessionId || messages.length === 0) return;
-    const shareUrl = `${window.location.origin}/?share=${encodeURIComponent(currentSessionId)}`;
-    navigator.clipboard.writeText(shareUrl);
-  };
-
-  // Interactive Canvas Studio state
+  // Interactive Canvas Studio & Route state
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [canvasCode, setCanvasCode] = useState('');
   const [canvasLanguage, setCanvasLanguage] = useState('html');
@@ -140,11 +107,28 @@ export const App: React.FC = () => {
   const [hubView, setHubView] = useState<'library' | 'explore' | null>(null);
   const [isFluxStudioOpen, setIsFluxStudioOpen] = useState(false);
 
+  // Clean HTML5 History Router helper
+  const pushRoute = (path: string) => {
+    if (window.location.pathname !== path) {
+      window.history.pushState({ path }, '', path);
+    }
+  };
+
+  const closeOverlayToCurrentChat = () => {
+    setIsSettingsOpen(false);
+    setIsUpgradeOpen(false);
+    setIsVoiceModalOpen(false);
+    setHubView(null);
+    setIsFluxStudioOpen(false);
+    pushRoute(currentSessionId ? `/c/${currentSessionId}` : '/');
+  };
+
   const handleOpenCanvas = (code: string, language: string, title?: string) => {
     setCanvasCode(code);
     setCanvasLanguage(language);
     setCanvasTitle(title || `Artifact: ${language.toUpperCase()}`);
     setIsCanvasOpen(true);
+    pushRoute('/codex');
   };
 
   const handleOpenCodex = () => {
@@ -169,6 +153,77 @@ export const App: React.FC = () => {
 </html>`);
     }
     setIsCanvasOpen(true);
+    pushRoute('/codex');
+  };
+
+  // Synchronize UI modals, studios, and active chat session with URL pathname & Browser Back/Forward (popstate)
+  useEffect(() => {
+    const syncFromUrl = () => {
+      const path = window.location.pathname;
+      const params = new URLSearchParams(window.location.search);
+
+      // Handle Stripe Checkout success redirect
+      if (params.get('stripe_success') === 'true') {
+        setIsPro(true);
+        localStorage.setItem('nebula_is_pro', 'true');
+      }
+
+      // Reset overlays first
+      setIsSettingsOpen(path === '/settings');
+      setIsUpgradeOpen(path === '/pricing');
+      setIsVoiceModalOpen(path === '/voice');
+      setIsFluxStudioOpen(path === '/flux');
+      setHubView(path === '/library' ? 'library' : path === '/explore' ? 'explore' : null);
+
+      if (path === '/codex') {
+        handleOpenCodex();
+      } else if (path === '/') {
+        setIsCanvasOpen(false);
+      }
+
+      // Match /c/:sessionId
+      if (path.startsWith('/c/')) {
+        const sid = decodeURIComponent(path.slice(3));
+        if (sid) {
+          setCurrentSessionId(sid);
+          const match = sessions.find((s) => s.id === sid);
+          if (match) setMessages(match.messages);
+        }
+      }
+
+      // Match /share/:sessionId or ?share=:sessionId
+      const shareId = path.startsWith('/share/')
+        ? decodeURIComponent(path.slice(7))
+        : params.get('share');
+
+      if (shareId) {
+        fetch(`${API_BASE}/api/sessions/share/${shareId}`)
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.success && data.session) {
+              setCurrentSessionId(data.session.id);
+              setMessages(data.session.messages || []);
+            }
+          })
+          .catch(() => {
+            const localMatch = sessions.find((s) => s.id === shareId);
+            if (localMatch) {
+              setCurrentSessionId(localMatch.id);
+              setMessages(localMatch.messages);
+            }
+          });
+      }
+    };
+
+    syncFromUrl();
+    window.addEventListener('popstate', syncFromUrl);
+    return () => window.removeEventListener('popstate', syncFromUrl);
+  }, [sessions.length]);
+
+  const handleShareChat = () => {
+    if (!currentSessionId || messages.length === 0) return;
+    const shareUrl = `${window.location.origin}/share/${encodeURIComponent(currentSessionId)}`;
+    navigator.clipboard.writeText(shareUrl);
   };
 
   // Sync sessions to localStorage
@@ -220,12 +275,14 @@ export const App: React.FC = () => {
     if (session) {
       setMessages(session.messages);
     }
+    pushRoute(`/c/${encodeURIComponent(id)}`);
   };
 
   // Start fresh chat session
   const handleNewChat = () => {
     setCurrentSessionId(null);
     setMessages([]);
+    pushRoute('/');
   };
 
   // Delete chat session
@@ -274,6 +331,7 @@ export const App: React.FC = () => {
     const activeSessionId = currentSessionId || `session-${Date.now()}`;
     if (!currentSessionId) {
       setCurrentSessionId(activeSessionId);
+      pushRoute(`/c/${activeSessionId}`);
     }
 
     try {
@@ -552,12 +610,27 @@ export const App: React.FC = () => {
         onSelectSession={handleSelectSession}
         onNewChat={handleNewChat}
         onDeleteSession={handleDeleteSession}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenUpgrade={() => setIsUpgradeOpen(true)}
-        onOpenLibrary={() => setHubView('library')}
-        onOpenExplore={() => setHubView('explore')}
+        onOpenSettings={() => {
+          setIsSettingsOpen(true);
+          pushRoute('/settings');
+        }}
+        onOpenUpgrade={() => {
+          setIsUpgradeOpen(true);
+          pushRoute('/pricing');
+        }}
+        onOpenLibrary={() => {
+          setHubView('library');
+          pushRoute('/library');
+        }}
+        onOpenExplore={() => {
+          setHubView('explore');
+          pushRoute('/explore');
+        }}
         onOpenCodex={handleOpenCodex}
-        onOpenFluxStudio={() => setIsFluxStudioOpen(true)}
+        onOpenFluxStudio={() => {
+          setIsFluxStudioOpen(true);
+          pushRoute('/flux');
+        }}
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
@@ -572,10 +645,16 @@ export const App: React.FC = () => {
           onSelectPersona={setSelectedPersona}
           theme={theme}
           onToggleTheme={toggleTheme}
-          onOpenVoiceMode={() => setIsVoiceModalOpen(true)}
+          onOpenVoiceMode={() => {
+            setIsVoiceModalOpen(true);
+            pushRoute('/voice');
+          }}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)}
           onClearChat={handleNewChat}
-          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenSettings={() => {
+            setIsSettingsOpen(true);
+            pushRoute('/settings');
+          }}
           onExportMarkdown={handleExportMarkdown}
           onExportText={handleExportText}
           onShareChat={messages.length > 0 ? handleShareChat : undefined}
@@ -611,7 +690,10 @@ export const App: React.FC = () => {
               initialCode={canvasCode}
               initialLanguage={canvasLanguage}
               title={canvasTitle}
-              onClose={() => setIsCanvasOpen(false)}
+              onClose={() => {
+                setIsCanvasOpen(false);
+                pushRoute(currentSessionId ? `/c/${currentSessionId}` : '/');
+              }}
             />
           )}
         </div>
@@ -620,14 +702,14 @@ export const App: React.FC = () => {
       {/* Hands-free Voice Mode Modal */}
       <VoiceModal
         isOpen={isVoiceModalOpen}
-        onClose={() => setIsVoiceModalOpen(false)}
+        onClose={closeOverlayToCurrentChat}
         onSendMessage={(speechText) => handleSendMessage(speechText, false, null)}
       />
 
       {/* Settings Modal */}
       <SettingsModal
         isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
+        onClose={closeOverlayToCurrentChat}
         apiUrl={apiUrl}
         setApiUrl={setApiUrl}
         userName={userName}
@@ -639,7 +721,7 @@ export const App: React.FC = () => {
       {/* Upgrade Plan Modal */}
       <UpgradeModal
         isOpen={isUpgradeOpen}
-        onClose={() => setIsUpgradeOpen(false)}
+        onClose={closeOverlayToCurrentChat}
         onUpgradeSuccess={() => setIsPro(true)}
       />
 
@@ -647,7 +729,7 @@ export const App: React.FC = () => {
       <HubModal
         isOpen={hubView !== null}
         activeView={hubView || 'library'}
-        onClose={() => setHubView(null)}
+        onClose={closeOverlayToCurrentChat}
         sessions={sessions}
         onLaunchPrompt={(prompt, persona) => {
           if (persona) setSelectedPersona(persona);
@@ -659,7 +741,7 @@ export const App: React.FC = () => {
       {/* FLUX.1 ComfyGraph Visual Node Studio */}
       <FluxWorkflowStudio
         isOpen={isFluxStudioOpen}
-        onClose={() => setIsFluxStudioOpen(false)}
+        onClose={closeOverlayToCurrentChat}
         onSendToChat={(markdownText, imageUrl) => {
           const newMsg: Message = {
             id: `msg-${Date.now()}`,
