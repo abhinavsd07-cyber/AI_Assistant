@@ -101,7 +101,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-3 flex flex-col gap-1 overflow-y-auto">
           {/* Brand Header */}
           <div className="flex items-center justify-between px-2 pt-1 pb-2">
-            <span className="font-bold text-lg tracking-tight text-[#0D0D0D] dark:text-[#F0F0F0]">Nebula AI</span>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full overflow-hidden p-0.5 bg-gradient-to-tr from-purple-500/40 via-indigo-500/20 to-transparent border border-gray-200 dark:border-gray-700 shrink-0 shadow-xs">
+                <img
+                  src="/cosmic_orb.jpg"
+                  alt="Nebula AI"
+                  className="w-full h-full rounded-full object-cover"
+                />
+              </div>
+              <span className="font-bold text-lg tracking-tight text-[#0D0D0D] dark:text-[#F0F0F0]">Nebula AI</span>
+            </div>
             
             {/* Mobile close button */}
             <button 
