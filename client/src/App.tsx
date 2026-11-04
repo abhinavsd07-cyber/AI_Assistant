@@ -397,43 +397,46 @@ export const App: React.FC = () => {
           for (const line of lines) {
             const trimmed = line.trim();
             if (trimmed.startsWith('data: ')) {
+              let parsed: any;
               try {
-                const parsed = JSON.parse(trimmed.slice(6));
-                if (parsed.fullText) {
-                  fullText = parsed.fullText;
+                parsed = JSON.parse(trimmed.slice(6));
+              } catch {
+                // Ignore incomplete SSE line
+                continue;
+              }
+
+              if (parsed.error) {
+                throw new Error(parsed.error);
+              }
+
+              if (parsed.fullText) {
+                fullText = parsed.fullText;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId ? { ...m, text: fullText, imageUrl: parsed.imageUrl } : m
+                  )
+                );
+              } else if (parsed.chunk) {
+                if (!hasStarted) {
+                  hasStarted = true;
+                  setIsLoading(false);
+                  fullText = parsed.chunk;
+                  setMessages([
+                    ...newMessages,
+                    {
+                      id: assistantId,
+                      sender: 'assistant',
+                      text: fullText,
+                      timestamp: assistantTimestamp,
+                    },
+                  ]);
+                } else {
+                  fullText += parsed.chunk;
                   setMessages((prev) =>
                     prev.map((m) =>
-                      m.id === assistantId ? { ...m, text: fullText, imageUrl: parsed.imageUrl } : m
+                      m.id === assistantId ? { ...m, text: fullText } : m
                     )
                   );
-                } else if (parsed.chunk) {
-                  if (!hasStarted) {
-                    hasStarted = true;
-                    setIsLoading(false);
-                    fullText = parsed.chunk;
-                    setMessages([
-                      ...newMessages,
-                      {
-                        id: assistantId,
-                        sender: 'assistant',
-                        text: fullText,
-                        timestamp: assistantTimestamp,
-                      },
-                    ]);
-                  } else {
-                    fullText += parsed.chunk;
-                    setMessages((prev) =>
-                      prev.map((m) =>
-                        m.id === assistantId ? { ...m, text: fullText } : m
-                      )
-                    );
-                  }
-                } else if (parsed.error) {
-                  throw new Error(parsed.error);
-                }
-              } catch (e: any) {
-                if (e.message && e.message.includes('Failed to generate')) {
-                  throw e;
                 }
               }
             }
