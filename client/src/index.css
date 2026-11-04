@@ -5,6 +5,13 @@
 @layer base {
   * {
     box-sizing: border-box;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  *::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+    width: 0;
+    height: 0;
   }
   html, body, #root {
     height: 100%;
@@ -25,27 +32,17 @@
   }
 }
 
-/* Custom scrollbar matching ChatGPT minimalist UI */
+/* Hide all scrollbars globally for a sleek, borderless, modern aesthetic */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  display: none;
+  width: 0;
+  height: 0;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.28);
-}
-
-html.dark ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
-}
-html.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.32);
+  background: transparent;
 }
 
 @keyframes pulseSlow {

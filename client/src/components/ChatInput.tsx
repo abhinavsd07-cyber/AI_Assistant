@@ -26,7 +26,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
   const [isWebSearch, setIsWebSearch] = useState(false);
   const [isImageGen, setIsImageGen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [speechLang, setSpeechLang] = useState<'ml-IN' | 'en-US'>('ml-IN');
+  const speechLang = 'en-US';
   const [micError, setMicError] = useState<string | null>(null);
   const [attachment, setAttachment] = useState<FileAttachment | null>(null);
 
@@ -128,14 +128,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
       stopRecording();
     } else {
       startRecording(speechLang);
-    }
-  };
-
-  const toggleSpeechLang = () => {
-    const nextLang = speechLang === 'ml-IN' ? 'en-US' : 'ml-IN';
-    setSpeechLang(nextLang);
-    if (isRecording) {
-      startRecording(nextLang);
     }
   };
 
@@ -270,10 +262,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
             onKeyDown={handleKeyDown}
             placeholder={
               isRecording 
-                ? (speechLang === 'ml-IN' ? 'സംസാരിക്കൂ, ഞാൻ കേൾക്കുന്നുണ്ട്... (Listening in Malayalam)' : 'Listening in English...')
+                ? 'Listening to your voice...'
                 : isImageGen 
                 ? 'Describe the image to generate with AI...' 
-                : 'Ask Nebula anything... (മലയാളത്തിലും ചോദിക്കാം)'
+                : 'Ask Nebula anything...'
             }
             rows={1}
             className="flex-1 bg-transparent border-0 outline-hidden resize-none text-[15px] text-[#0D0D0D] dark:text-[#ECECEC] placeholder-gray-400 py-1.5 max-h-[140px] leading-relaxed font-normal"
@@ -326,16 +318,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
               <span className="hidden sm:inline">Thinking</span>
             </button>
 
-            {/* Voice Language Switcher (ML / EN) */}
-            <button
-              type="button"
-              onClick={toggleSpeechLang}
-              className="px-2 py-1 rounded-full text-[11px] font-bold bg-gray-200/80 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-              title={`Voice recognition language: ${speechLang === 'ml-IN' ? 'Malayalam (ml-IN)' : 'English (en-US)'}. Click to switch.`}
-            >
-              {speechLang === 'ml-IN' ? 'മല' : 'EN'}
-            </button>
-
             {/* Voice Mic Button */}
             <button
               type="button"
@@ -345,7 +327,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
                   ? 'bg-red-500 text-white animate-pulse'
                   : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
-              title={speechLang === 'ml-IN' ? 'Speak in Malayalam (മലയാളത്തിൽ സംസാരിക്കാം)' : 'Speak in English'}
+              title={isRecording ? 'Stop voice recording' : 'Voice input'}
             >
               <Mic size={17} />
             </button>
