@@ -546,7 +546,7 @@ app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
       candidateModels = ["gemini-3.8-flash", "gemini-3.5-flash"];
     } else {
       let preferred = requestedModel;
-      if (!preferred || (typeof preferred === "string" && preferred.startsWith("ollama:")) || preferred === "Nebula 4.0e" || preferred === "gemini-3.8-flash") {
+      if (!preferred || (typeof preferred === "string" && (preferred.startsWith("ollama:") || preferred.includes("1.5"))) || preferred === "Nebula 4.0e" || preferred === "gemini-3.8-flash") {
         preferred = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
       }
       candidateModels = [
@@ -577,8 +577,21 @@ app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
       ? "You are currently running in Ollama (Meta Llama 3.3 70B Open-Weights Hybrid Engine) inside Nebula AI. "
       : "";
     const personaInstruction = PERSONA_PROMPTS[persona] || PERSONA_PROMPTS.general;
+
+    const intentResolutionDirective =
+      "\n\n[ADVANCED NLP INTENT RESOLUTION & TYPO NORMALIZATION]:\n" +
+      "1. Typo & Phonetic Tolerance: The user may type quickly with keyboard slips, phonetic spelling, or broken English (e.g., 'fintone' -> fine-tune, 'whte' -> what, 'malyalm' -> Malayalam, 'reemove' -> remove, 'convet' -> convert, 'undating' -> understanding, 'darkbackgroeund' -> dark background, 'frind' -> friend, 'hw' -> how, 'plz'/'pls' -> please). NEVER complain about typos or ask the user to fix spelling. Silently infer the exact intended meaning in context and answer accurately.\n" +
+      "2. Contextual Anaphora & Follow-up Resolution: When the user asks brief, cryptic, or ambiguous follow-ups (e.g., 'why?', 'how?', 'what next?', 'fix it', 'give code', 'explain', 'is it done?', 'what about this?'), examine the prior conversation turns. Identify the exact subject, error, or feature being discussed and provide a direct, insightful answer addressing that specific topic without asking 'what do you mean?'.\n" +
+      "3. Manglish & Code-Switching Fluency: Understand Malayalam written in English alphabet (Manglish, e.g., 'ith engane cheyyam', 'onnu koodi explain cheyyamo', 'enthanu ithinte gunam', 'oru nalla idea tharumo', 'ithu mathram mathiyo'). Understand Manglish naturally and respond in clean Malayalam script (or English if the user initiated in English).\n" +
+      "4. Implicit Intent from Errors/Logs: If the user pastes an error message, stack trace, terminal output, or code snippet without an explicit question, deduce immediately that their goal is to identify the root cause, understand why it happened, and receive the working fix.\n" +
+      "5. Technical Precision & Directness: Always provide complete, concrete, working solutions with exact file paths or copy-paste code blocks rather than vague explanations.\n";
+
+    const reasoningDirective = isReasoning
+      ? "\n[DEEP REASONING & CHAIN-OF-THOUGHT MODE]: Analyze edge cases, verify step-by-step logic, and provide thorough, mathematically sound architectural depth."
+      : "";
+
     const systemInstruction =
-      `${memoryContext}${ollamaRolePrefix}${personaInstruction} The current year is 2026. Following the May 2026 Kerala Legislative Assembly elections, V. D. Satheesan (UDF) assumed office as the Chief Minister of Kerala on May 18, 2026. ` +
+      `${memoryContext}${ollamaRolePrefix}${personaInstruction}${intentResolutionDirective}${reasoningDirective} The current year is 2026. Following the May 2026 Kerala Legislative Assembly elections, V. D. Satheesan (UDF) assumed office as the Chief Minister of Kerala on May 18, 2026. ` +
       "Always rely on live search results for current leaders, elections, and recent events. " +
       "Answer in Malayalam when the user uses Malayalam or asks for it. " +
       "Be concise, direct, step-by-step, and provide practical examples. Be honest when uncertain. " +
@@ -619,7 +632,7 @@ app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
 
     // Append prior conversational history turns if provided (clean text only to avoid network bloat)
     if (Array.isArray(history) && history.length > 0) {
-      const recentHistory = history.slice(-6);
+      const recentHistory = history.slice(-16);
       for (const h of recentHistory) {
         if (h.text && h.text.trim()) {
           contents.push({
@@ -833,7 +846,11 @@ app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
           const responseStream = await ai.models.generateContentStream({
             model,
             contents,
-            config: { systemInstruction },
+            config: {
+              systemInstruction,
+              temperature: isReasoning ? 0.35 : 0.65,
+              topP: 0.95,
+            },
           });
 
           for await (const chunk of responseStream) {
@@ -894,7 +911,11 @@ app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
         response = await ai.models.generateContent({
           model,
           contents,
-          config: { systemInstruction },
+          config: {
+            systemInstruction,
+            temperature: isReasoning ? 0.35 : 0.65,
+            topP: 0.95,
+          },
         });
 
         if (response?.text) {
