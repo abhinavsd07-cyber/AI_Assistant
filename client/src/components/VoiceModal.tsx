@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Mic, MicOff, Volume2, Sparkles, AlertCircle, Square } from 'lucide-react';
+import { X, Mic, MicOff, Volume2, Sparkles, AlertCircle, Globe, Square } from 'lucide-react';
 
 interface VoiceModalProps {
   isOpen: boolean;
@@ -12,7 +12,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
   const [transcript, setTranscript] = useState('');
   const [lastAiReply, setLastAiReply] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [detectedLang, setDetectedLang] = useState<'auto' | 'ml' | 'en'>('auto');
+  const [voiceLang, setVoiceLang] = useState<'en-US' | 'ml-IN'>('ml-IN');
 
   const recognitionRef = useRef<any>(null);
   const transcriptRef = useRef<string>('');
@@ -54,9 +54,9 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
     };
   }, [stopAll]);
 
-  // Automatic Speech Recognition with Zero-Manual Language Switching
-  const startListening = React.useCallback(() => {
+  const startListening = React.useCallback((langOverride?: 'en-US' | 'ml-IN') => {
     setErrorMessage('');
+    const activeLang = langOverride || voiceLang;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setErrorMessage('Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.');
@@ -85,15 +85,14 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
       recognition.continuous = false;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
-      // Bilingual multi-script Indian acoustic model (handles both Malayalam and English)
-      recognition.lang = 'ml-IN';
+      recognition.lang = activeLang;
 
       recognition.onstart = () => {
         if (isMountedRef.current) setStatus('listening');
       };
 
       recognition.onresult = (event: any) => {
-        // If AI was speaking and user interrupts, immediately cancel AI speech
+        // If AI was speaking and user interrupts, immediately cancel AI speech!
         if (synthRef.current && synthRef.current.speaking) {
           synthRef.current.cancel();
           setStatus('listening');
@@ -104,21 +103,18 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
           currentText += event.results[i][0].transcript;
         }
         transcriptRef.current = currentText;
-        if (isMountedRef.current) {
-          setTranscript(currentText);
-
-          // Uniquely identify the spoken language from the live acoustic transcript
-          const isMalayalam = /[\u0D00-\u0D7F]/.test(currentText) ||
-            /\b(njan|ente|enthanu|aanu|alla|und|illa|cheyyamo|parayoo|varum|pokum|evide|ivide|avide|sukhamano|namaskaram|kazhinjo|ariyamo|valare|ippol|nanni)\b/i.test(currentText);
-          setDetectedLang(isMalayalam ? 'ml' : 'en');
-        }
+        if (isMountedRef.current) setTranscript(currentText);
       };
 
       recognition.onerror = (event: any) => {
         if (!isMountedRef.current) return;
         if (event.error === 'aborted') return;
         if (event.error === 'no-speech') {
-          setErrorMessage('No speech detected. Please speak clearly into your microphone.');
+          setErrorMessage(
+            activeLang === 'ml-IN'
+              ? 'ശബ്ദം ലഭിച്ചില്ല. മൈക്കിന് അരികിൽ വ്യക്തമായി സംസാരിക്കുക (No speech detected).'
+              : 'No speech detected. Please speak clearly into your microphone.'
+          );
         } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
           setErrorMessage('Microphone permission denied. Please allow microphone access in your browser address bar.');
         } else if (event.error === 'network') {
@@ -149,7 +145,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         setStatus('idle');
       }
     }
-  }, []);
+  }, [voiceLang]);
 
   const processUserSpeech = async (speechText: string) => {
     setStatus('thinking');
@@ -185,22 +181,8 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.rate = 1.05;
-
-    // Automatically detect language of AI response and choose best acoustic voice
     const hasMalayalam = /[\u0D00-\u0D7F]/.test(cleanText);
-    utterance.lang = hasMalayalam ? 'ml-IN' : 'en-US';
-
-    if (synthRef.current && typeof synthRef.current.getVoices === 'function') {
-      const voices = synthRef.current.getVoices();
-      if (voices.length > 0) {
-        const preferredVoice = hasMalayalam
-          ? voices.find((v) => v.lang.startsWith('ml')) || voices.find((v) => v.lang.startsWith('en-IN'))
-          : voices.find((v) => v.lang.startsWith('en-US')) || voices.find((v) => v.lang.startsWith('en'));
-        if (preferredVoice) {
-          utterance.voice = preferredVoice;
-        }
-      }
-    }
+    utterance.lang = hasMalayalam ? 'ml-IN' : voiceLang;
 
     utterance.onstart = () => {
       if (isMountedRef.current) setStatus('speaking');
@@ -220,8 +202,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
     };
 
     utterance.onerror = () => {
-      if (!isMountedRef.current) return;
-      setStatus('idle');
+      if (isMountedRef.current) setStatus('idle');
     };
 
     synthRef.current.speak(utterance);
@@ -244,13 +225,13 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
       setLastAiReply('');
       restartTimerRef.current = window.setTimeout(() => {
         if (isMountedRef.current) {
-          startListening();
+          startListening(voiceLang);
         }
       }, 150);
     } else {
       stopAll();
     }
-  }, [isOpen, startListening, stopAll]);
+  }, [isOpen, voiceLang, startListening, stopAll]);
 
   if (!isOpen) return null;
 
@@ -267,18 +248,16 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
             <span className="text-sm font-bold tracking-tight">Nebula Conversational Voice</span>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            {/* Automatic Language Identification Badge - Zero manual toggle */}
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-gray-200 border border-white/5">
-              <Sparkles size={12} className="text-emerald-400" />
-              <span>
-                {detectedLang === 'ml'
-                  ? 'Auto: മലയാളം'
-                  : detectedLang === 'en'
-                  ? 'Auto: English'
-                  : 'Auto-Detect (Malayalam & English)'}
-              </span>
-            </div>
+          <div className="flex items-center gap-2">
+            {/* Language Switcher */}
+            <button
+              onClick={() => setVoiceLang(voiceLang === 'en-US' ? 'ml-IN' : 'en-US')}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-gray-200 transition-all cursor-pointer"
+              title="Toggle Recognition Language"
+            >
+              <Globe size={13} className="text-emerald-400" />
+              <span>{voiceLang === 'en-US' ? 'English' : 'മലയാളം'}</span>
+            </button>
 
             <button 
               onClick={() => {
@@ -342,7 +321,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
               'bg-gray-500'
             }`} />
             <span>
-              {status === 'listening' ? (detectedLang === 'ml' ? 'ശ്രദ്ധിക്കുന്നു (മലയാളം)...' : 'Listening... Speak in Malayalam or English') :
+              {status === 'listening' ? (voiceLang === 'ml-IN' ? 'ശ്രദ്ധിക്കുന്നു (മലയാളം)...' : 'Listening to you...') :
                status === 'thinking' ? 'Nebula is thinking...' :
                status === 'speaking' ? 'Speaking (Click orb to interrupt)...' :
                'Tap Mic to Start'}
@@ -350,7 +329,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
           </div>
 
           <p className="text-[14px] font-medium text-gray-200 line-clamp-3 min-h-[44px] leading-relaxed max-w-sm">
-            {transcript || lastAiReply.slice(0, 160) || 'Start speaking in English or മലയാളം (Auto-detected)...'}
+            {transcript || lastAiReply.slice(0, 160) || (voiceLang === 'ml-IN' ? 'മലയാളത്തിൽ സംസാരിച്ചു തുടങ്ങാം...' : 'Start speaking in English or Malayalam...')}
           </p>
 
           {errorMessage && (
