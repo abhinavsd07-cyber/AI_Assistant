@@ -310,7 +310,8 @@ export const App: React.FC = () => {
     attachment?: FileAttachment | null,
     isWebSearch: boolean = false,
     isImageGen: boolean = false,
-    historyOverride?: Message[]
+    historyOverride?: Message[],
+    isVoice: boolean = false
   ): Promise<string> => {
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const userMessage: Message = {
@@ -371,6 +372,7 @@ export const App: React.FC = () => {
           persona: selectedPersona,
           isImageGen,
           stream: true,
+          isVoice,
         }),
       });
 
@@ -683,7 +685,14 @@ export const App: React.FC = () => {
 
             {/* Bottom Floating Chat Input with Vision, Documents & Speech */}
             <div className="flex-shrink-0">
-              <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+              <ChatInput
+                onSendMessage={handleSendMessage}
+                isLoading={isLoading}
+                onOpenVoiceMode={() => {
+                  setIsVoiceModalOpen(true);
+                  pushRoute('/voice');
+                }}
+              />
             </div>
           </div>
 
@@ -706,7 +715,7 @@ export const App: React.FC = () => {
       <VoiceModal
         isOpen={isVoiceModalOpen}
         onClose={closeOverlayToCurrentChat}
-        onSendMessage={(speechText) => handleSendMessage(speechText, false, null)}
+        onSendMessage={(speechText) => handleSendMessage(speechText, false, null, false, false, undefined, true)}
       />
 
       {/* Settings Modal */}

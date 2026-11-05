@@ -18,9 +18,10 @@ interface ChatInputProps {
     isImageGen?: boolean
   ) => void;
   isLoading: boolean;
+  onOpenVoiceMode?: () => void;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, onOpenVoiceMode }) => {
   const [input, setInput] = useState('');
   const [isReasoning, setIsReasoning] = useState(false);
   const [isWebSearch, setIsWebSearch] = useState(false);
@@ -327,10 +328,28 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
                   ? 'bg-red-500 text-white animate-pulse'
                   : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
-              title={isRecording ? 'Stop voice recording' : 'Voice input'}
+              title={isRecording ? 'Stop voice recording' : 'Dictate voice into chat'}
             >
               <Mic size={17} />
             </button>
+
+            {/* ChatGPT-Style Blue Conversational Voice Mode Button */}
+            {onOpenVoiceMode && !input.trim() && (
+              <button
+                type="button"
+                onClick={onOpenVoiceMode}
+                className="w-8 h-8 rounded-full bg-[#1A73E8] hover:bg-[#1557B0] dark:bg-[#2563EB] dark:hover:bg-[#1D4ED8] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
+                title="Start ChatGPT-Style Hands-Free Voice Mode"
+              >
+                {/* 4 soundwave bars matching ChatGPT */}
+                <div className="flex items-center gap-[2.5px] h-3.5">
+                  <span className="w-[2px] h-2 bg-white rounded-full animate-pulse [animation-delay:0.1s]" />
+                  <span className="w-[2px] h-3.5 bg-white rounded-full animate-pulse [animation-delay:0.25s]" />
+                  <span className="w-[2px] h-2.5 bg-white rounded-full animate-pulse [animation-delay:0.4s]" />
+                  <span className="w-[2px] h-1.5 bg-white rounded-full animate-pulse [animation-delay:0.15s]" />
+                </div>
+              </button>
+            )}
 
             {/* Send Button */}
             <button

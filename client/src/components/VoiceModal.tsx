@@ -22,6 +22,8 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
   const isMountedRef = useRef(true);
   const restartTimerRef = useRef<number | null>(null);
   const silenceTimerRef = useRef<number | null>(null);
+  const speechWatchdogRef = useRef<number | null>(null);
+  const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const availableVoicesRef = useRef<SpeechSynthesisVoice[]>([]);
 
   isOpenRef.current = isOpen;
@@ -42,6 +44,11 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
       window.clearTimeout(silenceTimerRef.current);
       silenceTimerRef.current = null;
     }
+    if (speechWatchdogRef.current) {
+      window.clearTimeout(speechWatchdogRef.current);
+      speechWatchdogRef.current = null;
+    }
+    activeUtteranceRef.current = null;
     try {
       if (recognitionRef.current) {
         recognitionRef.current.onstart = null;
@@ -108,10 +115,15 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
       return;
     }
 
+    if (speechWatchdogRef.current) {
+      window.clearTimeout(speechWatchdogRef.current);
+      speechWatchdogRef.current = null;
+    }
+
     synthRef.current.cancel();
 
     let cleanText = text
-      .replace(/```[\s\S]*?```/g, 'Code block omitted.')
+      .replace(/```[\s\S]*?```/g, '')
       .replace(/https?:\/\/\S+/g, '')
       .replace(/[*#_`~>\[\]()]/g, '')
       .replace(/\s+/g, ' ')
@@ -123,6 +135,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
     }
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
+    activeUtteranceRef.current = utterance;
     utterance.rate = 1.05;
     utterance.pitch = 1.0;
 
@@ -154,11 +167,15 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
       utterance.lang = 'en-US';
     }
 
-    utterance.onstart = () => {
-      updateStatus('speaking');
-    };
+    // Immediately update status to speaking so the visualizer starts animating
+    updateStatus('speaking');
 
-    utterance.onend = () => {
+    const finishSpeakingAndListen = () => {
+      if (speechWatchdogRef.current) {
+        window.clearTimeout(speechWatchdogRef.current);
+        speechWatchdogRef.current = null;
+      }
+      activeUtteranceRef.current = null;
       if (!isMountedRef.current || !isOpenRef.current) return;
       transcriptRef.current = '';
       setTranscript('');
@@ -166,15 +183,22 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         if (isMountedRef.current && isOpenRef.current) {
           startListening(voiceLang);
         }
-      }, 400);
+      }, 350);
     };
 
+    utterance.onend = finishSpeakingAndListen;
     utterance.onerror = (e) => {
       console.warn('SpeechSynthesis error:', e);
-      if (isMountedRef.current && isOpenRef.current) {
-        startListening(voiceLang);
-      }
+      finishSpeakingAndListen();
     };
+
+    // Watchdog timer: If browser TTS hangs or drops onend, automatically resume listening
+    const estimatedMs = Math.max(3000, Math.min(30000, cleanText.length * 85));
+    speechWatchdogRef.current = window.setTimeout(() => {
+      if (statusRef.current === 'speaking') {
+        finishSpeakingAndListen();
+      }
+    }, estimatedMs);
 
     if (synthRef.current.paused) {
       synthRef.current.resume();
