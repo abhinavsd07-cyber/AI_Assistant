@@ -1,5 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Mic, MicOff, Volume2, Sparkles, AlertCircle, Square } from 'lucide-react';
+import { X, Mic, MicOff, Volume2, Sparkles, AlertCircle, Square, Globe } from 'lucide-react';
+
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
+
+export type VoiceLangCode = 'auto' | 'ml-IN' | 'ta-IN' | 'hi-IN' | 'en-IN';
+
+const VOICE_LANGUAGES: { code: VoiceLangCode; label: string; sttLang: string }[] = [
+  { code: 'auto', label: '🌐 Auto-Detect', sttLang: 'en-IN' },
+  { code: 'ml-IN', label: 'മലയാളം', sttLang: 'ml-IN' },
+  { code: 'ta-IN', label: 'தமிழ்', sttLang: 'ta-IN' },
+  { code: 'hi-IN', label: 'हिन्दी', sttLang: 'hi-IN' },
+  { code: 'en-IN', label: 'English', sttLang: 'en-IN' },
+];
+
+function detectLanguageFromText(text: string): { ttsLang: string; sttLang: string; label: string } {
+  if (/[\u0D00-\u0D7F]/.test(text)) return { ttsLang: 'ml', sttLang: 'ml-IN', label: 'മലയാളം (Malayalam)' };
+  if (/[\u0B80-\u0BFF]/.test(text)) return { ttsLang: 'ta', sttLang: 'ta-IN', label: 'தமிழ் (Tamil)' };
+  if (/[\u0900-\u097F]/.test(text)) return { ttsLang: 'hi', sttLang: 'hi-IN', label: 'हिन्दी (Hindi)' };
+  if (/[\u0C00-\u0C7F]/.test(text)) return { ttsLang: 'te', sttLang: 'te-IN', label: 'తెలుగు (Telugu)' };
+  if (/[\u0C80-\u0CFF]/.test(text)) return { ttsLang: 'kn', sttLang: 'kn-IN', label: 'ಕನ್ನಡ (Kannada)' };
+  if (/[\u0600-\u06FF]/.test(text)) return { ttsLang: 'ar', sttLang: 'ar-SA', label: 'العربية (Arabic)' };
+  return { ttsLang: 'en', sttLang: 'en-IN', label: 'English' };
+}
 
 interface VoiceModalProps {
   isOpen: boolean;
@@ -12,19 +34,22 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
   const [transcript, setTranscript] = useState('');
   const [lastAiReply, setLastAiReply] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const voiceLang: 'en-US' | 'ml-IN' = 'en-US';
+  const [selectedLang, setSelectedLang] = useState<VoiceLangCode>('auto');
+  const [detectedLangLabel, setDetectedLangLabel] = useState<string>('Auto Multilingual');
 
   const statusRef = useRef<'idle' | 'listening' | 'thinking' | 'speaking'>('idle');
   const isOpenRef = useRef(isOpen);
   const recognitionRef = useRef<any>(null);
   const transcriptRef = useRef<string>('');
   const synthRef = useRef<SpeechSynthesis | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const isMountedRef = useRef(true);
   const restartTimerRef = useRef<number | null>(null);
   const silenceTimerRef = useRef<number | null>(null);
   const speechWatchdogRef = useRef<number | null>(null);
   const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const availableVoicesRef = useRef<SpeechSynthesisVoice[]>([]);
+  const activeSttLangRef = useRef<string>('en-IN');
 
   isOpenRef.current = isOpen;
 
@@ -60,6 +85,15 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
       }
     } catch {
       // Ignore
+    }
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      } catch {
+        // Ignore
+      }
+      audioRef.current = null;
     }
     if (synthRef.current) {
       synthRef.current.cancel();
@@ -99,7 +133,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         setLastAiReply(reply);
         speakResponse(reply);
       } else {
-        startListening(voiceLang);
+        startListening(activeSttLangRef.current);
       }
     } catch (err: any) {
       if (isMountedRef.current) {
@@ -110,19 +144,24 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
   };
 
   const speakResponse = (text: string) => {
-    if (!synthRef.current) {
-      startListening(voiceLang);
-      return;
-    }
-
     if (speechWatchdogRef.current) {
       window.clearTimeout(speechWatchdogRef.current);
       speechWatchdogRef.current = null;
     }
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      } catch {
+        // Ignore
+      }
+      audioRef.current = null;
+    }
+    if (synthRef.current) {
+      synthRef.current.cancel();
+    }
 
-    synthRef.current.cancel();
-
-    let cleanText = text
+    const cleanText = text
       .replace(/```[\s\S]*?```/g, '')
       .replace(/https?:\/\/\S+/g, '')
       .replace(/[*#_`~>\[\]()]/g, '')
@@ -130,44 +169,16 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
       .trim();
 
     if (!cleanText) {
-      startListening(voiceLang);
+      startListening(activeSttLangRef.current);
       return;
     }
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    activeUtteranceRef.current = utterance;
-    utterance.rate = 1.05;
-    utterance.pitch = 1.0;
-
-    const voices = availableVoicesRef.current.length > 0
-      ? availableVoicesRef.current
-      : synthRef.current.getVoices();
-
-    const hasMalayalam = /[\u0D00-\u0D7F]/.test(cleanText);
-
-    let chosenVoice: SpeechSynthesisVoice | null = null;
-    if (hasMalayalam) {
-      chosenVoice = voices.find((v) => v.lang.startsWith('ml')) || null;
+    const detected = detectLanguageFromText(cleanText);
+    setDetectedLangLabel(detected.label);
+    if (selectedLang === 'auto') {
+      activeSttLangRef.current = detected.sttLang;
     }
 
-    if (!chosenVoice) {
-      chosenVoice =
-        voices.find((v) => (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Online')) && (v.lang.startsWith('en-IN') || v.lang.startsWith('en-US') || v.lang.startsWith('en'))) ||
-        voices.find((v) => v.lang.startsWith('en-IN')) ||
-        voices.find((v) => v.lang.startsWith('en-US')) ||
-        voices.find((v) => v.lang.startsWith('en')) ||
-        voices[0] ||
-        null;
-    }
-
-    if (chosenVoice) {
-      utterance.voice = chosenVoice;
-      utterance.lang = chosenVoice.lang;
-    } else {
-      utterance.lang = 'en-US';
-    }
-
-    // Immediately update status to speaking so the visualizer starts animating
     updateStatus('speaking');
 
     const finishSpeakingAndListen = () => {
@@ -176,39 +187,84 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         speechWatchdogRef.current = null;
       }
       activeUtteranceRef.current = null;
+      audioRef.current = null;
       if (!isMountedRef.current || !isOpenRef.current) return;
       transcriptRef.current = '';
       setTranscript('');
       restartTimerRef.current = window.setTimeout(() => {
         if (isMountedRef.current && isOpenRef.current) {
-          startListening(voiceLang);
+          startListening(activeSttLangRef.current);
         }
       }, 350);
     };
 
-    utterance.onend = finishSpeakingAndListen;
-    utterance.onerror = (e) => {
-      console.warn('SpeechSynthesis error:', e);
-      finishSpeakingAndListen();
-    };
-
-    // Watchdog timer: If browser TTS hangs or drops onend, automatically resume listening
-    const estimatedMs = Math.max(3000, Math.min(30000, cleanText.length * 85));
+    // Watchdog timer: If TTS takes too long, automatically resume listening
+    const estimatedMs = Math.max(4000, Math.min(35000, cleanText.length * 95));
     speechWatchdogRef.current = window.setTimeout(() => {
       if (statusRef.current === 'speaking') {
         finishSpeakingAndListen();
       }
     }, estimatedMs);
 
-    if (synthRef.current.paused) {
-      synthRef.current.resume();
+    // Primary: Play high-clarity Multilingual Neural TTS stream from backend (/api/tts)
+    // Works for Malayalam (ml), Tamil (ta), Hindi (hi), Telugu (te), Kannada (kn), Arabic (ar), and English (en) on ALL devices!
+    try {
+      const ttsAudioUrl = `${API_BASE}/api/tts?lang=${encodeURIComponent(detected.ttsLang)}&text=${encodeURIComponent(cleanText.slice(0, 750))}`;
+      const audio = new Audio(ttsAudioUrl);
+      audioRef.current = audio;
+      audio.onended = finishSpeakingAndListen;
+      audio.onerror = () => {
+        // Fallback to browser SpeechSynthesis if offline
+        fallbackBrowserSpeak(cleanText, detected.sttLang, finishSpeakingAndListen);
+      };
+      audio.play().catch(() => {
+        fallbackBrowserSpeak(cleanText, detected.sttLang, finishSpeakingAndListen);
+      });
+      return;
+    } catch {
+      fallbackBrowserSpeak(cleanText, detected.sttLang, finishSpeakingAndListen);
     }
+  };
+
+  const fallbackBrowserSpeak = (cleanText: string, langCode: string, onDone: () => void) => {
+    if (!synthRef.current) {
+      onDone();
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    activeUtteranceRef.current = utterance;
+    utterance.rate = 1.03;
+    utterance.pitch = 1.0;
+
+    const voices =
+      availableVoicesRef.current.length > 0
+        ? availableVoicesRef.current
+        : synthRef.current.getVoices();
+
+    const langPrefix = langCode.split('-')[0];
+    const chosenVoice =
+      voices.find((v) => v.lang.toLowerCase().startsWith(langPrefix)) ||
+      voices.find((v) => v.lang.startsWith('en-IN')) ||
+      voices.find((v) => v.lang.startsWith('en')) ||
+      voices[0] ||
+      null;
+
+    if (chosenVoice) {
+      utterance.voice = chosenVoice;
+      utterance.lang = chosenVoice.lang;
+    } else {
+      utterance.lang = langCode;
+    }
+
+    utterance.onend = onDone;
+    utterance.onerror = onDone;
+    if (synthRef.current.paused) synthRef.current.resume();
     synthRef.current.speak(utterance);
   };
 
-  const startListening = React.useCallback((langOverride?: 'en-US' | 'ml-IN') => {
+  const startListening = React.useCallback((langOverride?: string) => {
     setErrorMessage('');
-    const activeLang = langOverride || voiceLang;
+    const activeLang = langOverride || activeSttLangRef.current || 'en-IN';
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setErrorMessage('Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.');
@@ -244,6 +300,16 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
       };
 
       recognition.onresult = (event: any) => {
+        if (audioRef.current) {
+          try {
+            audioRef.current.pause();
+            audioRef.current.src = '';
+          } catch {
+            // Ignore
+          }
+          audioRef.current = null;
+          updateStatus('listening');
+        }
         if (synthRef.current && synthRef.current.speaking) {
           synthRef.current.cancel();
           updateStatus('listening');
@@ -324,15 +390,33 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         updateStatus('idle');
       }
     }
-  }, [voiceLang]);
+  }, []);
 
   const interruptSpeech = () => {
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      } catch {
+        // Ignore
+      }
+      audioRef.current = null;
+    }
     if (synthRef.current) {
       synthRef.current.cancel();
     }
     transcriptRef.current = '';
     setTranscript('');
-    startListening(voiceLang);
+    startListening(activeSttLangRef.current);
+  };
+
+  const handleLanguageSelect = (langObj: { code: VoiceLangCode; label: string; sttLang: string }) => {
+    setSelectedLang(langObj.code);
+    activeSttLangRef.current = langObj.sttLang;
+    setDetectedLangLabel(langObj.code === 'auto' ? 'Auto Multilingual' : langObj.label);
+    if (statusRef.current === 'listening' || statusRef.current === 'idle') {
+      startListening(langObj.sttLang);
+    }
   };
 
   useEffect(() => {
@@ -343,7 +427,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
       setErrorMessage('');
       const timer = window.setTimeout(() => {
         if (isMountedRef.current) {
-          startListening(voiceLang);
+          startListening(activeSttLangRef.current);
         }
       }, 150);
       return () => {
@@ -353,7 +437,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
     } else {
       stopAll();
     }
-  }, [isOpen, voiceLang]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -372,8 +456,8 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
 
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 text-xs font-semibold text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Live Auto-Reply</span>
+              <Globe size={12} className="text-emerald-400" />
+              <span>{detectedLangLabel}</span>
             </span>
 
             <button 
@@ -386,6 +470,24 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
               <X size={16} />
             </button>
           </div>
+        </div>
+
+        {/* Multilingual Language Selector Pills */}
+        <div className="w-full flex flex-wrap items-center justify-center gap-1.5 mt-3">
+          {VOICE_LANGUAGES.map((l) => (
+            <button
+              key={l.code}
+              type="button"
+              onClick={() => handleLanguageSelect(l)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
+                selectedLang === l.code
+                  ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-900/40'
+                  : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/15 hover:text-white'
+              }`}
+            >
+              {l.label}
+            </button>
+          ))}
         </div>
 
         {/* Central Animated Liquid Orb */}

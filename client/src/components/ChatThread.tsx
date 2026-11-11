@@ -34,6 +34,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   onOpenCanvas
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -71,26 +72,58 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   };
 
   const toggleSpeech = (text: string, id: string) => {
-    if (!('speechSynthesis' in window)) {
-      alert('Speech synthesis is not supported in this browser.');
-      return;
+    if (ttsAudioRef.current) {
+      try {
+        ttsAudioRef.current.pause();
+        ttsAudioRef.current.src = '';
+      } catch {
+        // Ignore
+      }
+      ttsAudioRef.current = null;
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
     }
 
     if (speakingId === id) {
-      window.speechSynthesis.cancel();
       setSpeakingId(null);
       return;
     }
 
-    window.speechSynthesis.cancel();
-    const cleanText = text.replace(/```[\s\S]*?```/g, 'Code block omitted.');
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = /[\u0D00-\u0D7F]/.test(cleanText) ? 'ml-IN' : 'en-US';
-    utterance.rate = 1.0;
-    utterance.onend = () => setSpeakingId(null);
-    utterance.onerror = () => setSpeakingId(null);
+    const cleanText = text
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/[*#_`~>\[\]()]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleanText) return;
+
     setSpeakingId(id);
-    window.speechSynthesis.speak(utterance);
+    const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
+    const audio = new Audio(`${apiBase}/api/tts?lang=auto&text=${encodeURIComponent(cleanText.slice(0, 750))}`);
+    ttsAudioRef.current = audio;
+    audio.onended = () => setSpeakingId(null);
+    audio.onerror = () => {
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = /[\u0D00-\u0D7F]/.test(cleanText)
+          ? 'ml-IN'
+          : /[\u0B80-\u0BFF]/.test(cleanText)
+          ? 'ta-IN'
+          : /[\u0900-\u097F]/.test(cleanText)
+          ? 'hi-IN'
+          : 'en-IN';
+        utterance.onend = () => setSpeakingId(null);
+        utterance.onerror = () => setSpeakingId(null);
+        window.speechSynthesis.speak(utterance);
+      } else {
+        setSpeakingId(null);
+      }
+    };
+    audio.play().catch(() => {
+      setSpeakingId(null);
+    });
   };
 
   const handleStartEdit = (message: Message) => {

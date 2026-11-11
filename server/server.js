@@ -141,6 +141,80 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Multilingual Neural Text-to-Speech (TTS) Audio Stream Endpoint (Supports Malayalam, Tamil, Hindi, Telugu, Kannada, Arabic, English, etc.)
+app.get("/api/tts", async (req, res) => {
+  try {
+    const rawText = String(req.query.text || "").trim();
+    if (!rawText) {
+      return res.status(400).json({ success: false, error: "text query parameter is required" });
+    }
+
+    // Auto-detect language from script if not explicitly specified
+    let lang = String(req.query.lang || "").trim().toLowerCase();
+    if (!lang || lang === "auto") {
+      if (/[\u0D00-\u0D7F]/.test(rawText)) lang = "ml";
+      else if (/[\u0B80-\u0BFF]/.test(rawText)) lang = "ta";
+      else if (/[\u0900-\u097F]/.test(rawText)) lang = "hi";
+      else if (/[\u0C00-\u0C7F]/.test(rawText)) lang = "te";
+      else if (/[\u0C80-\u0CFF]/.test(rawText)) lang = "kn";
+      else if (/[\u0600-\u06FF]/.test(rawText)) lang = "ar";
+      else lang = "en";
+    } else {
+      lang = lang.split("-")[0];
+    }
+
+    // Split text into safe sentence chunks (<= 180 chars each) for neural TTS synthesis
+    const clean = rawText.slice(0, 900).replace(/\s+/g, " ").trim();
+    const chunks = [];
+    let remaining = clean;
+    while (remaining.length > 0) {
+      if (remaining.length <= 180) {
+        chunks.push(remaining);
+        break;
+      }
+      let splitIdx = remaining.lastIndexOf(". ", 180);
+      if (splitIdx < 40) splitIdx = remaining.lastIndexOf("? ", 180);
+      if (splitIdx < 40) splitIdx = remaining.lastIndexOf("! ", 180);
+      if (splitIdx < 40) splitIdx = remaining.lastIndexOf(", ", 180);
+      if (splitIdx < 40) splitIdx = remaining.lastIndexOf(" ", 180);
+      if (splitIdx <= 0) splitIdx = 180;
+      else splitIdx += 1;
+
+      chunks.push(remaining.slice(0, splitIdx).trim());
+      remaining = remaining.slice(splitIdx).trim();
+    }
+
+    const buffers = [];
+    for (const chunk of chunks) {
+      if (!chunk) continue;
+      const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${encodeURIComponent(lang)}&q=${encodeURIComponent(chunk)}`;
+      const response = await fetch(ttsUrl, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        },
+      });
+      if (response.ok) {
+        const arrayBuf = await response.arrayBuffer();
+        buffers.push(Buffer.from(arrayBuf));
+      }
+    }
+
+    if (buffers.length === 0) {
+      return res.status(502).json({ success: false, error: "TTS synthesis unavailable" });
+    }
+
+    const combinedAudio = Buffer.concat(buffers);
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Content-Length", String(combinedAudio.length));
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    return res.send(combinedAudio);
+  } catch (err) {
+    console.warn("TTS endpoint warning:", err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // AI/ML Evaluation Endpoint: Vector RAG Inspection & Metrics (Authenticated)
 app.post("/api/rag/inspect", requireAuth, async (req, res) => {
   const startTime = Date.now();
@@ -626,12 +700,12 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
     const personaInstruction = PERSONA_PROMPTS[persona] || PERSONA_PROMPTS.general;
 
     const intentResolutionDirective =
-      "\n\n[ADVANCED NLP INTENT RESOLUTION & TYPO NORMALIZATION]:\n" +
-      "1. Typo & Phonetic Tolerance: The user may type quickly with keyboard slips, phonetic spelling, or broken English (e.g., 'fintone' -> fine-tune, 'whte' -> what, 'malyalm' -> Malayalam, 'reemove' -> remove, 'convet' -> convert, 'undating' -> understanding, 'darkbackgroeund' -> dark background, 'frind' -> friend, 'hw' -> how, 'plz'/'pls' -> please). NEVER complain about typos or ask the user to fix spelling. Silently infer the exact intended meaning in context and answer accurately.\n" +
-      "2. Contextual Anaphora & Follow-up Resolution: When the user asks brief, cryptic, or ambiguous follow-ups (e.g., 'why?', 'how?', 'what next?', 'fix it', 'give code', 'explain', 'is it done?', 'what about this?'), examine the prior conversation turns. Identify the exact subject, error, or feature being discussed and provide a direct, insightful answer addressing that specific topic without asking 'what do you mean?'.\n" +
-      "3. Manglish & Code-Switching Fluency: Understand Malayalam written in English alphabet (Manglish, e.g., 'ith engane cheyyam', 'onnu koodi explain cheyyamo', 'enthanu ithinte gunam', 'oru nalla idea tharumo', 'ithu mathram mathiyo'). Understand Manglish naturally and respond in clean Malayalam script (or English if the user initiated in English).\n" +
-      "4. Implicit Intent from Errors/Logs: If the user pastes an error message, stack trace, terminal output, or code snippet without an explicit question, deduce immediately that their goal is to identify the root cause, understand why it happened, and receive the working fix.\n" +
-      "5. Technical Precision & Directness: Always provide complete, concrete, working solutions with exact file paths or copy-paste code blocks rather than vague explanations.\n";
+      "\n\n[AUTOMATIC MULTILINGUAL DETECTION & ADVANCED NLP INTENT RESOLUTION]:\n" +
+      "1. Automatic Language Detection & Mirroring (CRITICAL): Automatically detect the language the user is speaking or typing in — including Malayalam (മലയാളം), Tamil (தமிழ்), Hindi (हिन्दी), Telugu (తెలుగు), Kannada (ಕನ್ನಡ), Arabic (العربية), Spanish, French, or English. ALWAYS reply in the EXACT SAME LANGUAGE that the user used!\n" +
+      "2. Phonetic Speech, Manglish, Tanglish & Hinglish Fluency: In voice mode or chat, the user's speech in Malayalam, Tamil, or Hindi may be transcribed phonetically in English/Latin letters (e.g., Malayalam/Manglish: 'namaskaram', 'sukhamano', 'enthanu vishesham', 'evideyanu', 'ith engane cheyyam'; Tamil/Tanglish: 'vanakkam', 'eppadi irukkinga', 'enna panringa', 'ungal peyar enna', 'romba nandri'; Hindi/Hinglish: 'namaste', 'aap kaise ho', 'kya haal hai'). Immediately recognize the underlying language (Malayalam, Tamil, or Hindi) and reply in clean, natural native script (മലയാളം script for Malayalam/Manglish, தமிழ் script for Tamil/Tanglish, हिन्दी script for Hindi/Hinglish) so the neural speech synthesizer speaks in that native language!\n" +
+      "3. Typo & Phonetic Tolerance: The user may type quickly with keyboard slips or broken spelling. NEVER complain about typos; silently infer the exact intended meaning and answer accurately.\n" +
+      "4. Contextual Anaphora & Follow-up Resolution: When the user asks brief follow-ups ('why?', 'how?', 'what next?', 'അതെന്താണ്?', 'എങ്ങനെ?', 'ஏன்?', 'எப்படி?'), examine prior conversation turns and answer directly in context.\n" +
+      "5. Technical Precision & Directness: Provide complete, concrete, working solutions.\n";
 
     const reasoningDirective = isReasoning
       ? "\n[DEEP REASONING & CHAIN-OF-THOUGHT MODE]: Analyze edge cases, verify step-by-step logic, and provide thorough, mathematically sound architectural depth."
@@ -639,11 +713,11 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
 
     const isVoice = Boolean(req.body.isVoice);
     const voiceDirective = isVoice
-      ? "\n[REAL-TIME CONVERSATIONAL VOICE MODE (CHATGPT-STYLE)]:\n" +
-        "You are speaking to the user in live hands-free voice mode. " +
-        "Keep your response natural, friendly, punchy, and conversational (max 2-3 spoken sentences). " +
-        "Never output markdown formatting, asterisks, tables, bullet points, raw code blocks, or URLs, as this text will be read aloud immediately by a speech synthesis engine. " +
-        "Speak in fluent, spoken English (or natural Malayalam/Manglish if the user asks in Malayalam)."
+      ? "\n[REAL-TIME MULTILINGUAL CONVERSATIONAL VOICE MODE]:\n" +
+        "You are speaking live with the user in hands-free voice mode. " +
+        "CRITICAL LANGUAGE RULE: Detect whether the user spoke in Malayalam (or Manglish), Tamil (or Tanglish), Hindi (or Hinglish), Telugu, Kannada, Arabic, or English, and reply 100% in that SAME language using its native script (e.g. Malayalam in മലയാളം script, Tamil in தமிழ் script, Hindi in हिन्दी script, English in English). " +
+        "Keep your response natural, warm, friendly, and conversational (max 2-3 spoken sentences). " +
+        "Never output markdown formatting, asterisks, tables, bullet points, raw code blocks, or URLs, because your text will be spoken aloud immediately by our multilingual neural TTS engine."
       : "";
 
     const systemInstruction =
