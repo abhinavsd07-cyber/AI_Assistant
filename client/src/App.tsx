@@ -3,7 +3,7 @@ import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { Hero } from './components/Hero';
 import { ChatThread } from './components/ChatThread';
-import { ChatInput, type ImageAttachment } from './components/ChatInput';
+import { ChatInput, type FileAttachment } from './components/ChatInput';
 import { SettingsModal } from './components/SettingsModal';
 import { UpgradeModal } from './components/UpgradeModal';
 import { AuthPage } from './pages/AuthPage';
@@ -39,7 +39,7 @@ export const App: React.FC = () => {
 
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [selectedModel, setSelectedModel] = useState('Nebula 4.0e');
+  const [selectedModel, setSelectedModel] = useState('gemini-3.5-flash-lite');
   const [isLoading, setIsLoading] = useState(false);
   const [apiUrl, setApiUrl] = useState('http://localhost:5000/api/chat');
 
@@ -61,7 +61,7 @@ export const App: React.FC = () => {
     }
   }, [sessions, userName, userEmail, isAuthenticated]);
 
-  // Sync from backend MongoDB sessions if available (with Authorization if logged in)
+  // Sync from backend MongoDB sessions if available
   useEffect(() => {
     const fetchMongoSessions = async () => {
       try {
@@ -83,8 +83,8 @@ export const App: React.FC = () => {
             return combined;
           });
         }
-      } catch (err) {
-        // Backend not ready or offline - fallback to localStorage smoothly
+      } catch {
+        // Backend offline fallback to localStorage
       }
     };
     fetchMongoSessions();
@@ -118,24 +118,27 @@ export const App: React.FC = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
       await fetch(`http://localhost:5000/api/sessions/${id}`, { method: 'DELETE', headers });
-    } catch (err) {
+    } catch {
       // Handled silently
     }
   };
 
-  // Send message to live backend API with Multi-turn history, image, and streaming typewriter
+  // Send message to live backend API with Multi-turn history, attachments, and sub-second SSE streaming
   const handleSendMessage = async (
     text: string, 
     isReasoning: boolean, 
-    imageAttachment?: ImageAttachment | null
+    attachment?: FileAttachment | null,
+    isWebSearch?: boolean
   ) => {
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const userMessage: Message = {
       id: `msg-${Date.now()}`,
       sender: 'user',
-      text: text || (imageAttachment ? '[Analyzing Image...]' : ''),
+      text: text || (attachment ? `[Analyzing ${attachment.name}...]` : ''),
       timestamp,
-      imageUrl: imageAttachment?.previewUrl,
+      imageUrl: attachment?.isImage ? attachment.previewUrl : undefined,
+      fileName: attachment?.name,
+      fileType: attachment?.mimeType,
     };
 
     const newMessages = [...messages, userMessage];
@@ -159,20 +162,28 @@ export const App: React.FC = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      // Sanitize history so that we only send text (no huge base64 images repeatedly in every message)
+      const sanitizedHistory = messages.slice(-6).map((m) => ({
+        sender: m.sender,
+        text: m.text,
+      }));
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify({ 
           message: formattedMessage,
           model: selectedModel,
-          history: messages.slice(-8),
-          image: imageAttachment ? {
-            mimeType: imageAttachment.mimeType,
-            data: imageAttachment.data,
-            previewUrl: imageAttachment.previewUrl,
+          history: sanitizedHistory,
+          image: attachment ? {
+            mimeType: attachment.mimeType,
+            data: attachment.data,
+            previewUrl: attachment.previewUrl,
+            name: attachment.name,
           } : null,
           sessionId: activeSessionId,
           isReasoning,
+          isWebSearch,
           stream: true,
         }),
       });
@@ -180,20 +191,23 @@ export const App: React.FC = () => {
       const assistantId = `msg-${Date.now() + 1}`;
       const assistantTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-      // Handle Real-Time Server-Sent Events (SSE) Streaming
+      // Handle Real-Time Server-Sent Events (SSE) Streaming with Line Buffering
       const contentType = response.headers.get('content-type') || '';
       if (contentType.includes('text/event-stream') && response.body) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullText = '';
         let hasStarted = false;
+        let buffer = '';
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunkText = decoder.decode(value, { stream: true });
-          const lines = chunkText.split('\n');
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          // Retain any incomplete trailing chunk in buffer
+          buffer = lines.pop() || '';
 
           for (const line of lines) {
             const trimmed = line.trim();
@@ -204,17 +218,16 @@ export const App: React.FC = () => {
                   if (!hasStarted) {
                     hasStarted = true;
                     setIsLoading(false);
-                    const streamStartMsg: Message = {
-                      id: assistantId,
-                      sender: 'assistant',
-                      text: parsed.chunk,
-                      timestamp: assistantTimestamp,
-                    };
+                    fullText = parsed.chunk;
                     setMessages([
                       ...newMessages,
-                      streamStartMsg,
+                      {
+                        id: assistantId,
+                        sender: 'assistant',
+                        text: fullText,
+                        timestamp: assistantTimestamp,
+                      },
                     ]);
-                    fullText = parsed.chunk;
                   } else {
                     fullText += parsed.chunk;
                     setMessages((prev) =>
@@ -250,10 +263,14 @@ export const App: React.FC = () => {
             ...newMessages,
             finalAssistantMsg,
           ];
+          const sessionTitle = text.length > 28 
+            ? `${text.slice(0, 28)}...` 
+            : text || (attachment ? attachment.name : 'Conversation');
+
           if (!existing) {
             const newSession: ChatSession = {
               id: activeSessionId,
-              title: text.length > 28 ? `${text.slice(0, 28)}...` : text || 'Image Analysis',
+              title: sessionTitle,
               messages: finalMessages,
               updatedAt: new Date().toISOString(),
             };
@@ -279,51 +296,31 @@ export const App: React.FC = () => {
         const initialAssistantMessage: Message = {
           id: assistantId,
           sender: 'assistant',
-          text: '',
+          text: replyText,
           timestamp: assistantTimestamp,
         };
 
         setMessages([...newMessages, initialAssistantMessage]);
 
-        let charIndex = 0;
-        const fullText = replyText;
-        const step = Math.max(4, Math.floor(fullText.length / 30));
-        
-        const streamTimer = setInterval(() => {
-          charIndex += step;
-          if (charIndex >= fullText.length) {
-            charIndex = fullText.length;
-            clearInterval(streamTimer);
+        setSessions((sessionList) => {
+          const existing = sessionList.find((s) => s.id === activeSessionId);
+          const sessionTitle = text.length > 28 
+            ? `${text.slice(0, 28)}...` 
+            : text || (attachment ? attachment.name : 'Conversation');
+
+          if (!existing) {
+            const newSession: ChatSession = {
+              id: activeSessionId,
+              title: sessionTitle,
+              messages: [...newMessages, initialAssistantMessage],
+              updatedAt: new Date().toISOString(),
+            };
+            return [newSession, ...sessionList];
           }
-
-          const currentStream = fullText.slice(0, charIndex);
-
-          setMessages((prev) => {
-            const updated = prev.map((m) =>
-              m.id === assistantId ? { ...m, text: currentStream } : m
-            );
-
-            if (charIndex >= fullText.length) {
-              setSessions((sessionList) => {
-                const existing = sessionList.find((s) => s.id === activeSessionId);
-                if (!existing) {
-                  const newSession: ChatSession = {
-                    id: activeSessionId,
-                    title: text.length > 28 ? `${text.slice(0, 28)}...` : text || 'Image Analysis',
-                    messages: updated,
-                    updatedAt: new Date().toISOString(),
-                  };
-                  return [newSession, ...sessionList];
-                }
-                return sessionList.map((s) =>
-                  s.id === activeSessionId ? { ...s, messages: updated } : s
-                );
-              });
-            }
-
-            return updated;
-          });
-        }, 12);
+          return sessionList.map((s) =>
+            s.id === activeSessionId ? { ...s, messages: [...newMessages, initialAssistantMessage] } : s
+          );
+        });
       }
 
     } catch (err: any) {
@@ -379,7 +376,7 @@ export const App: React.FC = () => {
             )}
           </div>
 
-          {/* Bottom Floating Chat Input with Vision & Speech */}
+          {/* Bottom Floating Chat Input with Vision, Documents & Speech */}
           <div className="flex-shrink-0">
             <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
           </div>
