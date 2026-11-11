@@ -23,9 +23,24 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
     'Deep Reasoning & 3072-dim Vector RAG document analysis',
     'High-resolution AI Image Generation with Cloudinary CDN',
     'Interactive Split-Screen Canvas & Python Wasm Sandbox',
-    'Hands-free Conversational Voice Mode (Malayalam & English)',
+    'Hands-free Real-Time Conversational Voice Mode',
     'MemGPT Long-Term Semantic Memory across all sessions',
   ];
+
+  const saveUserProFlag = () => {
+    localStorage.setItem('nebula_is_pro', 'true');
+    try {
+      const savedUser = localStorage.getItem('nebula_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed?.id) {
+          localStorage.setItem(`nebula_is_pro_${parsed.id}`, 'true');
+        }
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   const handleCheckout = async () => {
     setIsProcessing(true);
@@ -48,7 +63,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
       });
       const data = await res.json();
 
-      localStorage.setItem('nebula_is_pro', 'true');
+      saveUserProFlag();
       setReceipt({
         receiptId: data.receiptId || `RCPT-${Date.now()}`,
         activatedAt: new Date().toLocaleString(),
@@ -56,7 +71,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
       });
       onUpgradeSuccess?.();
     } catch {
-      localStorage.setItem('nebula_is_pro', 'true');
+      saveUserProFlag();
       setReceipt({
         receiptId: `RCPT-${Date.now()}`,
         activatedAt: new Date().toLocaleString(),

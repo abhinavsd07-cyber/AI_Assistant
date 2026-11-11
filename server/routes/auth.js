@@ -192,12 +192,11 @@ router.post("/google", async (req, res) => {
           googleId = claims.sub;
         }
       }
-    } else if (profile) {
-      // Profile passed directly from frontend
-      email = profile.email;
-      name = profile.name || "Google User";
-      picture = profile.picture || profile.avatar;
-      googleId = profile.id || profile.sub || `google-${Date.now()}`;
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: "Valid Google OAuth credential token is required.",
+      });
     }
 
     if (!email) {

@@ -312,8 +312,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="flex items-center gap-2">
                   <Globe size={15} className="text-gray-600 dark:text-gray-400" />
                   <div>
-                    <span className="font-semibold text-[#0D0D0D] dark:text-white block">Language Support</span>
-                    <span className="text-[11px] text-gray-500 dark:text-gray-400">Malayalam & English native synthesis</span>
+                    <span className="font-semibold text-[#0D0D0D] dark:text-white block">Language & Speech Engine</span>
+                    <span className="text-[11px] text-gray-500 dark:text-gray-400">Real-time conversational voice & NLP synthesis</span>
                   </div>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 font-bold font-mono">ACTIVE</span>

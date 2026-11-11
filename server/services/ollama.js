@@ -150,7 +150,7 @@ async function streamOllamaChat({
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       await ChatSession.findOneAndUpdate(
-        { sessionId },
+        { sessionId, userId: req.user ? req.user._id : null },
         {
           $setOnInsert: {
             title: message.slice(0, 30),
