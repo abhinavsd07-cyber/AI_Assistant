@@ -160,7 +160,7 @@ async function streamOllamaChat({
           $set: { model: `ollama:${cleanModel}` },
           $push: { messages: { $each: [userMsg, assistantMsg] } },
         },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: "after" }
       ).catch(() => {});
     }
 

@@ -516,7 +516,7 @@ app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
               $set: { model: "nebula-visual-cloudinary" },
               $push: { messages: { $each: [userMsg, assistantMsg] } },
             },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: "after" }
           );
         }
         return;
@@ -792,7 +792,7 @@ app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
 
         await ChatSession.findOneAndUpdate({ sessionId }, updateData, {
           upsert: true,
-          new: true,
+          returnDocument: "after",
         });
 
         if (req.user) {
