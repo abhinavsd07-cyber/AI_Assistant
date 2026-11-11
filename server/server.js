@@ -10,6 +10,14 @@ const authRoutes = require("./routes/auth");
 const { router: modelRoutes, seedDefaultsIfNeeded } = require("./routes/models");
 const { optionalAuth } = require("./middleware/auth");
 const { uploadToCloudinary } = require("./services/cloudinary");
+const {
+  extractTextFromAttachment,
+  chunkDocument,
+  generateEmbedding,
+  retrieveTopKChunks,
+  buildRagGroundingContext,
+} = require("./services/rag");
+const { applyGuardrails } = require("./services/guardrails");
 
 const app = express();
 
@@ -94,6 +102,45 @@ app.get("/api/health", (req, res) => {
     database: isMongoConnected ? "Connected" : "Standby",
     modelsReady: true,
   });
+});
+
+// AI/ML Evaluation Endpoint: Vector RAG Inspection & Metrics
+app.post("/api/rag/inspect", async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { query, documentText } = req.body;
+    if (!query || !documentText) {
+      return res.status(400).json({ success: false, error: "query and documentText are required." });
+    }
+
+    const chunks = chunkDocument(documentText, 500, 80);
+    const embeddedChunks = await Promise.all(
+      chunks.slice(0, 20).map(async (c) => ({
+        ...c,
+        embedding: await generateEmbedding(c.text),
+      }))
+    );
+
+    const topK = await retrieveTopKChunks(query, embeddedChunks, 3);
+    const latencyMs = Date.now() - startTime;
+
+    return res.json({
+      success: true,
+      metrics: {
+        totalChunks: chunks.length,
+        evaluatedChunks: embeddedChunks.length,
+        embeddingDimensions: embeddedChunks[0]?.embedding?.length || 3072,
+        pipelineLatencyMs: latencyMs,
+      },
+      topMatches: topK.map((m) => ({
+        id: m.id,
+        similarityScore: m.similarity,
+        textExcerpt: m.text,
+      })),
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Upload media or image asset to Cloudinary CDN
@@ -329,25 +376,53 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
     // Build current user message parts (supports Web Grounding, Image, PDF, Code, & Text)
     const currentParts = [];
 
+    // Apply Enterprise AI Guardrails (PII Redaction & Prompt Injection Detection)
+    const guardResult = applyGuardrails(trimmedMsg);
+    const safeUserMsg = guardResult.sanitizedMessage;
+
     if (searchGrounding) {
       currentParts.push({ text: searchGrounding });
     }
 
     if (image && image.data && image.mimeType) {
-      const isTextDoc =
-        image.mimeType.startsWith("text/") ||
-        image.mimeType === "application/json" ||
-        image.mimeType === "application/javascript" ||
-        image.mimeType === "application/typescript" ||
-        image.mimeType === "application/x-python";
+      const isImageMedia = image.mimeType.startsWith("image/");
 
-      if (isTextDoc) {
+      if (isImageMedia) {
+        // Native Gemini Vision Multimodal
+        currentParts.push({
+          inlineData: {
+            mimeType: image.mimeType,
+            data: image.data,
+          },
+        });
+      } else {
+        // Document / PDF / Code -> Execute Semantic Vector RAG Pipeline
         try {
-          const decodedText = Buffer.from(image.data, "base64").toString("utf-8");
-          currentParts.push({
-            text: `[Attached File: ${image.name || "document"}]:\n\`\`\`\n${decodedText}\n\`\`\`\n`,
-          });
-        } catch {
+          const docText = await extractTextFromAttachment(image);
+          if (docText && docText.length > 50) {
+            const rawChunks = chunkDocument(docText, 700, 100);
+
+            if (rawChunks.length > 1) {
+              // Generate embeddings for document chunks
+              const embeddedChunks = await Promise.all(
+                rawChunks.slice(0, 30).map(async (c) => ({
+                  ...c,
+                  embedding: await generateEmbedding(c.text),
+                }))
+              );
+
+              // 3072-dim Vector Cosine Similarity Search for relevant knowledge
+              const topChunks = await retrieveTopKChunks(safeUserMsg || "summarize document", embeddedChunks, 4);
+              const ragContext = buildRagGroundingContext(topChunks, image.name || "Uploaded Document");
+              currentParts.push({ text: ragContext });
+            } else {
+              currentParts.push({
+                text: `[Attached Document Knowledge: "${image.name || "file"}"]:\n\`\`\`\n${docText.slice(0, 15000)}\n\`\`\`\n`,
+              });
+            }
+          }
+        } catch (ragErr) {
+          console.warn("⚠️ RAG Pipeline fallback:", ragErr.message);
           currentParts.push({
             inlineData: {
               mimeType: image.mimeType,
@@ -355,19 +430,11 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
             },
           });
         }
-      } else {
-        // PDF or Image native inlineData
-        currentParts.push({
-          inlineData: {
-            mimeType: image.mimeType,
-            data: image.data,
-          },
-        });
       }
     }
 
-    if (trimmedMsg) {
-      currentParts.push({ text: trimmedMsg });
+    if (safeUserMsg) {
+      currentParts.push({ text: safeUserMsg });
     } else if (image) {
       currentParts.push({ text: `Please analyze and summarize the attached ${image.name || "file"} in detail.` });
     }
