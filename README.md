@@ -1,5 +1,7 @@
 # 🌌 Nebula AI — World-Class Multimodal Cognitive AI Platform & Studio
 
+[![Live Demo](https://img.shields.io/badge/Live%20Production-nebula--ai--assistant.onrender.com-10B981?style=for-the-badge&logo=render&logoColor=white)](https://nebula-ai-assistant.onrender.com/)
+
 [![React 19](https://img.shields.io/badge/React-19.3-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![TailwindCSS v4](https://img.shields.io/badge/TailwindCSS-v4.3-38B2AC?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
@@ -10,8 +12,10 @@
 [![FLUX.1 Node Studio](https://img.shields.io/badge/Visual%20Pipeline-FLUX.1%20Node%20Studio-6366F1?logo=sparkles&logoColor=white)](https://github.com/abhinavsd07-cyber/AI_Assistant)
 [![Stripe Sandbox](https://img.shields.io/badge/Payments-Stripe%20API%20Live-635BFF?logo=stripe&logoColor=white)](https://stripe.com/)
 [![Cloudinary CDN](https://img.shields.io/badge/Storage-Cloudinary%20CDN-3448C5?logo=cloudinary&logoColor=white)](https://cloudinary.com/)
-[![Evaluations](https://img.shields.io/badge/AI%20Benchmarks-10%2F10%20Passed%20(100%25)-brightgreen)](https://github.com/abhinavsd07-cyber/AI_Assistant)
+[![Evaluations](https://img.shields.io/badge/AI%20Benchmarks-13%2F13%20Passed%20(100%25)-brightgreen)](https://github.com/abhinavsd07-cyber/AI_Assistant)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+🌐 **Live Production App:** [https://nebula-ai-assistant.onrender.com/](https://nebula-ai-assistant.onrender.com/)
 
 **Nebula AI** is an enterprise-grade, world-class multimodal artificial intelligence platform designed to rival leading AI ecosystems like ChatGPT, Claude, Cursor, and ComfyUI. Engineered with a blazing-fast **React 19 + TypeScript + Tailwind v4** frontend, an **Express 5** backend, and **Google Gemini's multimodal reasoning models**, it unites cloud intelligence, visual node-graph diffusion workflows, and local open-weights execution.
 
