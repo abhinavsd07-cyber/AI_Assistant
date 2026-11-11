@@ -218,9 +218,32 @@ async function generateAndUploadImage(input, options = {}) {
     }
   }
 
-  // Strategy 4: Guaranteed working image URL fallback
+  // Strategy 4: Offline-safe custom SVG artwork poster (never returns unrelated random stock photos)
   if (!cdnUrl) {
-    cdnUrl = `https://picsum.photos/seed/${encodeURIComponent(cleanSubject)}/1024/768`;
+    const safeTitle = String(cleanSubject || "Nebula Artwork")
+      .replace(/[<>&"']/g, "")
+      .slice(0, 48);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${targetWidth}" height="${targetHeight}" viewBox="0 0 1024 1024">
+      <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#0f172a"/>
+          <stop offset="50%" stop-color="#311042"/>
+          <stop offset="100%" stop-color="#1e1b4b"/>
+        </linearGradient>
+        <radialGradient id="orb" cx="50%" cy="45%" r="35%">
+          <stop offset="0%" stop-color="#a855f7" stop-opacity="0.85"/>
+          <stop offset="60%" stop-color="#6366f1" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#0f172a" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="1024" fill="url(#bg)"/>
+      <circle cx="512" cy="460" r="340" fill="url(#orb)"/>
+      <circle cx="512" cy="460" r="140" fill="none" stroke="#c084fc" stroke-width="2" stroke-opacity="0.4"/>
+      <text x="512" y="820" text-anchor="middle" fill="#f8fafc" font-family="sans-serif" font-size="36" font-weight="bold">${safeTitle}</text>
+      <text x="512" y="868" text-anchor="middle" fill="#94a3b8" font-family="sans-serif" font-size="22">Nebula AI Visual Studio • ${targetWidth}x${targetHeight}</text>
+    </svg>`;
+    const svgDataUri = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+    cdnUrl = (await uploadToCloudinary(svgDataUri, "nebula_ai/generated")) || svgDataUri;
   }
 
   return {

@@ -113,6 +113,45 @@ async function runEvaluations() {
     }
   }
 
+  // --- SUITE 5: Authentication, JWT Security & Route Protection ---
+  console.log("\n\x1b[36m▶ Running Suite 5: Authentication, JWT Security & Access Control...\x1b[0m");
+  try {
+    const jwt = require("jsonwebtoken");
+    const { generateToken, requireAuth, JWT_SECRET } = require("../middleware/auth");
+
+    // Test 11: Cryptographic JWT Generation & Verification
+    const sampleUserId = "65f1a2b3c4d5e6f7a8b9c0d1";
+    const token = generateToken(sampleUserId);
+    const decoded = jwt.verify(token, JWT_SECRET);
+    recordTest("Auth", "Cryptographic JWT Signing & Verification", decoded.id === sampleUserId, `Verified sub: ${decoded.id}`);
+
+    // Test 12: Tampered JWT Rejection
+    let tamperedRejected = false;
+    try {
+      jwt.verify(`${token}tampered`, JWT_SECRET);
+    } catch {
+      tamperedRejected = true;
+    }
+    recordTest("Auth", "Tampered JWT Signature Rejection", tamperedRejected, "Invalid signature blocked");
+
+    // Test 13: Unauthenticated Route Blocking (requireAuth middleware)
+    let statusCodeSent = null;
+    const mockReq = { headers: {} };
+    const mockRes = {
+      status(code) {
+        statusCodeSent = code;
+        return this;
+      },
+      json() {
+        return this;
+      },
+    };
+    await requireAuth(mockReq, mockRes, () => {});
+    recordTest("Auth", "Protected Route Guard (401 on missing token)", statusCodeSent === 401, `Blocked with HTTP ${statusCodeSent}`);
+  } catch (authErr) {
+    recordTest("Auth", "Authentication Security Suite", false, authErr.message);
+  }
+
   // --- Summary Report ---
   const passedCount = results.filter((r) => r.passed).length;
   const totalCount = results.length;

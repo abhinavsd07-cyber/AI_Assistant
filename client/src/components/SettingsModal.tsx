@@ -41,7 +41,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
   apiUrl,
-  setApiUrl,
   userName,
   setUserName,
   userEmail,
@@ -52,11 +51,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // Live backend health telemetry
+  const [healthStatus, setHealthStatus] = useState<{
+    database: string;
+    modelsReady: boolean;
+    status: string;
+  }>({ database: 'Checking...', modelsReady: true, status: 'checking' });
+
   // MemGPT Memory state
   const [memories, setMemories] = useState<MemoryItem[]>([]);
   const [isLoadingMemories, setIsLoadingMemories] = useState(false);
   const [newKey, setNewKey] = useState('');
   const [newValue, setNewValue] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      fetch(`${API_BASE}/api/health`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            setHealthStatus({
+              database: data.database || 'Connected',
+              modelsReady: Boolean(data.modelsReady),
+              status: data.status || 'healthy',
+            });
+          }
+        })
+        .catch(() => {
+          setHealthStatus({ database: 'Offline', modelsReady: false, status: 'offline' });
+        });
+    }
+  }, [isOpen]);
 
   const fetchMemories = async () => {
     setIsLoadingMemories(true);
@@ -287,13 +312,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               )}
 
               <div>
-                <label className="text-gray-700 dark:text-gray-300 font-semibold block mb-1">Backend AI Endpoint</label>
+                <label className="text-gray-700 dark:text-gray-300 font-semibold block mb-1">Verified Backend AI Endpoint</label>
                 <input
                   type="text"
                   value={apiUrl}
-                  onChange={(e) => setApiUrl(e.target.value)}
-                  placeholder="http://localhost:5000/api/chat"
-                  className="w-full px-3 py-2 rounded-xl bg-[#FBFBFB] dark:bg-[#222222] border border-[#E5E5E5] dark:border-[#2C2C2C] text-[#0D0D0D] dark:text-[#ECECEC] placeholder-gray-400 text-xs focus:outline-none focus:bg-white dark:focus:bg-[#1A1A1A] transition-all"
+                  readOnly
+                  disabled
+                  className="w-full px-3 py-2 rounded-xl bg-[#F4F4F4] dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2C2C2C] text-gray-500 dark:text-gray-400 text-xs cursor-not-allowed select-all"
                 />
               </div>
 
@@ -305,7 +330,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <span className="text-[11px] text-gray-500 dark:text-gray-400">MongoDB Atlas Production Cluster</span>
                   </div>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 font-bold font-mono">CONNECTED</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold font-mono border ${
+                  healthStatus.database === 'Connected'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                    : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                }`}>
+                  {healthStatus.database.toUpperCase()}
+                </span>
               </div>
 
               <div className="p-3 rounded-2xl bg-[#FBFBFB] dark:bg-[#222222] border border-[#E5E5E5] dark:border-[#2C2C2C] flex items-center justify-between">
@@ -327,7 +358,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <span className="text-[11px] text-gray-500 dark:text-gray-400">Gemini 3.8, 3.5 Flash & Local Ollama</span>
                   </div>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 font-bold font-mono">ONLINE</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 font-bold font-mono">
+                  {healthStatus.modelsReady ? 'ONLINE' : 'STANDBY'}
+                </span>
               </div>
             </div>
 

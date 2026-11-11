@@ -9,6 +9,21 @@ export default defineConfig({
     tailwindcss(),
   ],
   build: {
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'react-vendor';
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'ui-icons';
+          }
+          if (id.includes('node_modules/katex') || id.includes('node_modules/marked')) {
+            return 'markdown-math';
+          }
+        },
+      },
+    },
   },
 })

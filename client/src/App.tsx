@@ -1,18 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { Hero } from './components/Hero';
 import { ChatThread } from './components/ChatThread';
 import { ChatInput, type FileAttachment } from './components/ChatInput';
-import { SettingsModal } from './components/SettingsModal';
-import { UpgradeModal } from './components/UpgradeModal';
-import { VoiceModal } from './components/VoiceModal';
-import { CanvasStudio } from './components/CanvasStudio';
-import { HubModal } from './components/HubModal';
-import { FluxWorkflowStudio } from './components/FluxWorkflowStudio';
 import { AuthPage } from './pages/AuthPage';
 import { useAuth } from './context/AuthContext';
 import type { Message, ChatSession, PersonaType } from './types';
+
+const SettingsModal = React.lazy(() =>
+  import('./components/SettingsModal').then((m) => ({ default: m.SettingsModal }))
+);
+const UpgradeModal = React.lazy(() =>
+  import('./components/UpgradeModal').then((m) => ({ default: m.UpgradeModal }))
+);
+const VoiceModal = React.lazy(() =>
+  import('./components/VoiceModal').then((m) => ({ default: m.VoiceModal }))
+);
+const CanvasStudio = React.lazy(() =>
+  import('./components/CanvasStudio').then((m) => ({ default: m.CanvasStudio }))
+);
+const HubModal = React.lazy(() =>
+  import('./components/HubModal').then((m) => ({ default: m.HubModal }))
+);
+const FluxWorkflowStudio = React.lazy(() =>
+  import('./components/FluxWorkflowStudio').then((m) => ({ default: m.FluxWorkflowStudio }))
+);
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -164,12 +177,6 @@ export const App: React.FC = () => {
       const path = window.location.pathname;
       const params = new URLSearchParams(window.location.search);
 
-      // Handle Stripe Checkout success redirect
-      if (params.get('stripe_success') === 'true') {
-        setIsPro(true);
-        localStorage.setItem('nebula_is_pro', 'true');
-      }
-
       // Reset overlays first
       setIsSettingsOpen(path === '/settings');
       setIsUpgradeOpen(path === '/pricing');
@@ -203,7 +210,7 @@ export const App: React.FC = () => {
           .then((r) => r.json())
           .then((data) => {
             if (data.success && data.session) {
-              setCurrentSessionId(data.session.id);
+              setCurrentSessionId(data.session.id || data.session.sessionId);
               setMessages(data.session.messages || []);
             }
           })
@@ -222,8 +229,18 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('popstate', syncFromUrl);
   }, [sessions.length]);
 
-  const handleShareChat = () => {
+  const handleShareChat = async () => {
     if (!currentSessionId || messages.length === 0) return;
+    if (token) {
+      try {
+        await fetch(`${API_BASE}/api/sessions/${encodeURIComponent(currentSessionId)}/share`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {
+        // continue copying link
+      }
+    }
     const shareUrl = `${window.location.origin}/share/${encodeURIComponent(currentSessionId)}`;
     navigator.clipboard.writeText(shareUrl);
   };
@@ -711,73 +728,73 @@ export const App: React.FC = () => {
 
           {/* Interactive Split-Screen Canvas Studio */}
           {isCanvasOpen && (
-            <CanvasStudio
-              initialCode={canvasCode}
-              initialLanguage={canvasLanguage}
-              title={canvasTitle}
-              onClose={() => {
-                setIsCanvasOpen(false);
-                pushRoute(currentSessionId ? `/c/${currentSessionId}` : '/');
-              }}
-            />
+            <Suspense fallback={null}>
+              <CanvasStudio
+                initialCode={canvasCode}
+                initialLanguage={canvasLanguage}
+                title={canvasTitle}
+                onClose={() => {
+                  setIsCanvasOpen(false);
+                  pushRoute(currentSessionId ? `/c/${currentSessionId}` : '/');
+                }}
+              />
+            </Suspense>
           )}
         </div>
       </div>
 
-      {/* Hands-free Voice Mode Modal */}
-      <VoiceModal
-        isOpen={isVoiceModalOpen}
-        onClose={closeOverlayToCurrentChat}
-        onSendMessage={(speechText) => handleSendMessage(speechText, false, null, false, false, undefined, true)}
-      />
+      {/* Lazy-Loaded Studio Overlays & Modals */}
+      <Suspense fallback={null}>
+        <VoiceModal
+          isOpen={isVoiceModalOpen}
+          onClose={closeOverlayToCurrentChat}
+          onSendMessage={(speechText) => handleSendMessage(speechText, false, null, false, false, undefined, true)}
+        />
 
-      {/* Settings Modal */}
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={closeOverlayToCurrentChat}
-        apiUrl={apiUrl}
-        setApiUrl={setApiUrl}
-        userName={userName}
-        setUserName={setUserName}
-        userEmail={userEmail}
-        setUserEmail={setUserEmail}
-      />
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={closeOverlayToCurrentChat}
+          apiUrl={apiUrl}
+          setApiUrl={setApiUrl}
+          userName={userName}
+          setUserName={setUserName}
+          userEmail={userEmail}
+          setUserEmail={setUserEmail}
+        />
 
-      {/* Upgrade Plan Modal */}
-      <UpgradeModal
-        isOpen={isUpgradeOpen}
-        onClose={closeOverlayToCurrentChat}
-        onUpgradeSuccess={() => setIsPro(true)}
-      />
+        <UpgradeModal
+          isOpen={isUpgradeOpen}
+          onClose={closeOverlayToCurrentChat}
+          onUpgradeSuccess={() => setIsPro(true)}
+        />
 
-      {/* Library & Explore Agents Hub Modal */}
-      <HubModal
-        isOpen={hubView !== null}
-        activeView={hubView || 'library'}
-        onClose={closeOverlayToCurrentChat}
-        sessions={sessions}
-        onLaunchPrompt={(prompt, persona) => {
-          if (persona) setSelectedPersona(persona);
-          handleSendMessage(prompt, false, null);
-        }}
-        onOpenCanvas={handleOpenCanvas}
-      />
+        <HubModal
+          isOpen={hubView !== null}
+          activeView={hubView || 'library'}
+          onClose={closeOverlayToCurrentChat}
+          sessions={sessions}
+          onLaunchPrompt={(prompt, persona) => {
+            if (persona) setSelectedPersona(persona);
+            handleSendMessage(prompt, false, null);
+          }}
+          onOpenCanvas={handleOpenCanvas}
+        />
 
-      {/* FLUX.1 ComfyGraph Visual Node Studio */}
-      <FluxWorkflowStudio
-        isOpen={isFluxStudioOpen}
-        onClose={closeOverlayToCurrentChat}
-        onSendToChat={(markdownText, imageUrl) => {
-          const newMsg: Message = {
-            id: `msg-${Date.now()}`,
-            sender: 'assistant',
-            text: markdownText,
-            imageUrl,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          };
-          setMessages((prev) => [...prev, newMsg]);
-        }}
-      />
+        <FluxWorkflowStudio
+          isOpen={isFluxStudioOpen}
+          onClose={closeOverlayToCurrentChat}
+          onSendToChat={(markdownText, imageUrl) => {
+            const newMsg: Message = {
+              id: `msg-${Date.now()}`,
+              sender: 'assistant',
+              text: markdownText,
+              imageUrl,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            };
+            setMessages((prev) => [...prev, newMsg]);
+          }}
+        />
+      </Suspense>
     </div>
   );
 };

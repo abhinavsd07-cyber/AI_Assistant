@@ -203,15 +203,41 @@ app.get("/api/sessions", requireAuth, async (req, res) => {
   }
 });
 
-// Public Shareable Chat Endpoint (Read-only view for shared links)
+// Mark a user's session as publicly shareable (Owner only)
+app.post("/api/sessions/:sessionId/share", requireAuth, async (req, res) => {
+  try {
+    if (!isMongoConnected) {
+      return res.json({ success: true, shareId: req.params.sessionId });
+    }
+    const session = await ChatSession.findOneAndUpdate(
+      { sessionId: req.params.sessionId, userId: req.user._id },
+      { $set: { isShared: true } },
+      { returnDocument: "after" }
+    );
+    if (!session) {
+      return res.status(404).json({ success: false, error: "Session not found or access denied" });
+    }
+    res.json({ success: true, shareId: session.sessionId });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Public Shareable Chat Endpoint (Read-only view strictly for explicitly shared links)
 app.get("/api/sessions/share/:sessionId", async (req, res) => {
   try {
     if (!isMongoConnected) {
       return res.status(404).json({ success: false, error: "Shared session not found" });
     }
-    const session = await ChatSession.findOne({ sessionId: req.params.sessionId });
+    const session = await ChatSession.findOne({
+      sessionId: req.params.sessionId,
+      isShared: true,
+    });
     if (!session) {
-      return res.status(404).json({ success: false, error: "Shared session not found" });
+      return res.status(404).json({
+        success: false,
+        error: "Shared session not found or has not been made public by its owner.",
+      });
     }
     res.json({
       success: true,
@@ -325,23 +351,25 @@ app.post("/api/payments/upgrade", requireAuth, async (req, res) => {
     let stripePayment = null;
 
     if (process.env.STRIPE_SECRET_KEY) {
-      try {
-        stripePayment = await createConfirmedStripePayment({
-          billingCycle,
-          customerEmail: req.user?.email || "guest@nebula.ai",
-          customerName: req.user?.name || "Abhinav SD",
+      stripePayment = await createConfirmedStripePayment({
+        billingCycle,
+        customerEmail: req.user?.email || "user@nebula.ai",
+        customerName: req.user?.name || "Nebula User",
+      });
+      if (!stripePayment || stripePayment.status !== "succeeded") {
+        return res.status(402).json({
+          success: false,
+          error: "Stripe payment confirmation could not be verified.",
         });
-        if (stripePayment?.paymentIntentId) {
-          receiptId = stripePayment.paymentIntentId;
-        }
-      } catch (stripeErr) {
-        console.warn("⚠️ Stripe live sandbox call warning:", stripeErr.message);
+      }
+      if (stripePayment.paymentIntentId) {
+        receiptId = stripePayment.paymentIntentId;
       }
     }
 
     if (isMongoConnected && req.user) {
       await User.findByIdAndUpdate(req.user._id, {
-        $set: { role: "pro", "preferences.plan": plan },
+        $set: { plan: "pro", role: "pro", "preferences.plan": plan },
       }).catch(() => {});
     }
 
@@ -527,10 +555,9 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
         }
         return;
       } catch (err) {
-        console.warn("⚠️ Image generation fallback:", err.message);
-        const fallbackUrl = `https://picsum.photos/seed/${encodeURIComponent(targetSubject)}/1024/768`;
-        const fallbackReply = `Here is your visual for **"${targetSubject}"**:\n\n![${targetSubject}](${fallbackUrl})\n\n🔗 [Open High-Res](${fallbackUrl})`;
-        res.write(`data: ${JSON.stringify({ chunk: fallbackReply, fullText: fallbackReply, imageUrl: fallbackUrl })}\n\n`);
+        console.warn("⚠️ Image generation error:", err.message);
+        const errorReply = `⚠️ **Image Generation Notice:** Unable to render visual for **"${targetSubject}"** right now (${err.message}). Please try again in a moment.`;
+        res.write(`data: ${JSON.stringify({ chunk: errorReply, fullText: errorReply })}\n\n`);
         res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
         return res.end();
       }

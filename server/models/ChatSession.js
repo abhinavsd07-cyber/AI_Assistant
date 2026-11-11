@@ -29,6 +29,7 @@ const ChatSessionSchema = new mongoose.Schema(
     model: { type: String, default: "gemini-3.8-flash" },
     systemPrompt: { type: String, default: "" },
     pinned: { type: Boolean, default: false },
+    isShared: { type: Boolean, default: false },
     tags: [{ type: String }],
     messages: [MessageSchema],
   },
