@@ -407,6 +407,26 @@ app.get("/api/sessions/share/:sessionId", async (req, res) => {
   }
 });
 
+// Rename a session title in MongoDB (Strictly scoped to logged-in user)
+app.put("/api/sessions/:sessionId", requireAuth, async (req, res) => {
+  try {
+    const { title } = req.body;
+    if (!title || !String(title).trim()) {
+      return res.status(400).json({ success: false, error: "Title is required" });
+    }
+    if (isMongoConnected) {
+      await ChatSession.findOneAndUpdate(
+        { sessionId: req.params.sessionId, userId: req.user._id },
+        { $set: { title: String(title).trim().slice(0, 80) } },
+        { returnDocument: "after" }
+      );
+    }
+    res.json({ success: true, title: String(title).trim().slice(0, 80) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Delete a session from MongoDB (Strictly scoped to logged-in user)
 app.delete("/api/sessions/:sessionId", requireAuth, async (req, res) => {
   try {

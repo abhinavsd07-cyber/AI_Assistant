@@ -297,6 +297,28 @@ export const App: React.FC = () => {
     pushRoute('/');
   };
 
+  // Rename chat session title
+  const handleRenameSession = async (id: string, newTitle: string) => {
+    const cleanTitle = newTitle.trim();
+    if (!cleanTitle) return;
+    setSessions((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, title: cleanTitle } : s))
+    );
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      await fetch(`${API_BASE}/api/sessions/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ title: cleanTitle }),
+      });
+    } catch {
+      // Handled silently
+    }
+  };
+
   // Delete chat session
   const handleDeleteSession = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -645,6 +667,8 @@ export const App: React.FC = () => {
         onSelectSession={handleSelectSession}
         onNewChat={handleNewChat}
         onDeleteSession={handleDeleteSession}
+        onRenameSession={handleRenameSession}
+        onOpenArtifact={handleOpenCanvas}
         onOpenSettings={() => {
           setIsSettingsOpen(true);
           pushRoute('/settings');
