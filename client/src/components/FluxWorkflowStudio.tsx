@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Play,
   X,
@@ -74,6 +74,173 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
       timestamp: 'Ready',
     },
   ]);
+
+  // Refs for dynamic responsive SVG Node-Graph Wire Connections
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+  const modelOutRef = useRef<HTMLSpanElement>(null);
+  const clipOutRef = useRef<HTMLSpanElement>(null);
+  const vaeOutRef = useRef<HTMLSpanElement>(null);
+  const sizeOutRef = useRef<HTMLSpanElement>(null);
+  const clipInRef = useRef<HTMLSpanElement>(null);
+  const promptOutRef = useRef<HTMLSpanElement>(null);
+  const samplerModelInRef = useRef<HTMLSpanElement>(null);
+  const samplerPromptInRef = useRef<HTMLSpanElement>(null);
+  const samplerSizeInRef = useRef<HTMLSpanElement>(null);
+  const samplerOutRef = useRef<HTMLSpanElement>(null);
+  const outputInRef = useRef<HTMLSpanElement>(null);
+
+  const [wires, setWires] = useState<
+    Array<{
+      id: string;
+      d: string;
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      color: string;
+      dashed?: boolean;
+      step: number;
+    }>
+  >([]);
+
+  const computeWires = useCallback(() => {
+    const container = gridContainerRef.current;
+    if (!container) return;
+    const cRect = container.getBoundingClientRect();
+    if (cRect.width === 0) return;
+
+    const getPortAnchor = (el: HTMLElement | null, side: 'left' | 'right') => {
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      const card = el.closest('.flux-node-card');
+      const cardRect = card ? card.getBoundingClientRect() : r;
+      return {
+        x: (side === 'right' ? cardRect.right : cardRect.left) - cRect.left,
+        y: r.top - cRect.top + r.height / 2,
+      };
+    };
+
+    // Standard S-curve across the gutter between two columns
+    const makeGutterCurve = (
+      p1: { x: number; y: number } | null,
+      p2: { x: number; y: number } | null
+    ) => {
+      if (!p1 || !p2) return '';
+      const midX = (p1.x + p2.x) / 2;
+      return `M ${p1.x} ${p1.y} C ${midX} ${p1.y}, ${midX} ${p2.y}, ${p2.x} ${p2.y}`;
+    };
+
+    // Right-gutter C-loop from top card of Col 2 (PROMPT) down to bottom card of Col 2 (Sampler)
+    const makeRightLoopCurve = (
+      p1: { x: number; y: number } | null,
+      p2: { x: number; y: number } | null
+    ) => {
+      if (!p1 || !p2) return '';
+      const loopX = Math.max(p1.x, p2.x) + 24;
+      return `M ${p1.x} ${p1.y} C ${loopX} ${p1.y}, ${loopX} ${p2.y}, ${p2.x} ${p2.y}`;
+    };
+
+    const pModelOut = getPortAnchor(modelOutRef.current, 'right');
+    const pClipOut = getPortAnchor(clipOutRef.current, 'right');
+    const pVaeOut = getPortAnchor(vaeOutRef.current, 'right');
+    const pSizeOut = getPortAnchor(sizeOutRef.current, 'right');
+    const pClipIn = getPortAnchor(clipInRef.current, 'left');
+    const pPromptOut = getPortAnchor(promptOutRef.current, 'right');
+    const pSamplerBaseIn = getPortAnchor(samplerModelInRef.current, 'left');
+    const pSamplerModelIn = pSamplerBaseIn ? { x: pSamplerBaseIn.x, y: pSamplerBaseIn.y - 10 } : null;
+    const pSamplerPromptRightIn = getPortAnchor(samplerPromptInRef.current, 'right');
+    const pSamplerSizeIn = pSamplerBaseIn ? { x: pSamplerBaseIn.x, y: pSamplerBaseIn.y + 12 } : null;
+    const pSamplerOut = getPortAnchor(samplerOutRef.current, 'right');
+    const pOutputIn = getPortAnchor(outputInRef.current, 'left');
+
+    const rawWires = [
+      {
+        id: 'wire-model-sampler',
+        p1: pModelOut,
+        p2: pSamplerModelIn,
+        d: makeGutterCurve(pModelOut, pSamplerModelIn),
+        color: '#6366F1', // Indigo (MODEL -> Sampler)
+        step: 1,
+      },
+      {
+        id: 'wire-clip-prompt',
+        p1: pClipOut,
+        p2: pClipIn,
+        d: makeGutterCurve(pClipOut, pClipIn),
+        color: '#F59E0B', // Amber (CLIP -> Smart Prompt)
+        step: 2,
+      },
+      {
+        id: 'wire-prompt-sampler',
+        p1: pPromptOut,
+        p2: pSamplerPromptRightIn,
+        d: makeRightLoopCurve(pPromptOut, pSamplerPromptRightIn),
+        color: '#10B981', // Emerald (PROMPT -> Sampler)
+        step: 3,
+      },
+      {
+        id: 'wire-size-sampler',
+        p1: pSizeOut,
+        p2: pSamplerSizeIn,
+        d: makeGutterCurve(pSizeOut, pSamplerSizeIn),
+        color: '#EC4899', // Pink (SIZE -> Sampler)
+        step: 3,
+      },
+      {
+        id: 'wire-sampler-output',
+        p1: pSamplerOut,
+        p2: pOutputIn,
+        d: makeGutterCurve(pSamplerOut, pOutputIn),
+        color: '#0284C7', // Sky Blue (RENDER -> Final Output)
+        step: 4,
+      },
+      {
+        id: 'wire-vae-output',
+        p1: pVaeOut,
+        p2: pOutputIn ? { x: pOutputIn.x, y: pOutputIn.y + 14 } : null,
+        d: makeGutterCurve(pVaeOut, pOutputIn ? { x: pOutputIn.x, y: pOutputIn.y + 14 } : null),
+        color: '#F43F5E', // Rose (VAE -> Final Output)
+        dashed: true,
+        step: 4,
+      },
+    ];
+
+    setWires(
+      rawWires
+        .filter((w) => w.d !== '' && w.p1 && w.p2)
+        .map((w) => ({
+          id: w.id,
+          d: w.d,
+          x1: w.p1!.x,
+          y1: w.p1!.y,
+          x2: w.p2!.x,
+          y2: w.p2!.y,
+          color: w.color,
+          dashed: w.dashed,
+          step: w.step,
+        }))
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const raf = requestAnimationFrame(computeWires);
+    const timer = setTimeout(computeWires, 120);
+    window.addEventListener('resize', computeWires);
+
+    let observer: ResizeObserver | null = null;
+    if (gridContainerRef.current && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => computeWires());
+      observer.observe(gridContainerRef.current);
+    }
+
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(timer);
+      window.removeEventListener('resize', computeWires);
+      observer?.disconnect();
+    };
+  }, [isOpen, expandedPrompt, computeWires]);
 
   if (!isOpen) return null;
 
@@ -303,6 +470,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
 
       {/* Main Responsive 12-Column Node-Graph Workspace (Mobile 1-Col -> Tablet 2-Col -> Desktop 4-Col) */}
       <div
+        onScroll={computeWires}
         className="flex-1 relative overflow-y-auto overflow-x-hidden p-3 sm:p-5"
         style={{
           backgroundColor: '#F8FAFC',
@@ -310,12 +478,67 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           backgroundSize: '24px 24px',
         }}
       >
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4 lg:gap-5 max-w-[1640px] mx-auto w-full items-start">
+        <div
+          ref={gridContainerRef}
+          className="relative grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-5 xl:gap-7 max-w-[1640px] mx-auto w-full items-start"
+        >
+          {/* Dynamic Port-Anchored SVG Node Graph Connection Wires */}
+          <svg className="hidden md:block absolute inset-0 w-full h-full pointer-events-none z-0 overflow-visible">
+            {wires.map((w) => {
+              const isStageActive = activeStep === w.step;
+              return (
+                <g key={w.id}>
+                  {/* Outer Soft Glow */}
+                  <path
+                    d={w.d}
+                    fill="none"
+                    stroke={w.color}
+                    strokeWidth={isStageActive ? '9' : '7'}
+                    strokeOpacity={isStageActive ? '0.3' : '0.18'}
+                    strokeLinecap="round"
+                  />
+                  {/* Main Vibrant Node Cable */}
+                  <path
+                    d={w.d}
+                    fill="none"
+                    stroke={w.color}
+                    strokeWidth={isStageActive ? '4' : '3.25'}
+                    strokeDasharray={w.dashed ? '6 5' : undefined}
+                    strokeLinecap="round"
+                  />
+                  {/* Animated Data Flow Pulse */}
+                  {!w.dashed && (
+                    <path
+                      d={w.d}
+                      fill="none"
+                      stroke="#FFFFFF"
+                      strokeWidth="2"
+                      strokeDasharray="4 16"
+                      strokeOpacity={isRunning ? '0.95' : '0.75'}
+                      className="animate-pulse"
+                      strokeLinecap="round"
+                    />
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Foreground Port Endpoint Pins on Card Borders */}
+          <svg className="hidden md:block absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible">
+            {wires.map((w) => (
+              <g key={`pins-${w.id}`}>
+                <circle cx={w.x1} cy={w.y1} r="5" fill={w.color} stroke="#FFFFFF" strokeWidth="2" />
+                <circle cx={w.x2} cy={w.y2} r="5" fill={w.color} stroke="#FFFFFF" strokeWidth="2" />
+              </g>
+            ))}
+          </svg>
+
           {/* COLUMN 1: Step 1 (Load AI Models) + Image Size */}
-          <div className="md:col-span-1 xl:col-span-3 flex flex-col gap-4 w-full min-w-0">
+          <div className="relative z-10 md:col-span-1 xl:col-span-3 flex flex-col gap-5 w-full min-w-0">
             {/* NODE 1: Load AI Models */}
             <div
-              className={`rounded-2xl bg-white border-2 transition-all shadow-lg shadow-slate-200/80 ${
+              className={`flux-node-card rounded-2xl bg-white border-2 transition-all shadow-lg shadow-slate-200/80 ${
                 activeStep === 1 ? 'border-indigo-600 ring-4 ring-indigo-500/15' : 'border-slate-200'
               }`}
             >
@@ -346,7 +569,11 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                       Image Generator Model (UNet)
                     </span>
                     <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-indigo-600">
-                      MODEL <span className="w-3 h-3 rounded-full bg-indigo-600 inline-block ring-4 ring-indigo-200" />
+                      MODEL{' '}
+                      <span
+                        ref={modelOutRef}
+                        className="w-3 h-3 rounded-full bg-indigo-600 inline-block ring-4 ring-indigo-200"
+                      />
                     </span>
                   </div>
                   <select
@@ -370,7 +597,11 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                       Text Reader (DualCLIP)
                     </span>
                     <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-600">
-                      CLIP <span className="w-3 h-3 rounded-full bg-amber-500 inline-block ring-4 ring-amber-200" />
+                      CLIP{' '}
+                      <span
+                        ref={clipOutRef}
+                        className="w-3 h-3 rounded-full bg-amber-500 inline-block ring-4 ring-amber-200"
+                      />
                     </span>
                   </div>
                   <div className="text-xs font-semibold text-slate-800 bg-white px-3 py-2 rounded-lg border border-slate-200 flex items-center justify-between">
@@ -388,7 +619,11 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                       HD Image Decoder (VAE)
                     </span>
                     <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-rose-600">
-                      VAE <span className="w-3 h-3 rounded-full bg-rose-500 inline-block ring-4 ring-rose-200" />
+                      VAE{' '}
+                      <span
+                        ref={vaeOutRef}
+                        className="w-3 h-3 rounded-full bg-rose-500 inline-block ring-4 ring-rose-200"
+                      />
                     </span>
                   </div>
                   <div className="text-xs font-semibold text-slate-700 bg-white px-3 py-2 rounded-lg border border-slate-200">
@@ -399,7 +634,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
             </div>
 
             {/* Image Resolution Node */}
-            <div className="rounded-2xl bg-white border-2 border-slate-200 shadow-lg shadow-slate-200/80">
+            <div className="flux-node-card rounded-2xl bg-white border-2 border-slate-200 shadow-lg shadow-slate-200/80">
               <div className="px-4 py-3 bg-pink-50/70 rounded-t-2xl border-b border-pink-100 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="w-7 h-7 rounded-lg bg-pink-600 flex items-center justify-center text-white">
@@ -415,7 +650,11 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                   </div>
                 </div>
                 <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-pink-600">
-                  SIZE <span className="w-3 h-3 rounded-full bg-pink-500 inline-block ring-4 ring-pink-200" />
+                  SIZE{' '}
+                  <span
+                    ref={sizeOutRef}
+                    className="w-3 h-3 rounded-full bg-pink-500 inline-block ring-4 ring-pink-200"
+                  />
                 </span>
               </div>
 
@@ -453,10 +692,10 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           </div>
 
           {/* COLUMN 2: Step 2 (Prompt) + Step 3 (KSampler) */}
-          <div className="md:col-span-1 xl:col-span-3 flex flex-col gap-4 w-full min-w-0">
+          <div className="relative z-10 md:col-span-1 xl:col-span-3 flex flex-col gap-5 w-full min-w-0">
             {/* NODE 2: Prompt & NLP Conditioning */}
             <div
-              className={`rounded-2xl bg-white border-2 transition-all shadow-lg shadow-slate-200/80 ${
+              className={`flux-node-card rounded-2xl bg-white border-2 transition-all shadow-lg shadow-slate-200/80 ${
                 activeStep === 2 ? 'border-amber-500 ring-4 ring-amber-500/15' : 'border-slate-200'
               }`}
             >
@@ -475,14 +714,19 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                   </div>
                 </div>
                 <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-emerald-600">
-                  PROMPT <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block ring-4 ring-emerald-200" />
+                  PROMPT{' '}
+                  <span
+                    ref={promptOutRef}
+                    className="w-3 h-3 rounded-full bg-emerald-500 inline-block ring-4 ring-emerald-200"
+                  />
                 </span>
               </div>
 
               <div className="p-4 space-y-3.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5 text-amber-700 font-bold">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Connected to Text Reader
+                    <span ref={clipInRef} className="w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-amber-200" />{' '}
+                    Connected to Text Reader
                   </span>
                   <span className="text-slate-500 font-semibold">Editable</span>
                 </div>
@@ -524,7 +768,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
 
             {/* NODE 3: KSampler & FlowMatch Scheduler */}
             <div
-              className={`rounded-2xl bg-white border-2 transition-all shadow-lg shadow-slate-200/80 ${
+              className={`flux-node-card rounded-2xl bg-white border-2 transition-all shadow-lg shadow-slate-200/80 ${
                 activeStep === 3
                   ? 'border-emerald-500 ring-4 ring-emerald-500/15'
                   : 'border-slate-200'
@@ -545,20 +789,27 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                   </div>
                 </div>
                 <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-sky-600">
-                  RENDER <span className="w-3 h-3 rounded-full bg-sky-500 inline-block ring-4 ring-sky-200" />
+                  RENDER{' '}
+                  <span
+                    ref={samplerOutRef}
+                    className="w-3 h-3 rounded-full bg-sky-500 inline-block ring-4 ring-sky-200"
+                  />
                 </span>
               </div>
 
               <div className="p-4 space-y-3 text-xs">
                 <div className="flex items-center gap-3 pb-1 text-xs font-bold text-slate-600">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" /> Model
+                    <span ref={samplerModelInRef} className="w-2.5 h-2.5 rounded-full bg-indigo-600 ring-2 ring-indigo-200" />{' '}
+                    Model
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Prompt
+                    <span ref={samplerPromptInRef} className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200" />{' '}
+                    Prompt
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-pink-500" /> Size
+                    <span ref={samplerSizeInRef} className="w-2.5 h-2.5 rounded-full bg-pink-500 ring-2 ring-pink-200" />{' '}
+                    Size
                   </span>
                 </div>
 
@@ -610,9 +861,9 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           </div>
 
           {/* COLUMN 3: Step 4 (Final HD Image Output Node) */}
-          <div className="md:col-span-1 xl:col-span-3 flex flex-col gap-4 w-full min-w-0">
+          <div className="relative z-10 md:col-span-1 xl:col-span-3 flex flex-col gap-5 w-full min-w-0">
             <div
-              className={`rounded-2xl bg-white border-2 transition-all shadow-xl shadow-slate-200/90 ${
+              className={`flux-node-card rounded-2xl bg-white border-2 transition-all shadow-xl shadow-slate-200/90 ${
                 activeStep === 4 ? 'border-sky-500 ring-4 ring-sky-500/15' : 'border-slate-200'
               }`}
             >
@@ -635,7 +886,18 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                 </span>
               </div>
 
-              <div className="p-4 space-y-3.5">
+              <div className="p-4 space-y-3">
+                {/* Input Connection Port Row for Output Node */}
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-2 font-bold text-sky-700">
+                    <span
+                      ref={outputInRef}
+                      className="w-2.5 h-2.5 rounded-full bg-sky-500 ring-2 ring-sky-200"
+                    />
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-200" />
+                    <span>Connected: Sampler + VAE Decoder</span>
+                  </span>
+                </div>
                 {/* Image Preview Frame */}
                 <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center group shadow-inner">
                   <img
