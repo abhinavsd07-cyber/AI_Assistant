@@ -71,6 +71,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const displayName = user?.name || 'Nebula User';
   const displayEmail = user?.email || 'Not signed in';
+  const avatarUrl =
+    user?.avatar && user.avatar !== '/avatar.jpg' && !user.avatar.includes('dicebear.com')
+      ? user.avatar
+      : null;
+  const [avatarError, setAvatarError] = useState(false);
+
+  React.useEffect(() => {
+    setAvatarError(false);
+  }, [user?.avatar]);
 
   // Extract initials
   const initials = displayName
@@ -302,9 +311,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className="flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] dark:hover:bg-[#282828] transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
-                      {initials}
-                    </div>
+                    {avatarUrl && !avatarError ? (
+                      <img
+                        src={avatarUrl}
+                        alt={displayName}
+                        referrerPolicy="no-referrer"
+                        onError={() => setAvatarError(true)}
+                        className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-200 dark:border-gray-700 shadow-2xs"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                        {initials}
+                      </div>
+                    )}
                     <div className="flex flex-col min-w-0">
                       <span className="text-[13px] font-semibold text-[#0D0D0D] dark:text-[#ECECEC] truncate leading-tight">
                         {displayName}
@@ -387,9 +406,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="flex items-center justify-between p-2 rounded-xl hover:bg-[#ECECEC]/70 dark:hover:bg-[#252525] transition-colors cursor-pointer text-[#0D0D0D] dark:text-[#ECECEC]"
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
-                {initials}
-              </div>
+              {avatarUrl && !avatarError ? (
+                <img
+                  src={avatarUrl}
+                  alt={displayName}
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarError(true)}
+                  className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-200 dark:border-gray-700 shadow-2xs"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                  {initials}
+                </div>
+              )}
               <div className="flex flex-col min-w-0">
                 <span className="text-[13px] font-semibold truncate leading-tight text-[#0D0D0D] dark:text-[#ECECEC]">
                   {displayName}

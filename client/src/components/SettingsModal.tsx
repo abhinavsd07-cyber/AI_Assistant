@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   Server, 
@@ -13,7 +13,10 @@ import {
   BarChart2,
   Brain,
   Trash2,
-  Plus
+  Plus,
+  Camera,
+  Upload,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -50,6 +53,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [activeTab, setActiveTab] = useState<'profile' | 'memory'>('profile');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string>(
+    user?.avatar && user.avatar !== '/avatar.jpg' && !user.avatar.includes('dicebear.com')
+      ? user.avatar
+      : ''
+  );
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarImgError, setAvatarImgError] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const cleanAvatar =
+      user?.avatar && user.avatar !== '/avatar.jpg' && !user.avatar.includes('dicebear.com')
+        ? user.avatar
+        : '';
+    setAvatarUrl(cleanAvatar);
+    setAvatarImgError(false);
+  }, [user?.avatar, isOpen]);
 
   // Live backend health telemetry
   const [healthStatus, setHealthStatus] = useState<{
@@ -108,12 +128,60 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingAvatar(true);
+    setAvatarImgError(false);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = async () => {
+        // Center-crop and resize to crisp 256x256 square JPEG
+        const canvas = document.createElement('canvas');
+        const size = 256;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const minSide = Math.min(img.width, img.height);
+          const sx = (img.width - minSide) / 2;
+          const sy = (img.height - minSide) / 2;
+          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+        }
+        const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        setAvatarUrl(croppedDataUrl);
+
+        if (isAuthenticated) {
+          await updateProfile({ name: userName, avatar: croppedDataUrl });
+        }
+        setIsUploadingAvatar(false);
+      };
+      img.onerror = () => {
+        setIsUploadingAvatar(false);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleRemoveAvatar = async () => {
+    setAvatarUrl('');
+    setAvatarImgError(false);
+    if (isAuthenticated) {
+      await updateProfile({ name: userName, avatar: '' });
+    }
+  };
+
   const handleSaveProfile = async () => {
     setIsSaving(true);
     setSaveSuccess(false);
 
     if (isAuthenticated) {
-      await updateProfile({ name: userName });
+      await updateProfile({ name: userName, avatar: avatarUrl });
     } else {
       localStorage.setItem('nebula_user_name', userName);
       localStorage.setItem('nebula_user_email', userEmail);
@@ -242,6 +310,92 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       GUEST SESSION
                     </span>
                   )}
+                </div>
+
+                {/* Profile Photo Upload & Preview */}
+                <div className="flex items-center gap-3.5 py-2 px-3 rounded-xl bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#333]">
+                  <div className="relative group shrink-0">
+                    {avatarUrl && !avatarImgError ? (
+                      <img
+                        src={avatarUrl}
+                        alt={userName || 'Profile'}
+                        referrerPolicy="no-referrer"
+                        onError={() => setAvatarImgError(true)}
+                        className="w-14 h-14 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-xs"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-base shadow-xs">
+                        {(userName || user?.name || 'NU')
+                          .split(' ')
+                          .map((p) => p[0])
+                          .join('')
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingAvatar}
+                      className="absolute inset-0 rounded-full bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity cursor-pointer"
+                      title="Change Profile Photo"
+                    >
+                      {isUploadingAvatar ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <Camera size={16} />
+                      )}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarFileChange}
+                      className="hidden"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                    <div>
+                      <span className="text-xs font-semibold text-[#0D0D0D] dark:text-white block">
+                        Profile Picture
+                      </span>
+                      <span className="text-[10.5px] text-gray-500 dark:text-gray-400 block truncate">
+                        {user?.provider === 'google' && avatarUrl?.includes('googleusercontent.com')
+                          ? 'Synced with your Google Account'
+                          : 'Upload a custom JPG, PNG, or WebP photo'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingAvatar}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0D0D0D] dark:bg-white text-white dark:text-black hover:opacity-90 text-[11px] font-semibold transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {isUploadingAvatar ? (
+                          <>
+                            <Loader2 size={11} className="animate-spin" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload size={11} />
+                            <span>{avatarUrl ? 'Change Photo' : 'Add Photo'}</span>
+                          </>
+                        )}
+                      </button>
+                      {avatarUrl && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveAvatar}
+                          className="px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-gray-600 dark:text-gray-300 hover:text-rose-600 text-[11px] font-medium transition-colors cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2.5">

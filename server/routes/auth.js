@@ -225,9 +225,17 @@ router.post("/google", async (req, res) => {
     });
 
     if (user) {
-      // Update googleId and avatar if missing
+      // Update googleId and Google profile picture (unless user uploaded a custom avatar)
       if (!user.googleId && googleId) user.googleId = googleId;
-      if (picture && (!user.avatar || user.avatar === "/avatar.jpg")) user.avatar = picture;
+      if (
+        picture &&
+        (!user.avatar ||
+          user.avatar === "/avatar.jpg" ||
+          user.avatar.includes("dicebear.com") ||
+          user.avatar.includes("googleusercontent.com"))
+      ) {
+        user.avatar = picture;
+      }
       user.usage.lastActive = new Date();
       await user.save();
     } else {
@@ -283,7 +291,7 @@ router.get("/me", requireAuth, async (req, res) => {
 });
 
 // ==========================================
-// 5. UPDATE USER PROFILE
+// 5. UPDATE USER PROFILE (Name, Avatar Photo & Preferences)
 // ==========================================
 router.put("/profile", requireAuth, async (req, res) => {
   try {
@@ -291,7 +299,19 @@ router.put("/profile", requireAuth, async (req, res) => {
     const user = req.user;
 
     if (name && name.trim()) user.name = name.trim();
-    if (avatar) user.avatar = avatar;
+    if (typeof avatar === "string") {
+      if (avatar.startsWith("data:image/")) {
+        try {
+          const { uploadToCloudinary } = require("../services/cloudinary");
+          const cdnUrl = await uploadToCloudinary(avatar, "nebula_ai/avatars");
+          user.avatar = cdnUrl || avatar;
+        } catch {
+          user.avatar = avatar;
+        }
+      } else {
+        user.avatar = avatar;
+      }
+    }
     if (preferences) {
       user.preferences = { ...user.preferences, ...preferences };
     }
