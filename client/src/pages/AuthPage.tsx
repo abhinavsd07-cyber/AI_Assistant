@@ -44,7 +44,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const googleBtnRef = useRef<HTMLDivElement>(null);
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+  const googleClientId =
+    import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+    '966040753081-ni3e6p4sen6pau4mb6eeeglmmfdjbe8g.apps.googleusercontent.com';
 
   // Clear alerts on mode switch
   const switchMode = (newMode: 'login' | 'signup') => {
@@ -171,15 +173,49 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
     setErrorMessage(null);
 
     const win = window as any;
+    if (googleClientId && win.google?.accounts?.oauth2) {
+      try {
+        const tokenClient = win.google.accounts.oauth2.initTokenClient({
+          client_id: googleClientId,
+          scope: 'openid email profile',
+          callback: async (tokenResponse: any) => {
+            if (tokenResponse?.error) {
+              if (
+                tokenResponse.error !== 'popup_closed_by_user' &&
+                tokenResponse.error !== 'access_denied'
+              ) {
+                setErrorMessage(
+                  `Google Sign-In error: ${tokenResponse.error_description || tokenResponse.error}`
+                );
+              }
+              return;
+            }
+            if (tokenResponse?.access_token) {
+              setIsSubmitting(true);
+              setErrorMessage(null);
+              const result = await loginWithGoogle(undefined, undefined, tokenResponse.access_token);
+              setIsSubmitting(false);
+              if (!result.success) {
+                setErrorMessage(result.error || 'Google login failed');
+              }
+            }
+          },
+          error_callback: (err: any) => {
+            if (err?.type && err.type !== 'popup_closed') {
+              setErrorMessage('Google Sign-In popup was blocked. Please allow popups for this site.');
+            }
+          },
+        });
+        tokenClient.requestAccessToken({ prompt: 'select_account' });
+        return;
+      } catch (e) {
+        console.warn('Google OAuth2 popup notice:', e);
+      }
+    }
+
     if (googleClientId && win.google?.accounts?.id) {
       try {
-        win.google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            setErrorMessage(
-              'Please click the Google Sign-In button above or sign in with your email and password.'
-            );
-          }
-        });
+        win.google.accounts.id.prompt();
         return;
       } catch (e) {
         console.warn('Google prompt notice:', e);
@@ -187,7 +223,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
     }
 
     setErrorMessage(
-      'Google OAuth popup could not be opened. Please use the Google button or sign in with your email and password.'
+      'Google Sign-In service is still loading. Please wait a second and try clicking again.'
     );
   };
 

@@ -148,11 +148,11 @@ router.post("/login", async (req, res) => {
 });
 
 // ==========================================
-// 3. GOOGLE SIGN-IN (OAuth2 / ID Token)
+// 3. GOOGLE SIGN-IN (OAuth2 / ID Token & Access Token)
 // ==========================================
 router.post("/google", async (req, res) => {
   try {
-    const { credential, profile } = req.body;
+    const { credential, accessToken } = req.body;
 
     let email = null;
     let name = null;
@@ -180,6 +180,28 @@ router.post("/google", async (req, res) => {
         return res.status(401).json({
           success: false,
           error: "Invalid or expired Google OAuth token. Please sign in again.",
+        });
+      }
+    } else if (accessToken) {
+      try {
+        const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!userInfoRes.ok) {
+          return res.status(401).json({
+            success: false,
+            error: "Invalid or expired Google OAuth access token. Please sign in again.",
+          });
+        }
+        const userInfo = await userInfoRes.json();
+        email = userInfo.email;
+        name = userInfo.name;
+        picture = userInfo.picture;
+        googleId = userInfo.sub;
+      } catch (verifyErr) {
+        return res.status(401).json({
+          success: false,
+          error: "Failed to verify Google OAuth token with Google servers.",
         });
       }
     } else {

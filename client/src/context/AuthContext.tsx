@@ -12,7 +12,7 @@ interface AuthContextType {
   navigateTo: (view: ViewType) => void;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  loginWithGoogle: (credential?: string, profile?: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: (credential?: string, profile?: Partial<UserProfile>, accessToken?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   updateProfile: (data: { name?: string; avatar?: string; preferences?: Record<string, any> }) => Promise<{ success: boolean; error?: string }>;
 }
@@ -170,12 +170,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithGoogle = async (credential?: string, profile?: Partial<UserProfile>): Promise<{ success: boolean; error?: string }> => {
+  const loginWithGoogle = async (credential?: string, profile?: Partial<UserProfile>, accessToken?: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential, profile }),
+        body: JSON.stringify({ credential, profile, accessToken }),
       });
 
       const data: AuthResponse = await res.json();
