@@ -96,6 +96,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
       x2: number;
       y2: number;
       targetStep: number;
+      dir: 'right' | 'down';
     }>
   >([]);
 
@@ -136,15 +137,29 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
       };
     };
 
+    // Orthogonal elbow connector with rounded corners — always ends with a straight horizontal segment
+    const ARROW_LEN = 6;
     const hCurve = (p1: { x: number; y: number } | null, p2: { x: number; y: number } | null) => {
       if (!p1 || !p2) return '';
-      const midX = (p1.x + p2.x) / 2;
-      return `M ${p1.x} ${p1.y} C ${midX} ${p1.y}, ${midX} ${p2.y}, ${p2.x} ${p2.y}`;
+      const endX = p2.x - ARROW_LEN + 1;
+      const midX = (p1.x + endX) / 2;
+      const dy = p2.y - p1.y;
+      if (Math.abs(dy) < 2) return `M ${p1.x} ${p1.y} H ${endX}`;
+      const dir = dy > 0 ? 1 : -1;
+      const r = Math.max(0, Math.min(8, Math.abs(dy) / 2, (endX - p1.x) / 2 - 2));
+      return [
+        `M ${p1.x} ${p1.y}`,
+        `H ${midX - r}`,
+        `Q ${midX} ${p1.y} ${midX} ${p1.y + dir * r}`,
+        `V ${p2.y - dir * r}`,
+        `Q ${midX} ${p2.y} ${midX + r} ${p2.y}`,
+        `H ${endX}`,
+      ].join(' ');
     };
 
     const vLine = (p1: { x: number; y: number } | null, p2: { x: number; y: number } | null) => {
       if (!p1 || !p2) return '';
-      return `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
+      return `M ${p1.x} ${p1.y} V ${p2.y - ARROW_LEN + 1}`;
     };
 
     const models = edgeAnchor(modelOutRef.current, 'right');
@@ -157,16 +172,16 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
     const outputIn = edgeAnchor(outputInRef.current, 'left');
 
     const raw = [
-      { id: 'models-prompt', p1: models, p2: promptIn, d: hCurve(models, promptIn), targetStep: 2 },
-      { id: 'prompt-sampler', p1: promptBottom, p2: samplerTop, d: vLine(promptBottom, samplerTop), targetStep: 3 },
-      { id: 'size-sampler', p1: resolution, p2: samplerIn, d: hCurve(resolution, samplerIn), targetStep: 3 },
-      { id: 'sampler-output', p1: samplerOut, p2: outputIn, d: hCurve(samplerOut, outputIn), targetStep: 4 },
+      { id: 'models-prompt', p1: models, p2: promptIn, d: hCurve(models, promptIn), targetStep: 2, dir: 'right' as const },
+      { id: 'prompt-sampler', p1: promptBottom, p2: samplerTop, d: vLine(promptBottom, samplerTop), targetStep: 3, dir: 'down' as const },
+      { id: 'size-sampler', p1: resolution, p2: samplerIn, d: hCurve(resolution, samplerIn), targetStep: 3, dir: 'right' as const },
+      { id: 'sampler-output', p1: samplerOut, p2: outputIn, d: hCurve(samplerOut, outputIn), targetStep: 4, dir: 'right' as const },
     ];
 
     setWires(
       raw
         .filter((w) => w.d !== '' && w.p2)
-        .map((w) => ({ id: w.id, d: w.d, x2: w.p2!.x, y2: w.p2!.y, targetStep: w.targetStep }))
+        .map((w) => ({ id: w.id, d: w.d, x2: w.p2!.x, y2: w.p2!.y, targetStep: w.targetStep, dir: w.dir }))
     );
   }, []);
 
@@ -432,28 +447,27 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
         >
           {/* Minimal Step-Flow Connectors (Neutral Slate; Active Step Highlighted) */}
           <svg className="hidden xl:block absolute inset-0 w-full h-full pointer-events-none z-0 overflow-visible">
-            <defs>
-              <marker id="flux-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                <path d="M 0 1 L 8 5 L 0 9 z" fill="#94A3B8" />
-              </marker>
-              <marker id="flux-arrow-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                <path d="M 0 1 L 8 5 L 0 9 z" fill="#6366F1" />
-              </marker>
-            </defs>
             {wires.map((w) => {
               const isActive = isRunning && activeStep === w.targetStep;
+              const color = isActive ? '#6366F1' : '#94A3B8';
+              // Fixed-orientation arrowhead whose tip sits exactly on the target card edge
+              const arrow =
+                w.dir === 'down'
+                  ? `${w.x2},${w.y2} ${w.x2 - 4.5},${w.y2 - 6} ${w.x2 + 4.5},${w.y2 - 6}`
+                  : `${w.x2},${w.y2} ${w.x2 - 6},${w.y2 - 4.5} ${w.x2 - 6},${w.y2 + 4.5}`;
               return (
-                <path
-                  key={w.id}
-                  d={w.d}
-                  fill="none"
-                  stroke={isActive ? '#6366F1' : '#CBD5E1'}
-                  strokeWidth={isActive ? 2.5 : 2}
-                  strokeDasharray={isActive ? '6 4' : undefined}
-                  strokeLinecap="round"
-                  markerEnd={isActive ? 'url(#flux-arrow-active)' : 'url(#flux-arrow)'}
-                  className="transition-all duration-300"
-                />
+                <g key={w.id} className="transition-all duration-300">
+                  <path
+                    d={w.d}
+                    fill="none"
+                    stroke={isActive ? '#6366F1' : '#CBD5E1'}
+                    strokeWidth={isActive ? 2.25 : 1.75}
+                    strokeDasharray={isActive ? '5 4' : undefined}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <polygon points={arrow} fill={color} strokeLinejoin="round" />
+                </g>
               );
             })}
           </svg>
