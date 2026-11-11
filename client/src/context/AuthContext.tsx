@@ -21,18 +21,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const getViewFromHash = (): ViewType => {
-  const hash = window.location.hash.toLowerCase();
-  if (hash.includes('signup')) return 'signup';
-  if (hash.includes('login') || hash.includes('signin')) return 'login';
-  return 'chat';
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(() => {
     try {
-      const savedUser = localStorage.getItem('nebula_user');
-      return savedUser ? JSON.parse(savedUser) : null;
+      const saved = localStorage.getItem('nebula_user');
+      return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
@@ -43,17 +36,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [currentView, setCurrentView] = useState<ViewType>(getViewFromHash);
 
-  // Sync hash routing with state
-  useEffect(() => {
-    const handleHashChange = () => {
-      setCurrentView(getViewFromHash());
-    };
-
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  // Synchronize route view with window hash: #/login, #/signup, #/
+  const [currentView, setCurrentView] = useState<ViewType>(() => {
+    const hash = window.location.hash.toLowerCase();
+    if (hash.includes('login')) return 'login';
+    if (hash.includes('signup')) return 'signup';
+    return 'chat';
+  });
 
   const navigateTo = useCallback((view: ViewType) => {
     setCurrentView(view);
@@ -64,6 +54,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       window.location.hash = '#/';
     }
+  }, []);
+
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('nebula_token');
+    localStorage.removeItem('nebula_user');
   }, []);
 
   // Verify token on mount with /api/auth/me
@@ -102,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     verifySession();
-  }, []);
+  }, [logout]);
 
   const handleAuthSuccess = (newToken: string, newUser: UserProfile) => {
     setToken(newToken);
@@ -172,13 +169,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       return { success: false, error: err.message || 'Failed to connect to authentication server' };
     }
-  };
-
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('nebula_token');
-    localStorage.removeItem('nebula_user');
   };
 
   const updateProfile = async (data: { name?: string; avatar?: string; preferences?: Record<string, any> }) => {
