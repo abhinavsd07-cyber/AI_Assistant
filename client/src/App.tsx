@@ -6,14 +6,46 @@ import { ChatThread } from './components/ChatThread';
 import { ChatInput, type FileAttachment } from './components/ChatInput';
 import { SettingsModal } from './components/SettingsModal';
 import { UpgradeModal } from './components/UpgradeModal';
+import { VoiceModal } from './components/VoiceModal';
 import { AuthPage } from './pages/AuthPage';
 import { useAuth } from './context/AuthContext';
-import type { Message, ChatSession } from './types';
+import type { Message, ChatSession, PersonaType } from './types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const App: React.FC = () => {
   const { user, token, isAuthenticated, currentView } = useAuth();
+
+  // Dark / Light Theme state
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      const savedTheme = localStorage.getItem('nebula_theme') as 'light' | 'dark' | null;
+      if (savedTheme) return savedTheme;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch {
+      return 'light';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      localStorage.setItem('nebula_theme', theme);
+    } catch {
+      // Ignore
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  // AI Persona state
+  const [selectedPersona, setSelectedPersona] = useState<PersonaType>('general');
 
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
     try {
@@ -31,7 +63,6 @@ export const App: React.FC = () => {
     return user?.email || localStorage.getItem('nebula_user_email') || 'Sign in to sync history';
   });
 
-  // Keep state updated when user context changes
   useEffect(() => {
     if (user) {
       setUserName(user.name);
@@ -48,6 +79,7 @@ export const App: React.FC = () => {
   // Modals & responsive drawer
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Sync sessions to localStorage
@@ -92,11 +124,11 @@ export const App: React.FC = () => {
     fetchMongoSessions();
   }, [token]);
 
-  // Load selected session messages
+  // Select a past session from sidebar
   const handleSelectSession = (id: string) => {
+    setCurrentSessionId(id);
     const session = sessions.find((s) => s.id === id);
     if (session) {
-      setCurrentSessionId(session.id);
       setMessages(session.messages);
     }
   };
@@ -125,13 +157,15 @@ export const App: React.FC = () => {
     }
   };
 
-  // Send message to live backend API with Multi-turn history, attachments, and sub-second SSE streaming
+  // Send message to live backend API with Multi-turn history, attachments, personas, and sub-second SSE streaming
   const handleSendMessage = async (
     text: string, 
-    isReasoning: boolean, 
+    isReasoning: boolean = false, 
     attachment?: FileAttachment | null,
-    isWebSearch?: boolean
-  ) => {
+    isWebSearch: boolean = false,
+    isImageGen: boolean = false,
+    historyOverride?: Message[]
+  ): Promise<string> => {
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const userMessage: Message = {
       id: `msg-${Date.now()}`,
@@ -143,7 +177,8 @@ export const App: React.FC = () => {
       fileType: attachment?.mimeType,
     };
 
-    const newMessages = [...messages, userMessage];
+    const baseHistory = historyOverride || messages;
+    const newMessages = [...baseHistory, userMessage];
     setMessages(newMessages);
     setIsLoading(true);
 
@@ -164,8 +199,8 @@ export const App: React.FC = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      // Sanitize history so that we only send text (no huge base64 images repeatedly in every message)
-      const sanitizedHistory = messages.slice(-6).map((m) => ({
+      // Sanitize history turns
+      const sanitizedHistory = baseHistory.slice(-6).map((m) => ({
         sender: m.sender,
         text: m.text,
       }));
@@ -186,6 +221,8 @@ export const App: React.FC = () => {
           sessionId: activeSessionId,
           isReasoning,
           isWebSearch,
+          persona: selectedPersona,
+          isImageGen,
           stream: true,
         }),
       });
@@ -193,7 +230,7 @@ export const App: React.FC = () => {
       const assistantId = `msg-${Date.now() + 1}`;
       const assistantTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-      // Handle Real-Time Server-Sent Events (SSE) Streaming with Line Buffering
+      // Handle Real-Time Server-Sent Events (SSE) Streaming
       const contentType = response.headers.get('content-type') || '';
       if (contentType.includes('text/event-stream') && response.body) {
         const reader = response.body.getReader();
@@ -208,7 +245,6 @@ export const App: React.FC = () => {
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
-          // Retain any incomplete trailing chunk in buffer
           buffer = lines.pop() || '';
 
           for (const line of lines) {
@@ -216,7 +252,14 @@ export const App: React.FC = () => {
             if (trimmed.startsWith('data: ')) {
               try {
                 const parsed = JSON.parse(trimmed.slice(6));
-                if (parsed.chunk) {
+                if (parsed.fullText) {
+                  fullText = parsed.fullText;
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantId ? { ...m, text: fullText, imageUrl: parsed.imageUrl } : m
+                    )
+                  );
+                } else if (parsed.chunk) {
                   if (!hasStarted) {
                     hasStarted = true;
                     setIsLoading(false);
@@ -250,110 +293,122 @@ export const App: React.FC = () => {
           }
         }
 
-        setIsLoading(false);
-
-        // Update local session storage
-        setSessions((sessionList) => {
-          const existing = sessionList.find((s) => s.id === activeSessionId);
-          const finalAssistantMsg: Message = {
-            id: assistantId,
-            sender: 'assistant',
-            text: fullText,
-            timestamp: assistantTimestamp,
-          };
-          const finalMessages: Message[] = [
-            ...newMessages,
-            finalAssistantMsg,
-          ];
-          const sessionTitle = text.length > 28 
-            ? `${text.slice(0, 28)}...` 
-            : text || (attachment ? attachment.name : 'Conversation');
-
-          if (!existing) {
-            const newSession: ChatSession = {
-              id: activeSessionId,
-              title: sessionTitle,
-              messages: finalMessages,
-              updatedAt: new Date().toISOString(),
-            };
-            return [newSession, ...sessionList];
-          }
-          return sessionList.map((s) =>
-            s.id === activeSessionId ? { ...s, messages: finalMessages } : s
-          );
-        });
-
-      } else {
-        // Standard JSON Fallback
-        const data = await response.json();
-        setIsLoading(false);
-
-        let replyText = '';
-        if (data.success && data.reply) {
-          replyText = data.reply;
-        } else {
-          replyText = `❌ Error: ${data.details || data.error || 'Failed to get response from AI model.'}`;
-        }
-
-        const initialAssistantMessage: Message = {
+        const finalAssistantMsg: Message = {
           id: assistantId,
           sender: 'assistant',
-          text: replyText,
+          text: fullText || 'No response generated.',
           timestamp: assistantTimestamp,
         };
 
-        setMessages([...newMessages, initialAssistantMessage]);
+        const updatedHistory = [...newMessages, finalAssistantMsg];
+        setMessages(updatedHistory);
+        setIsLoading(false);
 
-        setSessions((sessionList) => {
-          const existing = sessionList.find((s) => s.id === activeSessionId);
-          const sessionTitle = text.length > 28 
-            ? `${text.slice(0, 28)}...` 
-            : text || (attachment ? attachment.name : 'Conversation');
-
-          if (!existing) {
-            const newSession: ChatSession = {
+        // Update session in sidebar
+        const sessionTitle = text.slice(0, 30) || (attachment ? attachment.name.slice(0, 30) : 'Chat');
+        setSessions((prev) => {
+          const exists = prev.find((s) => s.id === activeSessionId);
+          if (exists) {
+            return prev.map((s) =>
+              s.id === activeSessionId
+                ? { ...s, messages: updatedHistory, updatedAt: new Date().toISOString() }
+                : s
+            );
+          }
+          return [
+            {
               id: activeSessionId,
               title: sessionTitle,
-              messages: [...newMessages, initialAssistantMessage],
+              messages: updatedHistory,
               updatedAt: new Date().toISOString(),
-            };
-            return [newSession, ...sessionList];
-          }
-          return sessionList.map((s) =>
-            s.id === activeSessionId ? { ...s, messages: [...newMessages, initialAssistantMessage] } : s
-          );
+            },
+            ...prev,
+          ];
         });
+
+        return fullText;
       }
 
+      // Fallback JSON handling
+      const data = await response.json();
+      setIsLoading(false);
+
+      if (data.success && data.reply) {
+        const assistantMsg: Message = {
+          id: assistantId,
+          sender: 'assistant',
+          text: data.reply,
+          timestamp: assistantTimestamp,
+          imageUrl: data.imageUrl,
+        };
+        const updatedHistory = [...newMessages, assistantMsg];
+        setMessages(updatedHistory);
+
+        const sessionTitle = text.slice(0, 30) || (attachment ? attachment.name.slice(0, 30) : 'Chat');
+        setSessions((prev) => {
+          const exists = prev.find((s) => s.id === activeSessionId);
+          if (exists) {
+            return prev.map((s) =>
+              s.id === activeSessionId
+                ? { ...s, messages: updatedHistory, updatedAt: new Date().toISOString() }
+                : s
+            );
+          }
+          return [
+            {
+              id: activeSessionId,
+              title: sessionTitle,
+              messages: updatedHistory,
+              updatedAt: new Date().toISOString(),
+            },
+            ...prev,
+          ];
+        });
+
+        return data.reply;
+      } else {
+        throw new Error(data.error || 'Failed to generate response.');
+      }
     } catch (err: any) {
       setIsLoading(false);
       const errorMessage: Message = {
         id: `msg-${Date.now() + 1}`,
         sender: 'assistant',
-        text: `❌ Connection error: Could not connect to backend server at ${apiUrl}.\n\nPlease ensure your backend server is running with 'npm start'. (${err.message})`,
+        text: `⚠️ **Error:** ${err.message || 'Unable to connect to Nebula AI service.'}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages([...newMessages, errorMessage]);
+      return '';
     }
   };
 
-  // Regenerate assistant response
-  const handleRegenerate = (assistantMsgId: string) => {
-    if (isLoading) return;
-    const msgIndex = messages.findIndex((m) => m.id === assistantMsgId);
-    if (msgIndex <= 0) return;
+  // Edit in-place user prompt & regenerate
+  const handleEditMessage = (messageId: string, newText: string) => {
+    const targetIndex = messages.findIndex((m) => m.id === messageId);
+    if (targetIndex === -1) return;
 
-    const prevUserMessage = messages[msgIndex - 1];
-    if (prevUserMessage && prevUserMessage.sender === 'user') {
-      const historyUntilPrompt = messages.slice(0, msgIndex);
-      setMessages(historyUntilPrompt);
-      handleSendMessage(
-        prevUserMessage.text,
-        !!prevUserMessage.isReasoning,
-        null,
-        false
-      );
+    // Retain conversations prior to this message
+    const prior = messages.slice(0, targetIndex);
+    handleSendMessage(newText, false, null, false, false, prior);
+  };
+
+  // Regenerate response for the last assistant turn
+  const handleRegenerate = (messageId: string) => {
+    const assistantIndex = messages.findIndex((m) => m.id === messageId);
+    if (assistantIndex === -1) return;
+
+    let userPrompt = '';
+    for (let i = assistantIndex - 1; i >= 0; i--) {
+      if (messages[i].sender === 'user') {
+        userPrompt = messages[i].text;
+        break;
+      }
     }
+
+    if (!userPrompt) return;
+    const historyBefore = messages.slice(0, assistantIndex);
+    setMessages(historyBefore);
+    handleSendMessage(userPrompt, false, null, false, false, historyBefore.slice(0, -1));
   };
 
   // Export Chat as Markdown (.md)
@@ -363,11 +418,8 @@ export const App: React.FC = () => {
       return;
     }
     const title = sessions.find((s) => s.id === currentSessionId)?.title || 'Nebula AI Conversation';
-    const content = `# 🌌 ${title}\n\n*Exported on ${new Date().toLocaleString()}*\n\n---\n\n` +
-      messages.map((m) => {
-        const author = m.sender === 'user' ? `**You (${m.timestamp})**` : `**Nebula AI (${m.timestamp})**`;
-        return `${author}:\n\n${m.text}\n`;
-      }).join('\n---\n\n');
+    const content = `# ${title}\n*Exported from Nebula AI on ${new Date().toLocaleString()}*\n\n---\n\n` +
+      messages.map((m) => `### ${m.sender === 'user' ? '👤 User' : '✨ Nebula AI'} (${m.timestamp})\n\n${m.text}\n`).join('\n---\n\n');
 
     const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -397,13 +449,13 @@ export const App: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Dedicated Full-Page Professional Authentication
+  // Authentication views
   if (currentView === 'login' || currentView === 'signup') {
     return <AuthPage initialMode={currentView} />;
   }
 
   return (
-    <div className="h-screen w-screen flex overflow-hidden bg-[#FCFCFC] text-[#0D0D0D]">
+    <div className="h-screen w-screen flex overflow-hidden bg-[#FCFCFC] dark:bg-[#121212] text-[#0D0D0D] dark:text-[#ECECEC] transition-colors duration-200">
       {/* Left Sidebar */}
       <Sidebar
         currentSessionId={currentSessionId}
@@ -418,11 +470,16 @@ export const App: React.FC = () => {
       />
 
       {/* Right Main Chat Stage */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#FCFCFC]">
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#FCFCFC] dark:bg-[#121212]">
         {/* Top Bar */}
         <TopBar
           selectedModel={selectedModel}
           onSelectModel={setSelectedModel}
+          selectedPersona={selectedPersona}
+          onSelectPersona={setSelectedPersona}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onOpenVoiceMode={() => setIsVoiceModalOpen(true)}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)}
           onClearChat={handleNewChat}
           onOpenSettings={() => setIsSettingsOpen(true)}
@@ -440,6 +497,7 @@ export const App: React.FC = () => {
                 messages={messages}
                 isLoading={isLoading}
                 onRegenerate={handleRegenerate}
+                onEditMessage={handleEditMessage}
               />
             )}
           </div>
@@ -451,7 +509,14 @@ export const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Hands-free Voice Mode Modal */}
+      <VoiceModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        onSendMessage={(speechText) => handleSendMessage(speechText, false, null)}
+      />
+
+      {/* Settings Modal */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -463,6 +528,7 @@ export const App: React.FC = () => {
         setUserEmail={setUserEmail}
       />
 
+      {/* Upgrade Plan Modal */}
       <UpgradeModal
         isOpen={isUpgradeOpen}
         onClose={() => setIsUpgradeOpen(false)}

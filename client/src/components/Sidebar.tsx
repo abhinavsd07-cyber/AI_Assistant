@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   SquarePen, 
   ChevronDown, 
@@ -14,10 +14,9 @@ import {
   ChevronRight,
   Sparkles,
   Sliders,
-  User as UserIcon,
   Settings as SettingsIcon,
-  HelpCircle,
-  LogOut
+  LogOut,
+  Search
 } from 'lucide-react';
 import type { ChatSession } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -48,8 +47,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { user, isAuthenticated, navigateTo, logout } = useAuth();
   const [showMore, setShowMore] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const displayList = sessions.map(s => ({ id: s.id, title: s.title }));
+  // Filter sessions by search query (title or message contents)
+  const filteredSessions = useMemo(() => {
+    if (!searchQuery.trim()) return sessions;
+    const q = searchQuery.toLowerCase();
+    return sessions.filter(s => 
+      s.title.toLowerCase().includes(q) ||
+      (s.messages && s.messages.some(m => m.text && m.text.toLowerCase().includes(q)))
+    );
+  }, [sessions, searchQuery]);
+
+  const displayList = filteredSessions.map(s => ({ id: s.id, title: s.title }));
   const visibleItems = showMore ? displayList : displayList.slice(0, 10);
 
   const displayName = user?.name || 'Abhinav SD';
@@ -69,13 +79,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {isOpenMobile && (
         <div 
           onClick={onCloseMobile}
-          className="fixed inset-0 bg-black/20 backdrop-blur-2xs z-40 md:hidden"
+          className="fixed inset-0 bg-black/30 backdrop-blur-2xs z-40 md:hidden"
         />
       )}
 
       <aside className={`
         fixed md:static top-0 left-0 bottom-0 z-50
-        w-[260px] bg-[#FCFCFC] border-r border-[#E5E5E5] flex flex-col justify-between
+        w-[260px] bg-[#FCFCFC] dark:bg-[#161616] border-r border-[#E5E5E5] dark:border-[#282828] flex flex-col justify-between
         transition-transform duration-300 ease-in-out
         ${isOpenMobile ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         h-full select-none
@@ -84,81 +94,104 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-3 flex flex-col gap-1 overflow-y-auto">
           {/* Brand Header */}
           <div className="flex items-center justify-between px-2 pt-1 pb-2">
-            <span className="font-bold text-lg tracking-tight text-[#0D0D0D]">Nebula AI</span>
+            <span className="font-bold text-lg tracking-tight text-[#0D0D0D] dark:text-[#F0F0F0]">Nebula AI</span>
             
             {/* Mobile close button */}
             <button 
               onClick={onCloseMobile}
-              className="md:hidden text-gray-500 hover:text-gray-800 p-1 rounded-lg"
+              className="md:hidden text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 p-1 rounded-lg"
             >
               <X size={18} />
             </button>
           </div>
 
-          {/* Quick Actions (matching screenshot) */}
-          <div className="flex flex-col gap-0.5 text-[13px] font-medium text-[#212121]">
+          {/* Quick Actions */}
+          <div className="flex flex-col gap-0.5 text-[13px] font-medium text-[#212121] dark:text-[#D4D4D4]">
             <button
               onClick={() => {
                 onNewChat();
                 onCloseMobile();
               }}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 transition-colors cursor-pointer text-left"
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 dark:hover:bg-[#242424] transition-colors cursor-pointer text-left"
             >
-              <SquarePen size={16} className="text-[#5D5D5D]" />
+              <SquarePen size={16} className="text-[#5D5D5D] dark:text-[#A0A0A0]" />
               <span>New chat</span>
             </button>
 
             <button
               onClick={() => onOpenSettings()}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 transition-colors cursor-pointer text-left text-gray-700"
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 dark:hover:bg-[#242424] transition-colors cursor-pointer text-left text-gray-700 dark:text-gray-300"
             >
-              <Calendar size={16} className="text-[#5D5D5D]" />
+              <Calendar size={16} className="text-[#5D5D5D] dark:text-[#A0A0A0]" />
               <span>Scheduled</span>
             </button>
 
             <button
               onClick={() => onOpenSettings()}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 transition-colors cursor-pointer text-left text-gray-700"
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 dark:hover:bg-[#242424] transition-colors cursor-pointer text-left text-gray-700 dark:text-gray-300"
             >
-              <Library size={16} className="text-[#5D5D5D]" />
+              <Library size={16} className="text-[#5D5D5D] dark:text-[#A0A0A0]" />
               <span>Library</span>
             </button>
 
             <button
               onClick={() => onOpenSettings()}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 transition-colors cursor-pointer text-left text-gray-700"
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 dark:hover:bg-[#242424] transition-colors cursor-pointer text-left text-gray-700 dark:text-gray-300"
             >
-              <AtSign size={16} className="text-[#5D5D5D]" />
+              <AtSign size={16} className="text-[#5D5D5D] dark:text-[#A0A0A0]" />
               <span>Plugins</span>
             </button>
 
             <button
               onClick={() => onOpenSettings()}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 transition-colors cursor-pointer text-left text-gray-700"
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 dark:hover:bg-[#242424] transition-colors cursor-pointer text-left text-gray-700 dark:text-gray-300"
             >
-              <Code size={16} className="text-[#5D5D5D]" />
+              <Code size={16} className="text-[#5D5D5D] dark:text-[#A0A0A0]" />
               <span>Codex</span>
             </button>
 
             <button
               onClick={() => onOpenSettings()}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 transition-colors cursor-pointer text-left text-gray-700"
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 dark:hover:bg-[#242424] transition-colors cursor-pointer text-left text-gray-700 dark:text-gray-300"
             >
-              <Compass size={16} className="text-[#5D5D5D]" />
+              <Compass size={16} className="text-[#5D5D5D] dark:text-[#A0A0A0]" />
               <span>Explore</span>
             </button>
           </div>
 
+          {/* Search Bar for Chat History */}
+          <div className="mt-3 px-1">
+            <div className="relative flex items-center">
+              <Search size={13} className="absolute left-2.5 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search chats..."
+                className="w-full pl-8 pr-6 py-1.5 rounded-lg bg-[#F0F0F0] dark:bg-[#202020] text-xs text-[#0D0D0D] dark:text-[#ECECEC] placeholder-gray-400 border border-transparent focus:border-gray-300 dark:focus:border-gray-700 outline-hidden transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Pinned & Recent Section */}
-          <div className="flex flex-col gap-1 mt-4 pt-2 border-t border-[#E5E5E5]/70">
-            <div className="px-2.5 py-1 text-[11px] font-semibold text-gray-400">
-              Pinned
+          <div className="flex flex-col gap-1 mt-3 pt-2 border-t border-[#E5E5E5]/70 dark:border-[#282828]">
+            <div className="flex items-center justify-between px-2.5 py-1 text-[11px] font-semibold text-gray-400">
+              <span>{searchQuery ? 'Search Results' : 'Recent Chats'}</span>
+              <span className="text-[10px] font-normal">{filteredSessions.length}</span>
             </div>
 
             <div className="flex flex-col gap-0.5">
               {visibleItems.length === 0 ? (
                 <div className="px-2.5 py-3 text-xs text-gray-400 italic">
-                  No conversations yet
+                  {searchQuery ? 'No matching conversations' : 'No conversations yet'}
                 </div>
               ) : (
                 visibleItems.map((item) => (
@@ -170,12 +203,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }}
                     className={`group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[13px] cursor-pointer transition-colors ${
                       currentSessionId === item.id
-                        ? 'bg-[#ECECEC] text-[#0D0D0D] font-medium'
-                        : 'text-[#424242] hover:text-[#0D0D0D] hover:bg-[#ECECEC]/60'
+                        ? 'bg-[#ECECEC] dark:bg-[#262626] text-[#0D0D0D] dark:text-white font-medium'
+                        : 'text-[#424242] dark:text-[#B0B0B0] hover:text-[#0D0D0D] dark:hover:text-white hover:bg-[#ECECEC]/60 dark:hover:bg-[#222222]'
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <div className="w-2.5 h-2.5 rounded-full border border-gray-400 shrink-0" />
+                      <div className="w-2.5 h-2.5 rounded-full border border-gray-400 dark:border-gray-600 shrink-0" />
                       <span className="truncate">{item.title}</span>
                     </div>
 
@@ -193,7 +226,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {displayList.length > 10 && (
                 <button
                   onClick={() => setShowMore(!showMore)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 transition-colors cursor-pointer"
                 >
                   {showMore ? (
                     <>
@@ -212,33 +245,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Bottom User Profile Section with Popover (Matching media_1793362882078_d19f4231.png) */}
-        <div className="relative p-3 border-t border-[#E5E5E5] flex flex-col gap-2 bg-[#FCFCFC]">
-          {/* Popover Menu matching uploaded screenshot */}
+        {/* Bottom User Profile Section */}
+        <div className="relative p-3 border-t border-[#E5E5E5] dark:border-[#282828] flex flex-col gap-2 bg-[#FCFCFC] dark:bg-[#161616]">
+          {/* Popover Menu */}
           {isUserMenuOpen && (
             <>
-              {/* Invisible full-screen backdrop to close on outside click */}
               <div 
                 className="fixed inset-0 z-40" 
                 onClick={() => setIsUserMenuOpen(false)} 
               />
 
-              {/* Popover Card */}
-              <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 bg-white rounded-2xl border border-[#E5E5E5] shadow-2xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-2 duration-150 text-[#0D0D0D]">
-                {/* Top Profile Header inside Menu */}
+              <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 bg-white dark:bg-[#1E1E1E] rounded-2xl border border-[#E5E5E5] dark:border-[#2E2E2E] shadow-2xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-2 duration-150 text-[#0D0D0D] dark:text-[#ECECEC]">
                 <div 
                   onClick={() => {
                     setIsUserMenuOpen(false);
                     onOpenSettings();
                   }}
-                  className="flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] transition-colors cursor-pointer"
+                  className="flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] dark:hover:bg-[#282828] transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-8 h-8 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                       {initials}
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="text-[13px] font-semibold text-[#0D0D0D] truncate leading-tight">
+                      <span className="text-[13px] font-semibold text-[#0D0D0D] dark:text-[#ECECEC] truncate leading-tight">
                         {displayName}
                       </span>
                       <span className="text-[11px] text-gray-500 truncate leading-tight">
@@ -249,125 +279,81 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <ChevronRight size={15} className="text-gray-400 shrink-0" />
                 </div>
 
-                <div className="h-[1px] bg-[#E5E5E5] my-1 mx-1" />
+                <div className="my-1 border-t border-[#E5E5E5] dark:border-[#2E2E2E]" />
 
-                {/* Upgrade plan */}
                 <button
-                  type="button"
                   onClick={() => {
                     setIsUserMenuOpen(false);
                     onOpenUpgrade();
                   }}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] transition-colors cursor-pointer w-full text-left"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] dark:hover:bg-[#282828] transition-colors text-left text-[13px] font-medium text-[#0D0D0D] dark:text-[#ECECEC] cursor-pointer"
                 >
-                  <Sparkles size={15} className="text-gray-500 shrink-0" />
+                  <Sparkles size={16} className="text-purple-600 dark:text-purple-400 shrink-0" />
                   <span>Upgrade plan</span>
                 </button>
 
-                {/* Personalization */}
                 <button
-                  type="button"
                   onClick={() => {
                     setIsUserMenuOpen(false);
                     onOpenSettings();
                   }}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] transition-colors cursor-pointer w-full text-left"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] dark:hover:bg-[#282828] transition-colors text-left text-[13px] font-medium text-[#0D0D0D] dark:text-[#ECECEC] cursor-pointer"
                 >
-                  <Sliders size={15} className="text-gray-500 shrink-0" />
-                  <span>Personalization</span>
+                  <Sliders size={16} className="text-gray-500 shrink-0" />
+                  <span>Personalize</span>
                 </button>
 
-                {/* Profile */}
                 <button
-                  type="button"
                   onClick={() => {
                     setIsUserMenuOpen(false);
                     onOpenSettings();
                   }}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] transition-colors cursor-pointer w-full text-left"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] dark:hover:bg-[#282828] transition-colors text-left text-[13px] font-medium text-[#0D0D0D] dark:text-[#ECECEC] cursor-pointer"
                 >
-                  <UserIcon size={15} className="text-gray-500 shrink-0" />
-                  <span>Profile</span>
-                </button>
-
-                {/* Settings */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsUserMenuOpen(false);
-                    onOpenSettings();
-                  }}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] transition-colors cursor-pointer w-full text-left"
-                >
-                  <SettingsIcon size={15} className="text-gray-500 shrink-0" />
+                  <SettingsIcon size={16} className="text-gray-500 shrink-0" />
                   <span>Settings</span>
                 </button>
 
-                <div className="h-[1px] bg-[#E5E5E5] my-1 mx-1" />
+                <div className="my-1 border-t border-[#E5E5E5] dark:border-[#2E2E2E]" />
 
-                {/* Help */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsUserMenuOpen(false);
-                    alert('Nebula AI Help & Documentation\nPowered by Google Gemini 3.8 Flash & MongoDB Atlas.');
-                  }}
-                  className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] transition-colors cursor-pointer w-full text-left"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <HelpCircle size={15} className="text-gray-500 shrink-0" />
-                    <span>Help</span>
-                  </div>
-                  <ChevronRight size={14} className="text-gray-400 shrink-0" />
-                </button>
-
-                {/* Log in / Sign up (only in guest mode) */}
-                {!isAuthenticated && (
+                {isAuthenticated ? (
                   <button
-                    type="button"
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      logout();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 transition-colors text-left text-[13px] font-medium cursor-pointer"
+                  >
+                    <LogOut size={16} className="shrink-0" />
+                    <span>Log out</span>
+                  </button>
+                ) : (
+                  <button
                     onClick={() => {
                       setIsUserMenuOpen(false);
                       navigateTo('login');
                     }}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] transition-colors cursor-pointer w-full text-left"
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] dark:hover:bg-[#282828] text-blue-600 dark:text-blue-400 transition-colors text-left text-[13px] font-medium cursor-pointer"
                   >
-                    <LogIn size={15} className="text-gray-500 shrink-0" />
+                    <LogIn size={16} className="shrink-0" />
                     <span>Log in / Sign up</span>
                   </button>
                 )}
-
-                {/* Log out (Always present, matching reference screenshot) */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsUserMenuOpen(false);
-                    logout();
-                    navigateTo('login');
-                  }}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 hover:text-black hover:bg-[#F4F4F4] transition-colors cursor-pointer w-full text-left"
-                >
-                  <LogOut size={15} className="text-gray-500 shrink-0" />
-                  <span>Log out</span>
-                </button>
               </div>
             </>
           )}
 
-          {/* Trigger Row */}
+          {/* Trigger button */}
           <div 
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className={`flex items-center justify-between px-2.5 py-2 rounded-xl transition-all cursor-pointer select-none ${
-              isUserMenuOpen ? 'bg-[#ECECEC]' : 'hover:bg-[#ECECEC]/70 active:scale-[0.99]'
-            }`}
+            className="flex items-center justify-between p-2 rounded-xl hover:bg-[#ECECEC]/70 dark:hover:bg-[#252525] transition-colors cursor-pointer text-[#0D0D0D] dark:text-[#ECECEC]"
           >
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              {/* Green Initial Circle matching screenshot (AS in green) */}
+            <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                 {initials}
               </div>
-              
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-[13px] font-semibold text-[#0D0D0D] truncate leading-tight">
+              <div className="flex flex-col min-w-0">
+                <span className="text-[13px] font-semibold truncate leading-tight text-[#0D0D0D] dark:text-[#ECECEC]">
                   {displayName}
                 </span>
                 <span className="text-[11px] text-gray-500 truncate leading-tight">
@@ -375,8 +361,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </span>
               </div>
             </div>
-
-            <ChevronRight size={14} className={`text-gray-400 transition-transform ${isUserMenuOpen ? 'rotate-90' : ''}`} />
+            <ChevronRight size={14} className="text-gray-400 shrink-0" />
           </div>
         </div>
       </aside>

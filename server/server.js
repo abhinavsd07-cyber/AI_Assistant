@@ -157,7 +157,9 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
       image, 
       sessionId, 
       isReasoning,
-      isWebSearch 
+      isWebSearch,
+      persona = "general",
+      isImageGen = false
     } = req.body;
 
     if (
@@ -169,6 +171,78 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
         success: false,
         error: "Valid message or document/image is required (max 25000 characters).",
       });
+    }
+
+    const trimmedMsg = (message || "").trim();
+
+    // AI Image Generation Pipeline (/image <prompt> or isImageGen flag)
+    const isImageGeneration = isImageGen || /^\/image\b/i.test(trimmedMsg);
+    if (isImageGeneration) {
+      const rawPrompt = trimmedMsg.replace(/^\/image\s*/i, "").trim() || "A futuristic AI nebula in deep space";
+      
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+      res.socket?.setNoDelay(true);
+
+      res.write(`data: ${JSON.stringify({ chunk: `🎨 **Generating high-resolution AI visual** for: *"${rawPrompt}"*...\n\n` })}\n\n`);
+
+      try {
+        const seed = Math.floor(Math.random() * 1000000);
+        const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(rawPrompt)}?width=1024&height=1024&nologo=true&seed=${seed}`;
+        const imgFetch = await fetch(pollUrl);
+        if (!imgFetch.ok) throw new Error("Image service busy, please retry.");
+        const arrBuf = await imgFetch.arrayBuffer();
+        const dataUri = `data:image/jpeg;base64,${Buffer.from(arrBuf).toString("base64")}`;
+        
+        let cdnUrl = await uploadToCloudinary(dataUri, "nebula_ai/generated");
+        if (!cdnUrl) {
+          cdnUrl = pollUrl;
+        }
+
+        const replyMarkdown = `Here is your generated image for **"${rawPrompt}"**:\n\n![${rawPrompt}](${cdnUrl})\n\n- 🖼️ **CDN Link**: [Open Full High-Res Image](${cdnUrl})\n- 🚀 **Storage**: Cloudinary Global CDN\n- 💡 **Prompt**: \`${rawPrompt}\``;
+
+        res.write(`data: ${JSON.stringify({ chunk: replyMarkdown, fullText: replyMarkdown, imageUrl: cdnUrl })}\n\n`);
+        res.write(`data: ${JSON.stringify({ done: true, model: "pollinations-flux-cloudinary" })}\n\n`);
+        res.end();
+
+        // Save session in background
+        if (isMongoConnected && sessionId) {
+          const userMsg = {
+            id: `msg-${Date.now()}`,
+            sender: "user",
+            text: trimmedMsg,
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          };
+          const assistantMsg = {
+            id: `msg-${Date.now() + 1}`,
+            sender: "assistant",
+            text: replyMarkdown,
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            imageUrl: cdnUrl,
+          };
+          await ChatSession.findOneAndUpdate(
+            { sessionId },
+            {
+              $setOnInsert: {
+                title: `🎨 ${rawPrompt.slice(0, 28)}`,
+                userId: req.user ? req.user._id : null,
+                userEmail: req.user ? req.user.email : null,
+              },
+              $set: { model: "pollinations-flux-cloudinary" },
+              $push: { messages: { $each: [userMsg, assistantMsg] } },
+            },
+            { upsert: true, new: true }
+          );
+        }
+        return;
+      } catch (err) {
+        const errMsg = `⚠️ Image generation failed: ${err.message}`;
+        res.write(`data: ${JSON.stringify({ chunk: errMsg, fullText: errMsg })}\n\n`);
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        return res.end();
+      }
     }
 
     if (!process.env.GEMINI_API_KEY) {
@@ -199,9 +273,17 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
     // Deduplicate
     candidateModels = Array.from(new Set(candidateModels.filter(Boolean)));
 
+    const PERSONA_PROMPTS = {
+      general: "You are Nebula AI, a world-class AI cognitive companion created by Abhinav SD.",
+      coder: "You are Nebula Senior Code Architect. You produce production-grade, cleanly structured, secure, modular code with complete error handling, TypeScript types, and modern software design patterns. Always provide complete working solutions with explanations.",
+      kerala_scholar: "You are Nebula Kerala Scholar. You possess encyclopedic knowledge of Kerala history, culture, Travancore/Cochin/Malabar heritage, Malayalam literature, and 2026 socio-political developments. You explain with depth, nuance, and cultural authenticity in Malayalam or English.",
+      malayalam_writer: "You are Nebula Malayalam Creative Writer (മലയാള സാഹിത്യകാരൻ). You write poetic, engaging, natural Malayalam prose, essays, stories, and translations.",
+      math_tutor: "You are Nebula Math & Science Tutor. You break down complex equations, calculus, physics, and chemistry concepts step-by-step with KaTeX formulas and intuitive analogies."
+    };
+
+    const personaInstruction = PERSONA_PROMPTS[persona] || PERSONA_PROMPTS.general;
     const systemInstruction =
-      "You are Nebula AI, a helpful, intelligent professional assistant. " +
-      "The current year is 2026. Following the May 2026 Kerala Legislative Assembly elections, V. D. Satheesan (UDF) assumed office as the Chief Minister of Kerala on May 18, 2026. " +
+      `${personaInstruction} The current year is 2026. Following the May 2026 Kerala Legislative Assembly elections, V. D. Satheesan (UDF) assumed office as the Chief Minister of Kerala on May 18, 2026. ` +
       "Always rely on live search results for current leaders, elections, and recent events. " +
       "Answer in Malayalam when the user uses Malayalam or asks for it. " +
       "Be concise, direct, step-by-step, and provide practical examples. Be honest when uncertain.";
@@ -221,8 +303,6 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
         }
       }
     }
-
-    const trimmedMsg = (message || "").trim();
 
     // Check if web search should be performed (explicit or query-based for current facts)
     const shouldSearch =
