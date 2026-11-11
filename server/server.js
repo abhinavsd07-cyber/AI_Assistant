@@ -826,6 +826,7 @@ app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
       let streamSuccess = false;
       let fullReply = "";
       let usedModel = candidateModels[0];
+      let lastStreamError = null;
 
       for (const model of candidateModels) {
         try {
@@ -851,12 +852,24 @@ app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
             break;
           }
         } catch (streamErr) {
+          lastStreamError = streamErr;
           console.warn(`Stream model '${model}' error: ${streamErr.message}. Trying next model...`);
         }
       }
 
       if (!streamSuccess) {
-        res.write(`data: ${JSON.stringify({ error: "Failed to generate AI response" })}\n\n`);
+        let descriptiveError = "Failed to generate AI response";
+        if (lastStreamError) {
+          const errMsg = lastStreamError.message || "";
+          if (errMsg.includes("API key not valid") || errMsg.includes("UNAUTHENTICATED") || errMsg.includes("ACCESS_TOKEN_TYPE_UNSUPPORTED")) {
+            descriptiveError = "Google Gemini API Key is invalid or unauthorized (HTTP 401). Please update GEMINI_API_KEY in server/.env with a valid key from Google AI Studio (starts with 'AIzaSy...').";
+          } else if (errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("429")) {
+            descriptiveError = "Google Gemini API rate limit or quota exceeded (HTTP 429). Please wait a moment or try again.";
+          } else {
+            descriptiveError = `AI generation failed: ${errMsg}`;
+          }
+        }
+        res.write(`data: ${JSON.stringify({ error: descriptiveError })}\n\n`);
         return res.end();
       }
 
