@@ -100,8 +100,13 @@ export const TopBar: React.FC<TopBarProps> = ({
         <div className="relative">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-[#ECECEC]/70 dark:hover:bg-[#252525] text-sm font-semibold text-[#0D0D0D] dark:text-[#ECECEC] transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-[#ECECEC]/70 dark:hover:bg-[#252525] text-sm font-semibold text-[#0D0D0D] dark:text-[#ECECEC] transition-colors cursor-pointer"
           >
+            <img
+              src="/cosmic_orb.jpg"
+              alt="Nebula AI"
+              className="w-5 h-5 rounded-full object-cover border border-purple-400/30 shadow-2xs shrink-0"
+            />
             <span className="text-base font-bold">Nebula AI</span>
             {isPro && (
               <span className="px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[9px] font-extrabold uppercase tracking-wider shadow-xs">
