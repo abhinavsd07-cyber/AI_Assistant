@@ -403,26 +403,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Desktop Collapsed Floating Rail Trigger (Identical to ChatGPT Desktop) */}
-      {isCollapsedDesktop && (
-        <div className="hidden md:flex fixed top-2.5 left-3 z-40 items-center gap-1 bg-white/90 dark:bg-[#1A1A1A]/90 backdrop-blur-md border border-[#E5E5E5] dark:border-[#2C2C2C] rounded-xl p-1 shadow-xs">
-          <button
-            onClick={() => setIsCollapsedDesktop(false)}
-            className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#282828] transition-colors cursor-pointer"
-            title="Open sidebar"
-          >
-            <PanelLeftOpen size={17} />
-          </button>
-          <button
-            onClick={onNewChat}
-            className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#282828] transition-colors cursor-pointer"
-            title="New chat"
-          >
-            <SquarePen size={17} />
-          </button>
-        </div>
-      )}
-
       {/* Mobile backdrop */}
       {isOpenMobile && (
         <div
@@ -431,30 +411,145 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
 
+      {/* Desktop Collapsed Mini Icon Rail (In-Flow — Zero Overlap with TopBar) */}
+      {isCollapsedDesktop && (
+        <aside className="hidden md:flex md:static w-[60px] shrink-0 h-full bg-[#F9F9F9] dark:bg-[#171717] border-r border-[#E5E5E5] dark:border-[#262626] flex-col items-center justify-between py-3 select-none z-30">
+          <div className="flex flex-col items-center gap-2">
+            {/* Expand Sidebar Button */}
+            <button
+              onClick={() => setIsCollapsedDesktop(false)}
+              className="p-2 rounded-xl text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] hover:text-[#0D0D0D] dark:hover:text-white transition-colors cursor-pointer"
+              title="Expand sidebar"
+            >
+              <PanelLeftOpen size={18} />
+            </button>
+
+            {/* New Chat Button */}
+            <button
+              onClick={onNewChat}
+              className="p-2 rounded-xl text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] hover:text-[#0D0D0D] dark:hover:text-white transition-colors cursor-pointer"
+              title="New chat"
+            >
+              <SquarePen size={18} />
+            </button>
+
+            {/* Search Chats Button */}
+            <button
+              onClick={() => {
+                setIsCollapsedDesktop(false);
+                setShowSearch(true);
+              }}
+              className="p-2 rounded-xl text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] hover:text-[#0D0D0D] dark:hover:text-white transition-colors cursor-pointer"
+              title="Search conversations"
+            >
+              <Search size={18} />
+            </button>
+
+            <div className="w-6 border-t border-[#E5E5E5] dark:border-[#2C2C2C] my-0.5" />
+
+            {/* FLUX.1 Visual Studio */}
+            {onOpenFluxStudio && (
+              <button
+                onClick={onOpenFluxStudio}
+                className="p-2 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer"
+                title="FLUX.1 Visual Studio"
+              >
+                <Sparkles size={18} />
+              </button>
+            )}
+
+            {/* Canvas & Artifacts */}
+            <button
+              onClick={onOpenCodex}
+              className="p-2 rounded-xl text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+              title="Canvas & Artifacts"
+            >
+              <Code size={18} />
+            </button>
+
+            {/* Explore Agents */}
+            <button
+              onClick={onOpenExplore}
+              className="p-2 rounded-xl text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer"
+              title="Explore Agents"
+            >
+              <Compass size={18} />
+            </button>
+
+            {/* Prompt Library */}
+            <button
+              onClick={onOpenLibrary}
+              className="p-2 rounded-xl text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer"
+              title="Prompt Library"
+            >
+              <Library size={18} />
+            </button>
+          </div>
+
+          {/* Bottom User Avatar Trigger */}
+          <button
+            onClick={() => {
+              setIsCollapsedDesktop(false);
+              setIsUserMenuOpen(true);
+            }}
+            className="p-1.5 rounded-xl hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer"
+            title={`${displayName} (${displayEmail})`}
+          >
+            {avatarUrl && !avatarError ? (
+              <img
+                src={avatarUrl}
+                alt={displayName}
+                referrerPolicy="no-referrer"
+                onError={() => setAvatarError(true)}
+                className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-2xs"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                {initials}
+              </div>
+            )}
+          </button>
+        </aside>
+      )}
+
       <aside
         className={`
           fixed md:static top-0 left-0 bottom-0 z-50
-          ${isCollapsedDesktop ? 'md:w-0 md:border-r-0 md:overflow-hidden' : 'w-[260px] border-r border-[#E5E5E5] dark:border-[#262626]'}
+          ${isCollapsedDesktop ? 'md:hidden' : 'w-[260px] shrink-0 border-r border-[#E5E5E5] dark:border-[#262626]'}
           bg-[#F9F9F9] dark:bg-[#171717] flex flex-col justify-between
           transition-all duration-200 ease-in-out
           ${isOpenMobile ? 'translate-x-0 w-[260px]' : '-translate-x-full md:translate-x-0'}
           h-full select-none
         `}
       >
-        {/* Top Action Bar (ChatGPT Authentic Header) */}
+        {/* Top Action Bar (Nebula AI Brand + ChatGPT Controls) */}
         <div className="px-2.5 pt-2.5 pb-1 flex items-center justify-between shrink-0">
-          <button
-            onClick={() => setIsCollapsedDesktop(true)}
-            className="hidden md:flex p-2 rounded-lg text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer"
-            title="Close sidebar"
-          >
-            <PanelLeftClose size={18} />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setIsCollapsedDesktop(true)}
+              className="hidden md:flex p-2 rounded-lg text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose size={18} />
+            </button>
 
-          {/* Mobile brand header */}
-          <div className="flex md:hidden items-center gap-2 px-1">
-            <img src="/cosmic_orb.jpg" alt="Nebula" className="w-6 h-6 rounded-full object-cover" />
-            <span className="font-bold text-sm text-[#0D0D0D] dark:text-white">Nebula AI</span>
+            {/* Nebula AI Brand Identity */}
+            <div
+              onClick={() => {
+                onNewChat();
+                onCloseMobile();
+              }}
+              className="flex items-center gap-2 px-1 cursor-pointer"
+            >
+              <img
+                src="/cosmic_orb.jpg"
+                alt="Nebula AI"
+                className="w-6 h-6 rounded-full object-cover border border-purple-400/30 shadow-2xs shrink-0"
+              />
+              <span className="font-bold text-sm text-[#0D0D0D] dark:text-white tracking-tight">
+                Nebula AI
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-0.5">

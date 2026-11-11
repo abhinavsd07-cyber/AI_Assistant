@@ -208,10 +208,10 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
   const isPython = language === 'python' || language === 'py';
 
   return (
-    <div className={`flex flex-col bg-white dark:bg-[#161616] border-l border-gray-200 dark:border-gray-800 shadow-2xl transition-all duration-300 z-40 ${
+    <div className={`flex flex-col bg-white dark:bg-[#161616] border-l border-gray-200 dark:border-gray-800 shadow-2xl transition-all duration-300 ${
       isFullscreen 
-        ? 'fixed inset-0 w-screen h-screen' 
-        : 'w-full lg:w-[50vw] xl:w-[48vw] h-full'
+        ? 'fixed inset-0 w-screen h-screen z-50' 
+        : 'fixed inset-0 z-50 w-full h-full lg:static lg:z-40 lg:w-[50vw] xl:w-[48vw]'
     }`}>
       {/* Top Studio Control Bar */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-[#1B1B1B]">

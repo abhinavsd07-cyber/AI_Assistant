@@ -56,7 +56,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
   const [isRunning, setIsRunning] = useState(false);
   const [activeStep, setActiveStep] = useState<number>(0);
   const [currentImage, setCurrentImage] = useState<string>(
-    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1024&q=85'
+    'https://res.cloudinary.com/drxsezyyl/image/upload/v1794420498/nebula_ai/generated/j4mnifyb1pcwi3nshita.jpg'
   );
   const [expandedPrompt, setExpandedPrompt] = useState<string>(
     'A futuristic cybernetic astronaut standing before a glowing violet and deep-blue cosmic nebula, holographic neural interface, dramatic volumetric lighting, ultra-detailed 8k photorealistic render.'
@@ -68,7 +68,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
       filename: 'Nebula_FLUX_00001.png',
       prompt: 'Cosmic Nebula Cybernetic Astronaut',
       imageUrl:
-        'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1024&q=85',
+        'https://res.cloudinary.com/drxsezyyl/image/upload/v1794420498/nebula_ai/generated/j4mnifyb1pcwi3nshita.jpg',
       latencyMs: 2840,
       resolution: '1024×1024',
       timestamp: 'Ready',
@@ -178,46 +178,33 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       }}
     >
-      {/* Top Clean Light Studio Header Bar */}
-      <div className="h-15 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 z-30 shadow-2xs">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs">
-            <div className="w-8 h-8 rounded-full overflow-hidden p-0.5 bg-gradient-to-tr from-purple-500/40 via-indigo-500/30 to-transparent border border-purple-200 shrink-0 shadow-xs">
+      {/* Top Clean Light Studio Header Bar (100% Responsive, Zero Wrapping) */}
+      <div className="min-h-[56px] bg-white border-b border-slate-200 px-3 sm:px-6 py-2 flex items-center justify-between gap-2 shrink-0 z-30 shadow-2xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs min-w-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden p-0.5 bg-gradient-to-tr from-purple-500/40 via-indigo-500/30 to-transparent border border-purple-200 shrink-0 shadow-xs">
               <img
                 src="/cosmic_orb.jpg"
                 alt="Nebula AI Logo"
                 className="w-full h-full rounded-full object-cover"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[15px] font-extrabold tracking-tight text-slate-900">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-sm sm:text-[15px] font-extrabold tracking-tight text-slate-900 truncate">
                 Nebula FLUX.1 Studio
               </span>
-              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-indigo-600 text-white font-semibold">
+              <span className="hidden sm:inline-block text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-indigo-600 text-white font-semibold whitespace-nowrap shrink-0">
                 Visual Node Pipeline
               </span>
             </div>
           </div>
-
-          {/* Preset Quick Switchers */}
-          <div className="hidden xl:flex items-center gap-2">
-            {presetPrompts.map((preset, i) => (
-              <button
-                key={i}
-                onClick={() => setPrompt(preset.text)}
-                className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 text-xs font-semibold text-slate-700 transition-all cursor-pointer"
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
         </div>
 
-        {/* Center Pipeline Flow Indicator */}
-        <div className="hidden md:flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-medium">
+        {/* Center Pipeline Flow Status Badge (No-Wrap) */}
+        <div className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-medium whitespace-nowrap shrink-0">
           {isRunning ? (
             <>
-              <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-ping" />
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-ping shrink-0" />
               <span className="text-indigo-700 font-semibold">
                 {activeStep === 1 && 'Step 1/4: Loading FLUX.1 & DualCLIP Models...'}
                 {activeStep === 2 && 'Step 2/4: Enhancing Prompt with Gemini NLP...'}
@@ -227,7 +214,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
             </>
           ) : (
             <>
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
               <span className="text-slate-700">
                 Last Render:{' '}
                 <strong className="text-emerald-600 font-bold">
@@ -242,24 +229,24 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           )}
         </div>
 
-        {/* Right Action Buttons */}
-        <div className="flex items-center gap-3">
+        {/* Right Action Buttons (No-Wrap) */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleRunWorkflow}
             disabled={isRunning}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 sm:px-5 py-2 rounded-xl font-bold text-xs whitespace-nowrap transition-all cursor-pointer shrink-0 ${
               isRunning
                 ? 'bg-indigo-100 text-indigo-700 cursor-wait border border-indigo-300'
                 : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20 active:scale-95'
             }`}
           >
-            <Play size={14} fill="currentColor" />
+            <Play size={13} fill="currentColor" className="shrink-0" />
             <span>{isRunning ? 'Running Pipeline...' : 'Run Workflow'}</span>
           </button>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 border border-slate-200 text-slate-600 transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 border border-slate-200 text-slate-600 transition-colors cursor-pointer shrink-0"
             title="Close Studio (Back to Chat)"
           >
             <X size={18} />
@@ -267,112 +254,65 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
         </div>
       </div>
 
-      {/* Sub-Header: Easy-to-Understand 4-Step Pipeline Progress Bar */}
-      <div className="bg-white/90 backdrop-blur-xs border-b border-slate-200/80 px-6 py-3 hidden lg:flex items-center justify-between z-20">
-        <div className="flex items-center gap-3">
+      {/* Sub-Header: Presets + 4-Step Pipeline Progress Bar (Horizontally Scrollable on Smaller Screens) */}
+      <div className="bg-white/95 backdrop-blur-xs border-b border-slate-200/80 px-3 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0">
+        {/* Preset Quick Switchers */}
+        <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-0.5 sm:pb-0">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1 shrink-0 hidden sm:inline">
+            Presets:
+          </span>
+          {presetPrompts.map((preset, i) => (
+            <button
+              key={i}
+              onClick={() => setPrompt(preset.text)}
+              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 text-[11px] font-semibold text-slate-700 whitespace-nowrap transition-all cursor-pointer shrink-0"
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 4-Step Pipeline Badges */}
+        <div className="hidden xl:flex items-center gap-2 shrink-0">
           {pipelineStages.map((s, idx) => {
             const isStageActive = activeStep === s.step;
             return (
               <React.Fragment key={s.step}>
                 <div
-                  className={`flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl border text-xs transition-all ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] whitespace-nowrap transition-all ${
                     isStageActive
                       ? 'bg-indigo-50 border-indigo-400 text-indigo-900 shadow-xs font-bold'
                       : 'bg-slate-50 border-slate-200/90 text-slate-700 font-semibold'
                   }`}
                 >
                   <span
-                    className={`w-2.5 h-2.5 rounded-full ${
+                    className={`w-2 h-2 rounded-full shrink-0 ${
                       isStageActive ? 'bg-indigo-600 animate-pulse' : 'bg-emerald-500'
                     }`}
                   />
                   <span>{s.title}</span>
-                  <span className="text-[11px] text-slate-500 font-normal">({s.sub})</span>
                 </div>
                 {idx < pipelineStages.length - 1 && (
-                  <ArrowRight size={15} className="text-slate-400" />
+                  <ArrowRight size={13} className="text-slate-400 shrink-0" />
                 )}
               </React.Fragment>
             );
           })}
         </div>
-        <span className="text-xs font-semibold text-slate-500">
-          Interactive Visual Pipeline • Easy Step-by-Step Flow
-        </span>
       </div>
 
-      {/* Main Light Dotted Node-Graph Canvas */}
+      {/* Main Responsive 12-Column Node-Graph Workspace (Mobile 1-Col -> Tablet 2-Col -> Desktop 4-Col) */}
       <div
-        className="flex-1 relative overflow-auto p-6 flex items-start justify-between gap-6"
+        className="flex-1 relative overflow-y-auto overflow-x-hidden p-3 sm:p-5"
         style={{
           backgroundColor: '#F8FAFC',
           backgroundImage: 'radial-gradient(#CBD5E1 1.35px, transparent 1.35px)',
           backgroundSize: '24px 24px',
         }}
       >
-        {/* High-Contrast Colorful SVG Connection Wires */}
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none z-0 hidden xl:block"
-          viewBox="0 0 1440 760"
-          preserveAspectRatio="none"
-        >
-          {/* Wire 1: Step 1 (UNet Model) -> Step 3 (KSampler) */}
-          <path
-            d="M 325 140 C 385 140, 315 480, 375 480"
-            fill="none"
-            stroke="#6366F1"
-            strokeWidth={activeStep === 1 ? '4' : '3'}
-            strokeDasharray={isRunning ? '8 5' : undefined}
-          />
-
-          {/* Wire 2: Step 1 (DualCLIP) -> Step 2 (Smart Prompt) */}
-          <path
-            d="M 325 250 C 350 250, 350 150, 375 150"
-            fill="none"
-            stroke="#F59E0B"
-            strokeWidth={activeStep === 2 ? '4' : '3'}
-            strokeDasharray={isRunning ? '8 5' : undefined}
-          />
-
-          {/* Wire 3: Step 1 (VAE) -> Step 4 (Final Image Output) */}
-          <path
-            d="M 325 345 C 520 345, 560 125, 755 125"
-            fill="none"
-            stroke="#F43F5E"
-            strokeWidth="2.5"
-            strokeDasharray="5 5"
-          />
-
-          {/* Wire 4: Image Size -> Step 3 (KSampler) */}
-          <path
-            d="M 325 540 C 350 540, 350 540, 375 540"
-            fill="none"
-            stroke="#EC4899"
-            strokeWidth="3"
-          />
-
-          {/* Wire 5: Step 2 (Prompt Embeddings) -> Step 3 (KSampler) */}
-          <path
-            d="M 705 235 C 735 235, 345 435, 375 435"
-            fill="none"
-            stroke="#10B981"
-            strokeWidth={activeStep === 3 ? '4' : '3'}
-          />
-
-          {/* Wire 6: Step 3 (KSampler) -> Step 4 (Final Image Output) */}
-          <path
-            d="M 705 500 C 735 500, 725 275, 755 275"
-            fill="none"
-            stroke="#0284C7"
-            strokeWidth={activeStep >= 3 ? '4' : '3.5'}
-            strokeDasharray={isRunning ? '8 5' : undefined}
-          />
-        </svg>
-
-        {/* Left & Center Connected Node Columns */}
-        <div className="relative z-10 flex flex-wrap xl:flex-nowrap items-start gap-10 w-full">
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4 lg:gap-5 max-w-[1640px] mx-auto w-full items-start">
           {/* COLUMN 1: Step 1 (Load AI Models) + Image Size */}
-          <div className="flex flex-col gap-6 w-full xl:w-[325px] shrink-0">
+          <div className="md:col-span-1 xl:col-span-3 flex flex-col gap-4 w-full min-w-0">
             {/* NODE 1: Load AI Models */}
             <div
               className={`rounded-2xl bg-white border-2 transition-all shadow-lg shadow-slate-200/80 ${
@@ -513,7 +453,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           </div>
 
           {/* COLUMN 2: Step 2 (Prompt) + Step 3 (KSampler) */}
-          <div className="flex flex-col gap-6 w-full xl:w-[345px] shrink-0">
+          <div className="md:col-span-1 xl:col-span-3 flex flex-col gap-4 w-full min-w-0">
             {/* NODE 2: Prompt & NLP Conditioning */}
             <div
               className={`rounded-2xl bg-white border-2 transition-all shadow-lg shadow-slate-200/80 ${
@@ -670,7 +610,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           </div>
 
           {/* COLUMN 3: Step 4 (Final HD Image Output Node) */}
-          <div className="flex flex-col gap-5 w-full xl:w-[400px] shrink-0">
+          <div className="md:col-span-1 xl:col-span-3 flex flex-col gap-4 w-full min-w-0">
             <div
               className={`rounded-2xl bg-white border-2 transition-all shadow-xl shadow-slate-200/90 ${
                 activeStep === 4 ? 'border-sky-500 ring-4 ring-sky-500/15' : 'border-slate-200'
@@ -773,11 +713,9 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Right Side Floating Job Queue & Benchmark Panel */}
-        <div className="relative z-10 w-full xl:w-[295px] shrink-0 flex flex-col gap-5">
-          {/* Job Queue Panel */}
+          {/* COLUMN 4: Completed Renders & Style Enhancers */}
+          <div className="md:col-span-1 xl:col-span-3 flex flex-col gap-4 w-full min-w-0">
+            {/* Job Queue Panel */}
           <div className="rounded-2xl bg-white border-2 border-slate-200 shadow-lg shadow-slate-200/80 p-4">
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
               <span className="text-[13px] font-extrabold text-slate-900 flex items-center gap-2">
@@ -861,6 +799,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                 {width}×{height} HD • Auto-Saved to Library CDN
               </span>
             </div>
+          </div>
           </div>
         </div>
       </div>
