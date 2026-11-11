@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Mic, MicOff, Volume2, Sparkles, AlertCircle, Globe, Square } from 'lucide-react';
+import { X, Mic, MicOff, Volume2, Sparkles, AlertCircle, Square } from 'lucide-react';
 
 interface VoiceModalProps {
   isOpen: boolean;
@@ -12,7 +12,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
   const [transcript, setTranscript] = useState('');
   const [lastAiReply, setLastAiReply] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [voiceLang, setVoiceLang] = useState<'en-US' | 'ml-IN'>('en-US');
+  const voiceLang: 'en-US' | 'ml-IN' = 'en-US';
 
   const statusRef = useRef<'idle' | 'listening' | 'thinking' | 'speaking'>('idle');
   const isOpenRef = useRef(isOpen);
@@ -371,15 +371,10 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Language Switcher */}
-            <button
-              onClick={() => setVoiceLang(voiceLang === 'en-US' ? 'ml-IN' : 'en-US')}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-gray-200 transition-all cursor-pointer"
-              title="Toggle Recognition Language"
-            >
-              <Globe size={13} className="text-emerald-400" />
-              <span>{voiceLang === 'en-US' ? 'English' : 'മലയാളം'}</span>
-            </button>
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 text-xs font-semibold text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Live Auto-Reply</span>
+            </span>
 
             <button 
               onClick={() => {
@@ -443,7 +438,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
               'bg-gray-500'
             }`} />
             <span>
-              {status === 'listening' ? (voiceLang === 'ml-IN' ? 'ശ്രദ്ധിക്കുന്നു (മലയാളം)...' : 'Listening to you...') :
+              {status === 'listening' ? 'Listening to you...' :
                status === 'thinking' ? 'Nebula is thinking...' :
                status === 'speaking' ? 'Speaking (Click orb to interrupt)...' :
                'Tap Mic to Start'}
@@ -451,7 +446,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
           </div>
 
           <p className="text-[14px] font-medium text-gray-200 line-clamp-3 min-h-[44px] leading-relaxed max-w-sm">
-            {transcript || lastAiReply.slice(0, 160) || (voiceLang === 'ml-IN' ? 'മലയാളത്തിൽ സംസാരിച്ചു തുടങ്ങാം...' : 'Start speaking in English or Malayalam...')}
+            {transcript || lastAiReply.slice(0, 160) || 'Start speaking naturally — Nebula will reply automatically...'}
           </p>
 
           {errorMessage && (

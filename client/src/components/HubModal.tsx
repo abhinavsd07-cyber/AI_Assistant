@@ -129,20 +129,20 @@ export const HubModal: React.FC<HubModalProps> = ({
       gradient: 'from-fuchsia-500/10 to-pink-500/10 border-fuchsia-500/20',
     },
     {
-      title: 'Kerala & Live Web Research Scholar',
+      title: 'Live Web & Deep Research Analyst',
       badge: 'Google Search Grounding',
-      description: 'Performs real-time web verification for current events, Kerala governance, technology updates, and cited research.',
-      persona: 'kerala_scholar',
+      description: 'Performs real-time web verification for current events, global tech breakthroughs, market trends, and cited research.',
+      persona: 'general',
       prompt: 'What are the most important breakthroughs in AI Agents and WebAssembly in 2026? Summarize with key takeaways.',
       icon: <Globe size={18} className="text-blue-500" />,
       gradient: 'from-blue-500/10 to-cyan-500/10 border-blue-500/20',
     },
     {
-      title: 'Malayalam & Bilingual Co-Pilot',
-      badge: 'മലയാളം + English',
-      description: 'Explains complex software engineering, machine learning, and academic concepts in natural Malayalam.',
-      persona: 'malayalam_writer',
-      prompt: 'Neural Networks, Deep Learning, RAG എന്നിവ തമ്മിലുള്ള വ്യത്യാസം ലളിതമായ മലയാളത്തിൽ ഉദാഹരണസഹിതം വിശദീകരിക്കാമോ?',
+      title: 'System Architecture & Cloud DevOps Agent',
+      badge: 'Cloud + Microservices',
+      description: 'Designs scalable system architectures, Docker/Kubernetes pipelines, database schemas, and enterprise API blueprints.',
+      persona: 'coder',
+      prompt: 'Design a production-ready microservices architecture for a high-traffic SaaS platform with Redis caching, MongoDB sharding, and CI/CD.',
       icon: <Languages size={18} className="text-amber-500" />,
       gradient: 'from-amber-500/10 to-orange-500/10 border-amber-500/20',
     },
@@ -226,7 +226,7 @@ export const HubModal: React.FC<HubModalProps> = ({
                     <button
                       onClick={() => {
                         onClose();
-                        onLaunchPrompt('/image Futuristic cyberpunk street in Kochi during monsoon night, neon reflections, 8k');
+                        onLaunchPrompt('/image Futuristic cyberpunk metropolis during a neon rainstorm at night, reflections on wet asphalt, 8k');
                       }}
                       className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#0D0D0D] dark:bg-white text-white dark:text-[#0D0D0D] hover:opacity-90 transition-opacity cursor-pointer"
                     >

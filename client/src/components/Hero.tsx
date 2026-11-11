@@ -19,8 +19,8 @@ export const Hero: React.FC<HeroProps> = ({ onSelectSuggestion }) => {
       id: 'sugg-2',
       icon: 'sparkles',
       title: 'AI Image Generator',
-      subtitle: '"/image Futuristic Kochi smart city with neon lights..."',
-      prompt: '/image Futuristic Kochi smart city with hyperloop and neon lights, cinematic 8k render',
+      subtitle: '"/image Futuristic cosmic AI metropolis with neon holograms..."',
+      prompt: '/image Futuristic cosmic AI metropolis with flying vehicles and neon holograms, cinematic 8k render',
     },
     {
       id: 'sugg-3',

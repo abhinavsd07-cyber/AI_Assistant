@@ -41,7 +41,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
   onSendToChat,
 }) => {
   const [prompt, setPrompt] = useState(
-    'A pastel mint-green vintage classic miniature car overflowing with blooming pink and peach flowers on the roof, soft studio lighting, minimalist pastel background, 8k photorealistic'
+    'Futuristic cybernetic astronaut standing before a glowing violet and deep-blue cosmic nebula, holographic neural interface, cinematic lighting, 8k photorealistic octane render'
   );
   const [unetModel, setUnetModel] = useState('FLUX.1-Schnell (Q4_K_S GGUF)');
   const clipModel = 'DualCLIP (T5-XXL FP8 + CLIP-L)';
@@ -56,19 +56,19 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
   const [isRunning, setIsRunning] = useState(false);
   const [activeStep, setActiveStep] = useState<number>(0);
   const [currentImage, setCurrentImage] = useState<string>(
-    'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=900&q=85'
+    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1024&q=85'
   );
   const [expandedPrompt, setExpandedPrompt] = useState<string>(
-    'A pastel mint-green vintage classic car overflowing with blooming pink and peach flowers, soft studio lighting, ultra-detailed 8k photorealistic render.'
+    'A futuristic cybernetic astronaut standing before a glowing violet and deep-blue cosmic nebula, holographic neural interface, dramatic volumetric lighting, ultra-detailed 8k photorealistic render.'
   );
   const [lastLatencyMs, setLastLatencyMs] = useState<number>(2840);
   const [jobQueue, setJobQueue] = useState<JobHistoryItem[]>([
     {
       id: 'job-init',
       filename: 'Nebula_FLUX_00001.png',
-      prompt: 'Vintage classic car with blooming flowers',
+      prompt: 'Cosmic Nebula Cybernetic Astronaut',
       imageUrl:
-        'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=900&q=85',
+        'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1024&q=85',
       latencyMs: 2840,
       resolution: '1024×1024',
       timestamp: 'Ready',
@@ -133,17 +133,30 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
 
   const presetPrompts = [
     {
-      label: '🌸 Vintage Flower Car',
-      text: 'A pastel mint-green vintage classic miniature car overflowing with blooming pink and peach flowers on the roof, soft studio lighting, minimalist pastel background, 8k photorealistic',
+      label: '🌌 Cosmic Cyborg',
+      text: 'Futuristic cybernetic astronaut standing before a glowing violet and deep-blue cosmic nebula, holographic neural interface, cinematic lighting, 8k photorealistic octane render',
     },
     {
       label: '🏎️ Cyberpunk Hypercar',
-      text: 'Futuristic matte-black cyberpunk hypercar drifting through neon-lit Tokyo rain at night, glowing cyan rim lights, 8k unreal engine 5 render',
+      text: 'Futuristic matte-black cyberpunk hypercar drifting through neon-lit rain at night, glowing cyan rim lights, reflections on wet asphalt, 8k unreal engine 5 render',
     },
     {
-      label: '🌴 Kerala Backwaters 2050',
-      text: 'Futuristic solar-powered luxury houseboat gliding through emerald Kerala backwaters at golden sunset, palm trees, cinematic 8k photography',
+      label: '🤖 Quantum AI Core',
+      text: 'Bioluminescent quantum supercomputer core floating inside a sleek glass architectural chamber, golden neural light streams, volumetric fog, 8k concept art',
     },
+    {
+      label: '🏰 Sky Citadel',
+      text: 'Majestic futuristic solarpunk crystal citadel floating above golden clouds at sunrise, waterfalls cascading into the sky, cinematic 8k masterpiece',
+    },
+  ];
+
+  const styleEnhancers = [
+    { label: '+ 8K Photorealistic', tag: ', ultra-detailed 8k photorealistic, ray-traced lighting' },
+    { label: '+ Unreal Engine 5', tag: ', Unreal Engine 5 render, volumetric fog, global illumination' },
+    { label: '+ Cyberpunk Neon', tag: ', cyberpunk neon magenta and cyan glow, rainy reflections' },
+    { label: '+ Cinematic Lens', tag: ', shot on 85mm f/1.4 lens, shallow depth of field, cinematic color grading' },
+    { label: '+ Isometric 3D', tag: ', cute isometric 3D diorama, Blender Cycles render, soft clay textures' },
+    { label: '+ Anime Studio', tag: ', Makoto Shinkai anime movie style, vibrant sky, intricate details' },
   ];
 
   const pipelineStages = [
@@ -218,7 +231,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                 </strong>{' '}
                 <span className="text-slate-300">|</span>{' '}
                 <span className="text-indigo-600 font-bold">
-                  1,600× faster than 8GB local swap (85m)
+                  Cloud GPU Pipeline • Cloudinary CDN
                 </span>
               </span>
             </>
@@ -740,7 +753,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                           `### ⚡ FLUX.1 Node Graph Studio Output\n` +
                           `* **Model**: \`${unetModel}\` + \`${clipModel}\`\n` +
                           `* **Resolution**: \`${width}×${height}\` (${steps} steps, ${sampler})\n` +
-                          `* **Execution Time**: \`${(lastLatencyMs / 1000).toFixed(2)}s\` *(1,600× faster than local 8GB RAM swap)*\n\n` +
+                          `* **Execution Time**: \`${(lastLatencyMs / 1000).toFixed(2)}s\` *(Nebula Cloud GPU + Cloudinary CDN)*\n\n` +
                           `![${prompt.slice(0, 40)}](${currentImage})\n\n` +
                           `🔗 [Open Cloudinary CDN Image](${currentImage})`;
                         onSendToChat(md, currentImage);
@@ -800,45 +813,49 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
             </div>
           </div>
 
-          {/* Performance Benchmark Card vs 8GB Local MacBook */}
+          {/* Creative Style Enhancers & Studio Ideas Card */}
           <div className="rounded-2xl bg-white border-2 border-slate-200 p-4 shadow-lg shadow-slate-200/80 space-y-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-[13px] font-extrabold text-slate-900">
-                ⚡ Speed Comparison
+              <span className="text-[13px] font-extrabold text-slate-900 flex items-center gap-1.5">
+                <Sparkles size={15} className="text-indigo-600" />
+                Style & Idea Enhancers
               </span>
-              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-extrabold">
-                1,600× Faster
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-extrabold">
+                1-Click Boost
               </span>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-200">
-                <div className="flex justify-between text-xs text-slate-800 mb-1.5">
-                  <span className="font-bold">Local 8GB RAM (MacBook)</span>
-                  <span className="text-rose-600 font-extrabold">~85 mins</span>
-                </div>
-                <div className="w-full bg-rose-200 h-2 rounded-full overflow-hidden">
-                  <div className="bg-rose-600 h-full w-full" />
-                </div>
-                <span className="text-[11px] font-medium text-slate-600 block mt-1.5">
-                  512×512 px • Slow SSD memory swap
-                </span>
-              </div>
+            <p className="text-[11px] font-medium text-slate-500 leading-relaxed">
+              Click any modifier below to instantly enrich your active prompt with studio lighting and render styles:
+            </p>
 
-              <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200">
-                <div className="flex justify-between text-xs text-slate-900 mb-1.5">
-                  <span className="font-extrabold">Your Nebula FLUX.1</span>
-                  <span className="text-emerald-700 font-extrabold">
-                    {(lastLatencyMs / 1000).toFixed(1)} secs
-                  </span>
-                </div>
-                <div className="w-full bg-emerald-200 h-2 rounded-full overflow-hidden">
-                  <div className="bg-emerald-600 h-full w-[8%]" />
-                </div>
-                <span className="text-[11px] font-bold text-emerald-800 block mt-1.5">
-                  1024×1024 HD (4× pixels) + Cloud CDN
+            <div className="grid grid-cols-2 gap-2">
+              {styleEnhancers.map((item, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    if (!prompt.includes(item.tag)) {
+                      setPrompt((prev) => `${prev.trim()}${item.tag}`);
+                    }
+                  }}
+                  className="px-2.5 py-2 rounded-xl bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 hover:border-indigo-300 text-[11px] font-bold text-slate-700 text-left transition-all cursor-pointer truncate"
+                  title={`Add "${item.tag}"`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200">
+              <div className="flex justify-between text-xs text-slate-900 mb-1">
+                <span className="font-extrabold">Nebula Cloud FLUX.1</span>
+                <span className="text-emerald-700 font-extrabold">
+                  {(lastLatencyMs / 1000).toFixed(1)}s Render
                 </span>
               </div>
+              <span className="text-[11px] font-bold text-emerald-800 block">
+                {width}×{height} HD • Auto-Saved to Library CDN
+              </span>
             </div>
           </div>
         </div>
