@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main, master ]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   frontend-build:
     name: Frontend TypeScript & Vite Build
@@ -17,15 +20,15 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: client/package-lock.json
 
       - name: Install Frontend Dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Build Production Bundle (TypeScript + Vite)
         run: npm run build
@@ -40,15 +43,15 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: server/package-lock.json
 
       - name: Install Backend Dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Verify Server & Middleware Syntax
         run: |
