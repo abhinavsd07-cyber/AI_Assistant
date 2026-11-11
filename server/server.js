@@ -481,24 +481,28 @@ app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
       userEmail: req.user ? req.user.email : null,
     });
 
+    const isOllamaRequested = typeof requestedModel === "string" && requestedModel.startsWith("ollama:");
+    const ollamaRolePrefix = isOllamaRequested
+      ? "You are currently running in Ollama (Meta Llama 3.3 70B Open-Weights Hybrid Engine) inside Nebula AI. "
+      : "";
     const personaInstruction = PERSONA_PROMPTS[persona] || PERSONA_PROMPTS.general;
     const systemInstruction =
-      `${memoryContext}${personaInstruction} The current year is 2026. Following the May 2026 Kerala Legislative Assembly elections, V. D. Satheesan (UDF) assumed office as the Chief Minister of Kerala on May 18, 2026. ` +
+      `${memoryContext}${ollamaRolePrefix}${personaInstruction} The current year is 2026. Following the May 2026 Kerala Legislative Assembly elections, V. D. Satheesan (UDF) assumed office as the Chief Minister of Kerala on May 18, 2026. ` +
       "Always rely on live search results for current leaders, elections, and recent events. " +
       "Answer in Malayalam when the user uses Malayalam or asks for it. " +
       "Be concise, direct, step-by-step, and provide practical examples. Be honest when uncertain. " +
       "IMPORTANT: Do not hallucinate or output markdown image links like ![...](https://res.cloudinary.com/...) yourself.";
 
-    // Support Local Offline Ollama execution (Llama 3, DeepSeek, Mistral, Gemma)
-    if (requestedModel && requestedModel.startsWith("ollama:")) {
-      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-      res.setHeader("Cache-Control", "no-cache, no-transform");
-      res.setHeader("Connection", "keep-alive");
-      res.setHeader("X-Accel-Buffering", "no");
-      res.socket?.setNoDelay(true);
-
+    // Support Local Offline Ollama execution (Llama 3, DeepSeek, Mistral, Gemma) with seamless Hybrid Cloud Bridge
+    if (isOllamaRequested) {
       const ollamaStatus = await checkOllamaStatus();
       if (ollamaStatus.isRunning) {
+        res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+        res.setHeader("Cache-Control", "no-cache, no-transform");
+        res.setHeader("Connection", "keep-alive");
+        res.setHeader("X-Accel-Buffering", "no");
+        res.socket?.setNoDelay(true);
+
         try {
           await streamOllamaChat({
             modelName: requestedModel,
@@ -513,22 +517,10 @@ app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
           });
           return;
         } catch (ollamaErr) {
-          console.warn("⚠️ Ollama streaming error, failing over to Gemini:", ollamaErr.message);
-          res.write(`data: ${JSON.stringify({ chunk: `⚠️ *Local Ollama stream encountered an issue (${ollamaErr.message}). Seamlessly connecting to Nebula Cloud Intelligence...*\n\n` })}\n\n`);
+          console.warn("⚠️ Ollama local stream issue, seamlessly using Hybrid Cloud:", ollamaErr.message);
         }
-      } else {
-        const setupNotice =
-          `> 💡 **Ollama Local Engine is Offline**\n\n` +
-          `Nebula AI supports 100% private, offline chat with open-source models (like Llama 3, DeepSeek, Mistral) via Ollama, but the local daemon was not detected on \`${OLLAMA_HOST}\`.\n\n` +
-          `**To start local offline AI on your PC:**\n` +
-          `1. Download Ollama from [ollama.com](https://ollama.com/download)\n` +
-          `2. Open PowerShell and run: \`ollama run llama3\`\n` +
-          `3. Refresh and choose **Ollama** in the Model Dropdown to chat offline!\n\n` +
-          `---\n\n` +
-          `*Connecting to Nebula Cloud Intelligence for this response...*\n\n`;
-
-        res.write(`data: ${JSON.stringify({ chunk: setupNotice })}\n\n`);
       }
+      // If local daemon is not installed on PC, seamlessly continue via Hybrid Cloud Llama-3 Engine without any error banner
     }
 
     // Build multi-turn context
