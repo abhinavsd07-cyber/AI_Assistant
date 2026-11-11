@@ -93,132 +93,80 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
     Array<{
       id: string;
       d: string;
-      x1: number;
-      y1: number;
       x2: number;
       y2: number;
-      color: string;
-      dashed?: boolean;
-      step: number;
+      targetStep: number;
     }>
   >([]);
 
+  // Clean, minimal step-to-step flow connectors (Step 1 → 2 → 3 → 4), drawn only on the 4-column desktop layout
   const computeWires = useCallback(() => {
     const container = gridContainerRef.current;
     if (!container) return;
+    if (window.innerWidth < 1280) {
+      setWires([]);
+      return;
+    }
     const cRect = container.getBoundingClientRect();
     if (cRect.width === 0) return;
 
-    const getPortAnchor = (el: HTMLElement | null, side: 'left' | 'right') => {
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
-      const card = el.closest('.flux-node-card');
-      const cardRect = card ? card.getBoundingClientRect() : r;
+    const getCard = (el: HTMLElement | null) =>
+      (el?.closest('.flux-node-card') as HTMLElement | null) || null;
+
+    // Anchor on the card edge, vertically centred on the card's header bar
+    const edgeAnchor = (el: HTMLElement | null, side: 'left' | 'right') => {
+      const card = getCard(el);
+      if (!card) return null;
+      const r = card.getBoundingClientRect();
+      const header = card.firstElementChild as HTMLElement | null;
+      const hr = header ? header.getBoundingClientRect() : r;
       return {
-        x: (side === 'right' ? cardRect.right : cardRect.left) - cRect.left,
-        y: r.top - cRect.top + r.height / 2,
+        x: (side === 'right' ? r.right : r.left) - cRect.left,
+        y: hr.top - cRect.top + hr.height / 2,
       };
     };
 
-    // Standard S-curve across the gutter between two columns
-    const makeGutterCurve = (
-      p1: { x: number; y: number } | null,
-      p2: { x: number; y: number } | null
-    ) => {
+    const verticalAnchor = (el: HTMLElement | null, side: 'top' | 'bottom') => {
+      const card = getCard(el);
+      if (!card) return null;
+      const r = card.getBoundingClientRect();
+      return {
+        x: r.left - cRect.left + r.width / 2,
+        y: (side === 'bottom' ? r.bottom : r.top) - cRect.top,
+      };
+    };
+
+    const hCurve = (p1: { x: number; y: number } | null, p2: { x: number; y: number } | null) => {
       if (!p1 || !p2) return '';
       const midX = (p1.x + p2.x) / 2;
       return `M ${p1.x} ${p1.y} C ${midX} ${p1.y}, ${midX} ${p2.y}, ${p2.x} ${p2.y}`;
     };
 
-    // Right-gutter C-loop from top card of Col 2 (PROMPT) down to bottom card of Col 2 (Sampler)
-    const makeRightLoopCurve = (
-      p1: { x: number; y: number } | null,
-      p2: { x: number; y: number } | null
-    ) => {
+    const vLine = (p1: { x: number; y: number } | null, p2: { x: number; y: number } | null) => {
       if (!p1 || !p2) return '';
-      const loopX = Math.max(p1.x, p2.x) + 24;
-      return `M ${p1.x} ${p1.y} C ${loopX} ${p1.y}, ${loopX} ${p2.y}, ${p2.x} ${p2.y}`;
+      return `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
     };
 
-    const pModelOut = getPortAnchor(modelOutRef.current, 'right');
-    const pClipOut = getPortAnchor(clipOutRef.current, 'right');
-    const pVaeOut = getPortAnchor(vaeOutRef.current, 'right');
-    const pSizeOut = getPortAnchor(sizeOutRef.current, 'right');
-    const pClipIn = getPortAnchor(clipInRef.current, 'left');
-    const pPromptOut = getPortAnchor(promptOutRef.current, 'right');
-    const pSamplerBaseIn = getPortAnchor(samplerModelInRef.current, 'left');
-    const pSamplerModelIn = pSamplerBaseIn ? { x: pSamplerBaseIn.x, y: pSamplerBaseIn.y - 10 } : null;
-    const pSamplerPromptRightIn = getPortAnchor(samplerPromptInRef.current, 'right');
-    const pSamplerSizeIn = pSamplerBaseIn ? { x: pSamplerBaseIn.x, y: pSamplerBaseIn.y + 12 } : null;
-    const pSamplerOut = getPortAnchor(samplerOutRef.current, 'right');
-    const pOutputIn = getPortAnchor(outputInRef.current, 'left');
+    const models = edgeAnchor(modelOutRef.current, 'right');
+    const promptIn = edgeAnchor(promptOutRef.current, 'left');
+    const promptBottom = verticalAnchor(promptOutRef.current, 'bottom');
+    const samplerTop = verticalAnchor(samplerOutRef.current, 'top');
+    const resolution = edgeAnchor(sizeOutRef.current, 'right');
+    const samplerIn = edgeAnchor(samplerOutRef.current, 'left');
+    const samplerOut = edgeAnchor(samplerOutRef.current, 'right');
+    const outputIn = edgeAnchor(outputInRef.current, 'left');
 
-    const rawWires = [
-      {
-        id: 'wire-model-sampler',
-        p1: pModelOut,
-        p2: pSamplerModelIn,
-        d: makeGutterCurve(pModelOut, pSamplerModelIn),
-        color: '#6366F1', // Indigo (MODEL -> Sampler)
-        step: 1,
-      },
-      {
-        id: 'wire-clip-prompt',
-        p1: pClipOut,
-        p2: pClipIn,
-        d: makeGutterCurve(pClipOut, pClipIn),
-        color: '#F59E0B', // Amber (CLIP -> Smart Prompt)
-        step: 2,
-      },
-      {
-        id: 'wire-prompt-sampler',
-        p1: pPromptOut,
-        p2: pSamplerPromptRightIn,
-        d: makeRightLoopCurve(pPromptOut, pSamplerPromptRightIn),
-        color: '#10B981', // Emerald (PROMPT -> Sampler)
-        step: 3,
-      },
-      {
-        id: 'wire-size-sampler',
-        p1: pSizeOut,
-        p2: pSamplerSizeIn,
-        d: makeGutterCurve(pSizeOut, pSamplerSizeIn),
-        color: '#EC4899', // Pink (SIZE -> Sampler)
-        step: 3,
-      },
-      {
-        id: 'wire-sampler-output',
-        p1: pSamplerOut,
-        p2: pOutputIn,
-        d: makeGutterCurve(pSamplerOut, pOutputIn),
-        color: '#0284C7', // Sky Blue (RENDER -> Final Output)
-        step: 4,
-      },
-      {
-        id: 'wire-vae-output',
-        p1: pVaeOut,
-        p2: pOutputIn ? { x: pOutputIn.x, y: pOutputIn.y + 14 } : null,
-        d: makeGutterCurve(pVaeOut, pOutputIn ? { x: pOutputIn.x, y: pOutputIn.y + 14 } : null),
-        color: '#F43F5E', // Rose (VAE -> Final Output)
-        dashed: true,
-        step: 4,
-      },
+    const raw = [
+      { id: 'models-prompt', p1: models, p2: promptIn, d: hCurve(models, promptIn), targetStep: 2 },
+      { id: 'prompt-sampler', p1: promptBottom, p2: samplerTop, d: vLine(promptBottom, samplerTop), targetStep: 3 },
+      { id: 'size-sampler', p1: resolution, p2: samplerIn, d: hCurve(resolution, samplerIn), targetStep: 3 },
+      { id: 'sampler-output', p1: samplerOut, p2: outputIn, d: hCurve(samplerOut, outputIn), targetStep: 4 },
     ];
 
     setWires(
-      rawWires
-        .filter((w) => w.d !== '' && w.p1 && w.p2)
-        .map((w) => ({
-          id: w.id,
-          d: w.d,
-          x1: w.p1!.x,
-          y1: w.p1!.y,
-          x2: w.p2!.x,
-          y2: w.p2!.y,
-          color: w.color,
-          dashed: w.dashed,
-          step: w.step,
-        }))
+      raw
+        .filter((w) => w.d !== '' && w.p2)
+        .map((w) => ({ id: w.id, d: w.d, x2: w.p2!.x, y2: w.p2!.y, targetStep: w.targetStep }))
     );
   }, []);
 
@@ -482,56 +430,32 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           ref={gridContainerRef}
           className="relative grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-5 xl:gap-7 max-w-[1640px] mx-auto w-full items-start"
         >
-          {/* Dynamic Port-Anchored SVG Node Graph Connection Wires */}
-          <svg className="hidden md:block absolute inset-0 w-full h-full pointer-events-none z-0 overflow-visible">
+          {/* Minimal Step-Flow Connectors (Neutral Slate; Active Step Highlighted) */}
+          <svg className="hidden xl:block absolute inset-0 w-full h-full pointer-events-none z-0 overflow-visible">
+            <defs>
+              <marker id="flux-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 1 L 8 5 L 0 9 z" fill="#94A3B8" />
+              </marker>
+              <marker id="flux-arrow-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 1 L 8 5 L 0 9 z" fill="#6366F1" />
+              </marker>
+            </defs>
             {wires.map((w) => {
-              const isStageActive = activeStep === w.step;
+              const isActive = isRunning && activeStep === w.targetStep;
               return (
-                <g key={w.id}>
-                  {/* Outer Soft Glow */}
-                  <path
-                    d={w.d}
-                    fill="none"
-                    stroke={w.color}
-                    strokeWidth={isStageActive ? '9' : '7'}
-                    strokeOpacity={isStageActive ? '0.3' : '0.18'}
-                    strokeLinecap="round"
-                  />
-                  {/* Main Vibrant Node Cable */}
-                  <path
-                    d={w.d}
-                    fill="none"
-                    stroke={w.color}
-                    strokeWidth={isStageActive ? '4' : '3.25'}
-                    strokeDasharray={w.dashed ? '6 5' : undefined}
-                    strokeLinecap="round"
-                  />
-                  {/* Animated Data Flow Pulse */}
-                  {!w.dashed && (
-                    <path
-                      d={w.d}
-                      fill="none"
-                      stroke="#FFFFFF"
-                      strokeWidth="2"
-                      strokeDasharray="4 16"
-                      strokeOpacity={isRunning ? '0.95' : '0.75'}
-                      className="animate-pulse"
-                      strokeLinecap="round"
-                    />
-                  )}
-                </g>
+                <path
+                  key={w.id}
+                  d={w.d}
+                  fill="none"
+                  stroke={isActive ? '#6366F1' : '#CBD5E1'}
+                  strokeWidth={isActive ? 2.5 : 2}
+                  strokeDasharray={isActive ? '6 4' : undefined}
+                  strokeLinecap="round"
+                  markerEnd={isActive ? 'url(#flux-arrow-active)' : 'url(#flux-arrow)'}
+                  className="transition-all duration-300"
+                />
               );
             })}
-          </svg>
-
-          {/* Foreground Port Endpoint Pins on Card Borders */}
-          <svg className="hidden md:block absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible">
-            {wires.map((w) => (
-              <g key={`pins-${w.id}`}>
-                <circle cx={w.x1} cy={w.y1} r="5" fill={w.color} stroke="#FFFFFF" strokeWidth="2" />
-                <circle cx={w.x2} cy={w.y2} r="5" fill={w.color} stroke="#FFFFFF" strokeWidth="2" />
-              </g>
-            ))}
           </svg>
 
           {/* COLUMN 1: Step 1 (Load AI Models) + Image Size */}
