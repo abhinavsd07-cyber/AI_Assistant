@@ -29,6 +29,8 @@ const DEFAULT_MODELS = [
   { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', tag: 'Deep Thinking Preview', badge: 'Reasoning' },
 ];
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export const TopBar: React.FC<TopBarProps> = ({
   selectedModel,
   onSelectModel,
@@ -46,7 +48,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   useEffect(() => {
     const fetchModels = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/models');
+        const res = await fetch(`${API_BASE}/api/models`);
         if (res.ok) {
           const data = await res.json();
           if (data.success && Array.isArray(data.models) && data.models.length > 0) {

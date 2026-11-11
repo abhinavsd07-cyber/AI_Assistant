@@ -10,6 +10,8 @@ import { AuthPage } from './pages/AuthPage';
 import { useAuth } from './context/AuthContext';
 import type { Message, ChatSession } from './types';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export const App: React.FC = () => {
   const { user, token, isAuthenticated, currentView } = useAuth();
 
@@ -41,7 +43,7 @@ export const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedModel, setSelectedModel] = useState('gemini-3.5-flash-lite');
   const [isLoading, setIsLoading] = useState(false);
-  const [apiUrl, setApiUrl] = useState('http://localhost:5000/api/chat');
+  const [apiUrl, setApiUrl] = useState(`${API_BASE}/api/chat`);
 
   // Modals & responsive drawer
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -69,7 +71,7 @@ export const App: React.FC = () => {
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
         }
-        const res = await fetch('http://localhost:5000/api/sessions', { headers });
+        const res = await fetch(`${API_BASE}/api/sessions`, { headers });
         const data = await res.json();
         if (data.success && Array.isArray(data.sessions) && data.sessions.length > 0) {
           const mapped: ChatSession[] = data.sessions.map((s: any) => ({
@@ -117,7 +119,7 @@ export const App: React.FC = () => {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      await fetch(`http://localhost:5000/api/sessions/${id}`, { method: 'DELETE', headers });
+      await fetch(`${API_BASE}/api/sessions/${id}`, { method: 'DELETE', headers });
     } catch {
       // Handled silently
     }
