@@ -56,38 +56,53 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
     setIsSubmitting(false);
   };
 
-  // Google Identity Services (GIS) button initialization
+  // Google Identity Services (GIS) button initialization (handles async defer script load)
   useEffect(() => {
     if (!googleClientId) return;
 
-    const win = window as any;
-    if (win.google?.accounts?.id && googleBtnRef.current) {
-      try {
-        win.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: async (response: any) => {
-            if (response.credential) {
-              setIsSubmitting(true);
-              setErrorMessage(null);
-              const result = await loginWithGoogle(response.credential);
-              setIsSubmitting(false);
-              if (!result.success) {
-                setErrorMessage(result.error || 'Google login failed');
+    let attempts = 0;
+    const initGis = () => {
+      const win = window as any;
+      if (win.google?.accounts?.id && googleBtnRef.current) {
+        try {
+          win.google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: async (response: any) => {
+              if (response.credential) {
+                setIsSubmitting(true);
+                setErrorMessage(null);
+                const result = await loginWithGoogle(response.credential);
+                setIsSubmitting(false);
+                if (!result.success) {
+                  setErrorMessage(result.error || 'Google login failed');
+                }
               }
-            }
-          },
-        });
+            },
+          });
 
-        win.google.accounts.id.renderButton(googleBtnRef.current, {
-          theme: 'outline',
-          size: 'large',
-          shape: 'pill',
-          width: '100%',
-          text: mode === 'login' ? 'signin_with' : 'signup_with',
-        });
-      } catch (err) {
-        console.warn('Google One Tap notice:', err);
+          win.google.accounts.id.renderButton(googleBtnRef.current, {
+            theme: 'outline',
+            size: 'large',
+            shape: 'pill',
+            width: 360,
+            text: mode === 'login' ? 'continue_with' : 'signup_with',
+          });
+        } catch (err) {
+          console.warn('Google GIS init notice:', err);
+        }
+        return true;
       }
+      return false;
+    };
+
+    if (!initGis()) {
+      const timer = setInterval(() => {
+        attempts += 1;
+        if (initGis() || attempts > 25) {
+          clearInterval(timer);
+        }
+      }, 200);
+      return () => clearInterval(timer);
     }
   }, [mode, googleClientId, loginWithGoogle]);
 
