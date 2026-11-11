@@ -70,9 +70,13 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
   const handleOpenStripeHostedPage = async () => {
     setIsOpeningStripePage(true);
     try {
+      const token = localStorage.getItem('nebula_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE}/api/payments/create-checkout-session`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           billingCycle,
           originUrl: window.location.origin,

@@ -69,8 +69,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const displayList = filteredSessions.map(s => ({ id: s.id, title: s.title }));
   const visibleItems = showMore ? displayList : displayList.slice(0, 10);
 
-  const displayName = user?.name || 'Abhinav SD';
-  const displayEmail = user?.email || 'Go';
+  const displayName = user?.name || 'Nebula User';
+  const displayEmail = user?.email || 'Not signed in';
 
   // Extract initials
   const initials = displayName
@@ -78,7 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .map(p => p[0])
     .join('')
     .slice(0, 2)
-    .toUpperCase() || 'AS';
+    .toUpperCase() || 'NU';
 
   return (
     <>

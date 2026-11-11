@@ -69,6 +69,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem('nebula_token');
     localStorage.removeItem('nebula_user');
+    localStorage.removeItem('nebula_user_name');
+    localStorage.removeItem('nebula_user_email');
+    localStorage.removeItem('nebula_is_pro');
+    localStorage.removeItem('nebula_sessions');
+    setCurrentView('login');
+    if (window.location.pathname !== '/login') {
+      window.history.pushState({ view: 'login' }, '', '/login');
+    }
   }, []);
 
   // Verify token on mount with /api/auth/me
@@ -76,6 +84,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const verifySession = async () => {
       const storedToken = localStorage.getItem('nebula_token');
       if (!storedToken) {
+        setToken(null);
+        setUser(null);
+        localStorage.removeItem('nebula_user');
         setIsLoading(false);
         return;
       }

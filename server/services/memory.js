@@ -20,10 +20,12 @@ function getAi() {
  */
 async function getUserMemories({ userId, userEmail }) {
   try {
+    if (!userId && !userEmail) {
+      return { memories: [], contextString: "" };
+    }
     const query = [];
     if (userId) query.push({ userId });
     if (userEmail) query.push({ userEmail });
-    if (query.length === 0) query.push({ userEmail: "guest@nebula.local" });
 
     const memories = await Memory.find({ $or: query }).sort({ updatedAt: -1 }).limit(25);
     if (!memories || memories.length === 0) {
@@ -47,6 +49,9 @@ async function getUserMemories({ userId, userEmail }) {
  * Asynchronously extracts persistent facts from conversation turns and saves to MongoDB
  */
 async function extractAndSaveMemories({ userId, userEmail, userMessage }) {
+  if (!userId && !userEmail) {
+    return;
+  }
   if (!userMessage || typeof userMessage !== "string" || userMessage.length < 12) {
     return;
   }

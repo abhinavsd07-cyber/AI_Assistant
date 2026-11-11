@@ -86,9 +86,13 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
     const stepTimer2 = setTimeout(() => setActiveStep(3), 1100);
 
     try {
+      const token = localStorage.getItem('nebula_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE}/api/flux/workflow`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           prompt,
           unetModel,

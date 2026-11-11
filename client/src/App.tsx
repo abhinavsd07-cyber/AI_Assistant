@@ -17,7 +17,7 @@ import type { Message, ChatSession, PersonaType } from './types';
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const App: React.FC = () => {
-  const { user, token, isAuthenticated, currentView } = useAuth();
+  const { user, token, isAuthenticated, isLoading: isAuthLoading, currentView } = useAuth();
 
   // Dark / Light Theme state
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -50,28 +50,14 @@ export const App: React.FC = () => {
   // AI Persona state
   const [selectedPersona, setSelectedPersona] = useState<PersonaType>('general');
 
-  const [sessions, setSessions] = useState<ChatSession[]>(() => {
-    try {
-      const saved = localStorage.getItem('nebula_sessions');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
 
   const [userName, setUserName] = useState<string>(() => {
-    return user?.name || localStorage.getItem('nebula_user_name') || 'Guest User';
+    return user?.name || '';
   });
   const [userEmail, setUserEmail] = useState<string>(() => {
-    return user?.email || localStorage.getItem('nebula_user_email') || 'Sign in to sync history';
+    return user?.email || '';
   });
-
-  useEffect(() => {
-    if (user) {
-      setUserName(user.name);
-      setUserEmail(user.email);
-    }
-  }, [user]);
 
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -84,20 +70,36 @@ export const App: React.FC = () => {
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isPro, setIsPro] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('nebula_is_pro') === 'true' || (user as any)?.plan === 'pro';
-    } catch {
-      return false;
-    }
-  });
+  const [isPro, setIsPro] = useState<boolean>(false);
 
+  // Strictly isolate user state, sessions, and Pro subscription per authenticated user ID
   useEffect(() => {
-    if ((user as any)?.plan === 'pro') {
-      setIsPro(true);
-      localStorage.setItem('nebula_is_pro', 'true');
+    if (isAuthenticated && user) {
+      setUserName(user.name);
+      setUserEmail(user.email);
+      const userProKey = `nebula_is_pro_${user.id}`;
+      const proStatus =
+        (user as any)?.plan === 'pro' ||
+        (user as any)?.role === 'pro' ||
+        localStorage.getItem(userProKey) === 'true';
+      setIsPro(proStatus);
+
+      try {
+        const saved = localStorage.getItem(`nebula_sessions_${user.id}`);
+        setSessions(saved ? JSON.parse(saved) : []);
+      } catch {
+        setSessions([]);
+      }
+    } else {
+      // Clear all state immediately on logout or unauthenticated state
+      setUserName('');
+      setUserEmail('');
+      setIsPro(false);
+      setSessions([]);
+      setMessages([]);
+      setCurrentSessionId(null);
     }
-  }, [user]);
+  }, [isAuthenticated, user?.id]);
 
   // Interactive Canvas Studio & Route state
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
@@ -226,47 +228,40 @@ export const App: React.FC = () => {
     navigator.clipboard.writeText(shareUrl);
   };
 
-  // Sync sessions to localStorage
+  // Sync sessions to per-user localStorage only when authenticated
   useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
     try {
-      localStorage.setItem('nebula_sessions', JSON.stringify(sessions));
-      if (!isAuthenticated) {
-        localStorage.setItem('nebula_user_name', userName);
-        localStorage.setItem('nebula_user_email', userEmail);
-      }
+      localStorage.setItem(`nebula_sessions_${user.id}`, JSON.stringify(sessions));
     } catch (e) {
       console.error('Error saving storage:', e);
     }
-  }, [sessions, userName, userEmail, isAuthenticated]);
+  }, [sessions, isAuthenticated, user?.id]);
 
-  // Sync from backend MongoDB sessions if available
+  // Sync from backend MongoDB sessions strictly for authenticated user
   useEffect(() => {
+    if (!isAuthenticated || !token) return;
     const fetchMongoSessions = async () => {
       try {
-        const headers: Record<string, string> = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-        const res = await fetch(`${API_BASE}/api/sessions`, { headers });
+        const res = await fetch(`${API_BASE}/api/sessions`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const data = await res.json();
-        if (data.success && Array.isArray(data.sessions) && data.sessions.length > 0) {
+        if (data.success && Array.isArray(data.sessions)) {
           const mapped: ChatSession[] = data.sessions.map((s: any) => ({
             id: s.sessionId || s._id,
             title: s.title,
             messages: s.messages || [],
             updatedAt: s.updatedAt || new Date().toISOString(),
           }));
-          setSessions((prev) => {
-            const combined = [...mapped, ...prev.filter(p => !mapped.some(m => m.id === p.id))];
-            return combined;
-          });
+          setSessions(mapped);
         }
       } catch {
-        // Backend offline fallback to localStorage
+        // Backend offline fallback to user-scoped localStorage
       }
     };
     fetchMongoSessions();
-  }, [token]);
+  }, [isAuthenticated, token]);
 
   // Select a past session from sidebar
   const handleSelectSession = (id: string) => {
@@ -601,9 +596,25 @@ export const App: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Authentication views
-  if (currentView === 'login' || currentView === 'signup') {
-    return <AuthPage initialMode={currentView} />;
+  // Strict Authentication Gate:
+  // Wait for initial token verification, then require login unless viewing a public read-only shared link
+  const isPublicShareRoute =
+    window.location.pathname.startsWith('/share/') ||
+    new URLSearchParams(window.location.search).has('share');
+
+  if (isAuthLoading) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#FCFCFC] dark:bg-[#121212] text-[#0D0D0D] dark:text-[#ECECEC] gap-3">
+        <div className="w-12 h-12 rounded-full overflow-hidden p-0.5 bg-gradient-to-tr from-purple-500 to-indigo-500 animate-pulse">
+          <img src="/cosmic_orb.jpg" alt="Nebula AI" className="w-full h-full rounded-full object-cover" />
+        </div>
+        <span className="text-xs font-semibold text-gray-500">Verifying Nebula session...</span>
+      </div>
+    );
+  }
+
+  if ((!isAuthenticated && !isPublicShareRoute) || currentView === 'login' || currentView === 'signup') {
+    return <AuthPage initialMode={currentView === 'signup' ? 'signup' : 'login'} />;
   }
 
   return (

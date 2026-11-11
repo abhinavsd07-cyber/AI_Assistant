@@ -167,8 +167,8 @@ app.post("/api/rag/inspect", async (req, res) => {
   }
 });
 
-// Upload media or image asset to Cloudinary CDN
-app.post("/api/upload", optionalAuth, async (req, res) => {
+// Upload media or image asset to Cloudinary CDN (Authenticated Users Only)
+app.post("/api/upload", requireAuth, async (req, res) => {
   try {
     const { data, folder } = req.body;
     if (!data) {
@@ -187,18 +187,16 @@ app.post("/api/upload", optionalAuth, async (req, res) => {
   }
 });
 
-// Fetch all saved chat sessions from MongoDB
-app.get("/api/sessions", optionalAuth, async (req, res) => {
+// Fetch all saved chat sessions from MongoDB (Strictly scoped to logged-in user)
+app.get("/api/sessions", requireAuth, async (req, res) => {
   try {
     if (!isMongoConnected) {
       return res.json({ success: true, sessions: [] });
     }
 
-    const query = req.user
-      ? { $or: [{ userId: req.user._id }, { userId: null }] }
-      : {};
-
-    const sessions = await ChatSession.find(query).sort({ updatedAt: -1 }).limit(40);
+    const sessions = await ChatSession.find({ userId: req.user._id })
+      .sort({ updatedAt: -1 })
+      .limit(40);
     res.json({ success: true, sessions });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -230,11 +228,14 @@ app.get("/api/sessions/share/:sessionId", async (req, res) => {
   }
 });
 
-// Delete a session from MongoDB
-app.delete("/api/sessions/:sessionId", optionalAuth, async (req, res) => {
+// Delete a session from MongoDB (Strictly scoped to logged-in user)
+app.delete("/api/sessions/:sessionId", requireAuth, async (req, res) => {
   try {
     if (isMongoConnected) {
-      await ChatSession.deleteOne({ sessionId: req.params.sessionId });
+      await ChatSession.deleteOne({
+        sessionId: req.params.sessionId,
+        userId: req.user._id,
+      });
     }
     res.json({ success: true, message: "Session deleted successfully" });
   } catch (err) {
@@ -242,12 +243,12 @@ app.delete("/api/sessions/:sessionId", optionalAuth, async (req, res) => {
   }
 });
 
-// GET /api/memories - Fetch all persistent user memories
-app.get("/api/memories", optionalAuth, async (req, res) => {
+// GET /api/memories - Fetch all persistent user memories (Strictly scoped to logged-in user)
+app.get("/api/memories", requireAuth, async (req, res) => {
   try {
     const { memories } = await getUserMemories({
-      userId: req.user ? req.user._id : null,
-      userEmail: req.user ? req.user.email : null,
+      userId: req.user._id,
+      userEmail: req.user.email,
     });
     res.json({ success: true, memories });
   } catch (err) {
@@ -255,8 +256,8 @@ app.get("/api/memories", optionalAuth, async (req, res) => {
   }
 });
 
-// POST /api/memories - Manually add a user memory
-app.post("/api/memories", optionalAuth, async (req, res) => {
+// POST /api/memories - Manually add a user memory (Strictly scoped to logged-in user)
+app.post("/api/memories", requireAuth, async (req, res) => {
   try {
     const { category = "preference", key, value } = req.body;
     if (!key || !value) {
@@ -265,13 +266,13 @@ app.post("/api/memories", optionalAuth, async (req, res) => {
     const { Memory } = require("./models");
     const mem = await Memory.findOneAndUpdate(
       {
-        userEmail: req.user ? req.user.email : "guest@nebula.local",
+        userId: req.user._id,
         key: key.toLowerCase().trim(),
       },
       {
         $set: {
-          userId: req.user ? req.user._id : null,
-          userEmail: req.user ? req.user.email : "guest@nebula.local",
+          userId: req.user._id,
+          userEmail: req.user.email,
           category,
           key: key.toLowerCase().trim(),
           value: value.trim(),
@@ -286,25 +287,24 @@ app.post("/api/memories", optionalAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/memories/:id - Delete a specific memory
-app.delete("/api/memories/:id", optionalAuth, async (req, res) => {
+// DELETE /api/memories/:id - Delete a specific memory (Strictly scoped to logged-in user)
+app.delete("/api/memories/:id", requireAuth, async (req, res) => {
   try {
     const { Memory } = require("./models");
-    await Memory.deleteOne({ _id: req.params.id });
+    await Memory.deleteOne({ _id: req.params.id, userId: req.user._id });
     res.json({ success: true, message: "Memory removed" });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// DELETE /api/memories - Clear all user memories
-app.delete("/api/memories", optionalAuth, async (req, res) => {
+// DELETE /api/memories - Clear all user memories (Strictly scoped to logged-in user)
+app.delete("/api/memories", requireAuth, async (req, res) => {
   try {
     const { Memory } = require("./models");
-    const query = req.user
-      ? { $or: [{ userId: req.user._id }, { userEmail: req.user.email }] }
-      : { userEmail: "guest@nebula.local" };
-    await Memory.deleteMany(query);
+    await Memory.deleteMany({
+      $or: [{ userId: req.user._id }, { userEmail: req.user.email }],
+    });
     res.json({ success: true, message: "All memories cleared" });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -312,7 +312,7 @@ app.delete("/api/memories", optionalAuth, async (req, res) => {
 });
 
 // POST /api/payments/upgrade - Live Stripe Sandbox / Razorpay Checkout Processing
-app.post("/api/payments/upgrade", optionalAuth, async (req, res) => {
+app.post("/api/payments/upgrade", requireAuth, async (req, res) => {
   try {
     const {
       plan = "pro",
@@ -361,7 +361,7 @@ app.post("/api/payments/upgrade", optionalAuth, async (req, res) => {
 });
 
 // POST /api/payments/create-checkout-session - Official Hosted Stripe Checkout Page
-app.post("/api/payments/create-checkout-session", optionalAuth, async (req, res) => {
+app.post("/api/payments/create-checkout-session", requireAuth, async (req, res) => {
   try {
     const { billingCycle = "monthly", originUrl = "http://localhost:5173" } = req.body;
     const session = await createStripeCheckoutSession({
@@ -380,11 +380,11 @@ app.post("/api/payments/create-checkout-session", optionalAuth, async (req, res)
 });
 
 // FLUX.1 Visual Node-Graph Workflow Execution Endpoint (ComfyUI-style Hybrid Pipeline)
-app.post("/api/flux/workflow", chatLimiter, optionalAuth, async (req, res) => {
+app.post("/api/flux/workflow", chatLimiter, requireAuth, async (req, res) => {
   const workflowStart = Date.now();
   try {
     const {
-      prompt = "A vintage mint-green classic car filled with blooming pastel flowers, studio photography, 8k",
+      prompt = "Futuristic cybernetic astronaut standing before a glowing cosmic nebula, 8k photorealistic",
       unetModel = "flux1-schnell-Q4_K_S.gguf",
       clipModel = "t5xxl_fp8 + clip_l",
       steps = 4,
@@ -416,7 +416,7 @@ app.post("/api/flux/workflow", chatLimiter, optionalAuth, async (req, res) => {
         cfg,
         resolution: `${width}x${height}`,
         sampler,
-        speedupFactor: "1600x faster than local 8GB RAM swap",
+        pipeline: "Nebula Cloud GPU + Cloudinary CDN",
       },
     });
   } catch (err) {
@@ -428,7 +428,7 @@ app.post("/api/flux/workflow", chatLimiter, optionalAuth, async (req, res) => {
 });
 
 // Main Chat endpoint with Contextual History, Documents, Live Web Search Grounding & Sub-Second Latency
-app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
+app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
   const startTime = Date.now();
   try {
     const { 
@@ -506,12 +506,12 @@ app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
             imageUrl: cdnUrl,
           };
           await ChatSession.findOneAndUpdate(
-            { sessionId },
+            { sessionId, userId: req.user._id },
             {
               $setOnInsert: {
                 title: `🎨 ${cleanPrompt.slice(0, 28)}`,
-                userId: req.user ? req.user._id : null,
-                userEmail: req.user ? req.user.email : null,
+                userId: req.user._id,
+                userEmail: req.user.email,
               },
               $set: { model: "nebula-visual-cloudinary" },
               $push: { messages: { $each: [userMsg, assistantMsg] } },
@@ -782,17 +782,21 @@ app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
         const updateData = {
           $setOnInsert: {
             title: sessionTitle,
-            userId: req.user ? req.user._id : null,
-            userEmail: req.user ? req.user.email : null,
+            userId: req.user._id,
+            userEmail: req.user.email,
           },
           $set: { model: modelUsed },
           $push: { messages: { $each: [userMsg, assistantMsg] } },
         };
 
-        await ChatSession.findOneAndUpdate({ sessionId }, updateData, {
-          upsert: true,
-          returnDocument: "after",
-        });
+        await ChatSession.findOneAndUpdate(
+          { sessionId, userId: req.user._id },
+          updateData,
+          {
+            upsert: true,
+            returnDocument: "after",
+          }
+        );
 
         if (req.user) {
           await User.findByIdAndUpdate(req.user._id, {

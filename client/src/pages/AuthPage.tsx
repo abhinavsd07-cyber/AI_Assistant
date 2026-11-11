@@ -4,7 +4,6 @@ import {
   Lock, 
   User, 
   ArrowRight, 
-  ArrowLeft,
   Eye, 
   EyeOff, 
   AlertCircle, 
@@ -169,7 +168,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
   };
 
   const handleGoogleClick = async () => {
-    setIsSubmitting(true);
     setErrorMessage(null);
 
     const win = window as any;
@@ -177,33 +175,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
       try {
         win.google.accounts.id.prompt((notification: any) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            fallbackGoogleAuth();
+            setErrorMessage(
+              'Please click the Google Sign-In button above or sign in with your email and password.'
+            );
           }
         });
         return;
       } catch (e) {
-        console.warn('Google prompt fallback:', e);
+        console.warn('Google prompt notice:', e);
       }
     }
 
-    fallbackGoogleAuth();
-  };
-
-  const fallbackGoogleAuth = async () => {
-    const defaultEmail = email.trim() || 'developer.user@gmail.com';
-    const defaultName = name.trim() || defaultEmail.split('@')[0];
-
-    const res = await loginWithGoogle(undefined, {
-      name: defaultName.charAt(0).toUpperCase() + defaultName.slice(1),
-      email: defaultEmail,
-      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(defaultEmail)}`,
-      provider: 'google',
-    });
-
-    setIsSubmitting(false);
-    if (!res.success) {
-      setErrorMessage(res.error || 'Google login failed');
-    }
+    setErrorMessage(
+      'Google OAuth popup could not be opened. Please use the Google button or sign in with your email and password.'
+    );
   };
 
   return (
@@ -219,24 +204,25 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
       {/* Top Navigation Bar */}
       <header className="relative z-20 w-full px-6 py-2.5 md:px-10 flex items-center justify-between border-b border-[#E5E5E5]/60 bg-white/70 backdrop-blur-md">
         {/* Brand identity */}
-        <div 
-          onClick={() => navigateTo('chat')}
-          className="flex items-center gap-2.5 cursor-pointer group select-none"
-        >
-          <div className="w-7 h-7 rounded-lg overflow-hidden border border-gray-200 group-hover:border-black transition-colors shrink-0">
+        <div className="flex items-center gap-2.5 select-none">
+          <div className="w-7 h-7 rounded-lg overflow-hidden border border-gray-200 shrink-0">
             <img src="/cosmic_orb.jpg" alt="Nebula Logo" className="w-full h-full object-cover" />
           </div>
           <span className="font-bold text-base tracking-tight text-[#0D0D0D]">Nebula AI</span>
         </div>
 
-        {/* Guest access action */}
+        {/* Switch between Sign In & Sign Up */}
         <button
           type="button"
-          onClick={() => navigateTo('chat')}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-black py-1.5 px-3.5 rounded-full bg-white border border-[#E5E5E5] hover:border-gray-400 hover:bg-gray-50 active:scale-95 transition-all cursor-pointer shadow-2xs"
+          onClick={() => {
+            const target = mode === 'login' ? 'signup' : 'login';
+            switchMode(target);
+            navigateTo(target);
+          }}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-black py-1.5 px-3.5 rounded-full bg-white border border-[#E5E5E5] hover:border-gray-400 hover:bg-gray-50 active:scale-95 transition-all cursor-pointer shadow-2xs"
         >
-          <ArrowLeft size={13} />
-          <span>Explore as Guest</span>
+          <span>{mode === 'login' ? 'Create Account' : 'Sign In'}</span>
+          <ArrowRight size={13} />
         </button>
       </header>
 
