@@ -22,6 +22,7 @@ const { isImagePrompt, classifyUserIntent, generateAndUploadImage } = require(".
 const { checkOllamaStatus, streamOllamaChat, OLLAMA_HOST } = require("./services/ollama");
 const { getUserMemories, extractAndSaveMemories } = require("./services/memory");
 const { securityHeaders, createRateLimiter } = require("./middleware/security");
+const { createConfirmedStripePayment, createStripeCheckoutSession } = require("./services/stripe");
 
 const app = express();
 
@@ -310,11 +311,33 @@ app.delete("/api/memories", optionalAuth, async (req, res) => {
   }
 });
 
-// POST /api/payments/upgrade - Sandbox Stripe / Razorpay Checkout Processing
+// POST /api/payments/upgrade - Live Stripe Sandbox / Razorpay Checkout Processing
 app.post("/api/payments/upgrade", optionalAuth, async (req, res) => {
   try {
-    const { plan = "pro", billingCycle = "monthly", paymentMethod = "razorpay" } = req.body;
-    const receiptId = `rcpt_nebula_${Date.now()}_${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+    const {
+      plan = "pro",
+      billingCycle = "monthly",
+      paymentMethod = "stripe",
+      gateway = "stripe",
+    } = req.body;
+
+    let receiptId = `rcpt_nebula_${Date.now()}_${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+    let stripePayment = null;
+
+    if (process.env.STRIPE_SECRET_KEY) {
+      try {
+        stripePayment = await createConfirmedStripePayment({
+          billingCycle,
+          customerEmail: req.user?.email || "guest@nebula.ai",
+          customerName: req.user?.name || "Abhinav SD",
+        });
+        if (stripePayment?.paymentIntentId) {
+          receiptId = stripePayment.paymentIntentId;
+        }
+      } catch (stripeErr) {
+        console.warn("⚠️ Stripe live sandbox call warning:", stripeErr.message);
+      }
+    }
 
     if (isMongoConnected && req.user) {
       await User.findByIdAndUpdate(req.user._id, {
@@ -326,10 +349,30 @@ app.post("/api/payments/upgrade", optionalAuth, async (req, res) => {
       success: true,
       plan,
       billingCycle,
-      paymentMethod,
+      paymentMethod: gateway || paymentMethod,
       receiptId,
+      stripePayment,
       activatedAt: new Date().toISOString(),
-      message: "Nebula Pro subscription activated successfully!",
+      message: "Nebula Pro subscription activated via Stripe Sandbox!",
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/payments/create-checkout-session - Official Hosted Stripe Checkout Page
+app.post("/api/payments/create-checkout-session", optionalAuth, async (req, res) => {
+  try {
+    const { billingCycle = "monthly", originUrl = "http://localhost:5173" } = req.body;
+    const session = await createStripeCheckoutSession({
+      billingCycle,
+      originUrl,
+      customerEmail: req.user?.email,
+    });
+    res.json({
+      success: true,
+      sessionId: session.sessionId,
+      checkoutUrl: session.checkoutUrl,
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

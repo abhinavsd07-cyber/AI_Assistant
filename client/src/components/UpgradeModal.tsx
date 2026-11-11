@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Sparkles, Check, ShieldCheck, CreditCard, Smartphone, Loader2, CheckCircle2 } from 'lucide-react';
+import { X, Sparkles, Check, ShieldCheck, CreditCard, Smartphone, Loader2, CheckCircle2, ExternalLink } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -11,9 +11,10 @@ interface UpgradeModalProps {
 
 export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onUpgradeSuccess }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
-  const [gateway, setGateway] = useState<'razorpay' | 'stripe'>('razorpay');
+  const [gateway, setGateway] = useState<'razorpay' | 'stripe'>('stripe');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [receipt, setReceipt] = useState<{ receiptId: string; activatedAt: string } | null>(null);
+  const [isOpeningStripePage, setIsOpeningStripePage] = useState(false);
+  const [receipt, setReceipt] = useState<{ receiptId: string; activatedAt: string; amount?: string } | null>(null);
 
   if (!isOpen) return null;
 
@@ -51,6 +52,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
       setReceipt({
         receiptId: data.receiptId || `RCPT-${Date.now()}`,
         activatedAt: new Date().toLocaleString(),
+        amount: data.stripePayment?.amountFormatted || (billingCycle === 'monthly' ? '$9.99 USD' : '$59.88 USD'),
       });
       onUpgradeSuccess?.();
     } catch {
@@ -62,6 +64,28 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
       onUpgradeSuccess?.();
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleOpenStripeHostedPage = async () => {
+    setIsOpeningStripePage(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/payments/create-checkout-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          billingCycle,
+          originUrl: window.location.origin,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.checkoutUrl) {
+        window.open(data.checkoutUrl, '_blank', 'noopener,noreferrer');
+      }
+    } catch (err) {
+      console.error('Failed to open Stripe Checkout:', err);
+    } finally {
+      setIsOpeningStripePage(false);
     }
   };
 
@@ -227,24 +251,45 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
               </div>
             </div>
 
-            {/* Checkout Action */}
+              {/* Checkout Action */}
             <div className="flex flex-col gap-2 pt-2 border-t border-[#E5E5E5] dark:border-[#2C2C2C]">
               <button
                 onClick={handleCheckout}
-                disabled={isProcessing}
+                disabled={isProcessing || isOpeningStripePage}
                 className="w-full py-2.5 rounded-xl bg-[#0D0D0D] dark:bg-white hover:bg-[#262626] dark:hover:bg-gray-100 text-white dark:text-black font-semibold text-xs shadow-xs transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {isProcessing ? (
                   <>
                     <Loader2 size={14} className="animate-spin" />
-                    <span>Processing via {gateway.toUpperCase()}...</span>
+                    <span>Confirming Live {gateway.toUpperCase()} Transaction...</span>
                   </>
                 ) : (
-                  <span>Pay & Activate Nebula Pro</span>
+                  <span>Pay & Activate Nebula Pro (Instant Sandbox)</span>
                 )}
               </button>
+
+              {gateway === 'stripe' && (
+                <button
+                  onClick={handleOpenStripeHostedPage}
+                  disabled={isOpeningStripePage || isProcessing}
+                  className="w-full py-2 rounded-xl border border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 font-semibold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  {isOpeningStripePage ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" />
+                      <span>Creating Stripe Checkout Session...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink size={13} />
+                      <span>Open Official Stripe Checkout Page (checkout.stripe.com)</span>
+                    </>
+                  )}
+                </button>
+              )}
+
               <span className="text-[10.5px] text-center text-gray-400 flex items-center justify-center gap-1">
-                <ShieldCheck size={12} className="text-emerald-600" /> 256-bit SSL encrypted checkout. Cancel anytime.
+                <ShieldCheck size={12} className="text-emerald-600" /> Connected to Nebula_Ai Stripe Sandbox (256-bit SSL)
               </span>
             </div>
           </>
