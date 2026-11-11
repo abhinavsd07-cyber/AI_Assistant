@@ -85,6 +85,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     window.speechSynthesis.cancel();
     const cleanText = text.replace(/```[\s\S]*?```/g, 'Code block omitted.');
     const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = /[\u0D00-\u0D7F]/.test(cleanText) ? 'ml-IN' : 'en-US';
     utterance.rate = 1.0;
     utterance.onend = () => setSpeakingId(null);
     utterance.onerror = () => setSpeakingId(null);
