@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Lightbulb, Mic, ArrowUp, X, FileText, Globe, Image as ImageIcon } from 'lucide-react';
+import { Plus, Lightbulb, Mic, ArrowUp, X, FileText, Globe, Image as ImageIcon, Sparkles } from 'lucide-react';
 
 export interface FileAttachment {
   name: string;
@@ -26,7 +26,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
   const [isWebSearch, setIsWebSearch] = useState(false);
   const [isImageGen, setIsImageGen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [speechLang, setSpeechLang] = useState<'ml-IN' | 'en-US'>('ml-IN');
+  const [detectedVoiceLang, setDetectedVoiceLang] = useState<'ml' | 'en' | null>(null);
   const [micError, setMicError] = useState<string | null>(null);
   const [attachment, setAttachment] = useState<FileAttachment | null>(null);
 
@@ -48,6 +48,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
       recognitionRef.current = null;
     }
     setIsRecording(false);
+    setDetectedVoiceLang(null);
   }, []);
 
   useEffect(() => {
@@ -56,7 +57,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
     };
   }, [stopRecording]);
 
-  const startRecording = (lang: 'ml-IN' | 'en-US') => {
+  // Automatic Speech Recognition with Zero-Manual Language Switching
+  const startRecording = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setMicError('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
@@ -72,7 +74,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
-      recognition.lang = lang;
+      
+      // Default to bilingual multi-script Indian locale (transcribes both Malayalam and English)
+      recognition.lang = 'ml-IN';
 
       recognition.onstart = () => {
         setIsRecording(true);
@@ -84,11 +88,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
           transcript += event.results[i][0].transcript;
         }
         if (transcript) {
+          // Uniquely identify the spoken language on-the-fly
+          const isMalayalam = /[\u0D00-\u0D7F]/.test(transcript) ||
+            /\b(njan|ente|enthanu|aanu|alla|und|illa|cheyyamo|parayoo|varum|pokum|evide|ivide|avide|sukhamano|namaskaram|kazhinjo|ariyamo|valare|ippol)\b/i.test(transcript);
+          setDetectedVoiceLang(isMalayalam ? 'ml' : 'en');
+
           const nextValue = `${baseInputRef.current}${transcript}`;
           setInput(nextValue);
           if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 140)}px`;
+            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`;
           }
         }
       };
@@ -98,11 +107,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
           setMicError('Microphone permission denied. Allow mic access in your browser address bar.');
         } else if (event.error === 'network') {
-          setMicError('Speech network error: Use Google Chrome or Microsoft Edge (Brave/Firefox block Web Speech API).');
+          setMicError('Speech network error: Use Google Chrome or Microsoft Edge with internet.');
         } else if (event.error === 'audio-capture') {
           setMicError('No microphone detected. Check your Windows microphone settings.');
         } else if (event.error === 'no-speech') {
-          setMicError(lang === 'ml-IN' ? 'ശബ്ദം ലഭിച്ചില്ല (No speech detected). Please speak clearly.' : 'No speech detected.');
+          setMicError('No speech detected. Please speak clearly into your microphone.');
         } else {
           setMicError(`Mic error: ${event.error}`);
         }
@@ -127,15 +136,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
     if (isRecording) {
       stopRecording();
     } else {
-      startRecording(speechLang);
-    }
-  };
-
-  const toggleSpeechLang = () => {
-    const nextLang = speechLang === 'ml-IN' ? 'en-US' : 'ml-IN';
-    setSpeechLang(nextLang);
-    if (isRecording) {
-      startRecording(nextLang);
+      startRecording();
     }
   };
 
@@ -210,7 +211,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
 
       <form
         onSubmit={handleSubmit}
-        className="relative flex flex-col bg-[#F4F4F4] dark:bg-[#1E1E1E] rounded-[26px] border border-[#E5E5E5] dark:border-[#2E2E2E] p-2.5 shadow-xs focus-within:border-gray-400 dark:focus-within:border-gray-600 focus-within:bg-white dark:focus-within:bg-[#202020] transition-all"
+        className="relative flex flex-col bg-[#F4F4F4] dark:bg-[#1E1E1E] rounded-3xl border border-[#E5E5E5] dark:border-[#2E2E2E] p-3 shadow-xs focus-within:border-gray-400 dark:focus-within:border-gray-600 focus-within:bg-white dark:focus-within:bg-[#202020] transition-all"
       >
         {/* Attachment preview banner */}
         {attachment && (
@@ -244,18 +245,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
           </div>
         )}
 
-        <div className="flex items-center gap-2.5 w-full">
-          {/* Plus icon on the left */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-            title="Add images, PDFs or documents"
-          >
-            <Plus size={19} />
-          </button>
-
-          {/* Text Area */}
+        {/* TOP SECTION: 100% Full-Width Textarea (Zero Vertical Scrollbar & Zero Text Clipping) */}
+        <div className="w-full px-1">
           <textarea
             ref={textareaRef}
             value={input}
@@ -265,87 +256,101 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
                 setIsImageGen(true);
               }
               e.target.style.height = 'auto';
-              e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 180)}px`;
             }}
             onKeyDown={handleKeyDown}
             placeholder={
-              isRecording 
-                ? (speechLang === 'ml-IN' ? 'സംസാരിക്കൂ, ഞാൻ കേൾക്കുന്നുണ്ട്... (Listening in Malayalam)' : 'Listening in English...')
-                : isImageGen 
-                ? 'Describe the image to generate with AI...' 
-                : 'Ask Nebula anything... (മലയാളത്തിലും ചോദിക്കാം)'
+              isRecording
+                ? `🎙️ Listening... ${detectedVoiceLang === 'ml' ? '(Detected: മലയാളം)' : detectedVoiceLang === 'en' ? '(Detected: English)' : '(Auto-detecting Malayalam & English)'}`
+                : isImageGen
+                ? 'Describe the image to generate with AI...'
+                : 'Ask Nebula anything in English or മലയാളം...'
             }
             rows={1}
-            className="flex-1 bg-transparent border-0 outline-hidden resize-none text-[15px] text-[#0D0D0D] dark:text-[#ECECEC] placeholder-gray-400 py-1.5 max-h-[140px] leading-relaxed font-normal"
+            className="w-full bg-transparent border-0 outline-hidden resize-none text-[15px] text-[#0D0D0D] dark:text-[#ECECEC] placeholder-gray-400 dark:placeholder-gray-500 py-1.5 min-h-[40px] max-h-[180px] leading-relaxed font-normal overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
           />
+        </div>
 
-          {/* Right Action Icons */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* AI Image Gen toggle */}
+        {/* BOTTOM SECTION: Spacious Action Toolbar (No Cramming, Clean Two-Tier UX) */}
+        <div className="flex items-center justify-between pt-2 mt-1 border-t border-gray-200/50 dark:border-gray-800/60 w-full">
+          {/* Left Feature Buttons */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Attachment Button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-8 h-8 rounded-full hover:bg-gray-200/80 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              title="Add images, PDFs or documents"
+            >
+              <Plus size={18} />
+            </button>
+
+            {/* AI Image Gen Toggle */}
             <button
               type="button"
               onClick={toggleImageGen}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isImageGen
                   ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs'
-                  : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+                  : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-200/60 dark:hover:bg-gray-800 border border-transparent'
               }`}
               title="Generate AI Images with Cloudinary CDN (/image <prompt>)"
             >
               <ImageIcon size={13} className={isImageGen ? 'text-emerald-600 dark:text-emerald-400' : ''} />
-              <span className="hidden sm:inline">Image</span>
+              <span>Image</span>
             </button>
 
-            {/* Live Web Search toggle */}
+            {/* Live Web Search Toggle */}
             <button
               type="button"
               onClick={() => setIsWebSearch(!isWebSearch)}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isWebSearch
                   ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700 shadow-2xs'
-                  : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+                  : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-200/60 dark:hover:bg-gray-800 border border-transparent'
               }`}
-              title="Toggle Live Web Search (Real-time Internet Grounding)"
+              title="Toggle Live Web Search (Real-time Grounding)"
             >
               <Globe size={13} className={isWebSearch ? 'text-blue-600 dark:text-blue-400' : ''} />
-              <span className="hidden sm:inline">Search</span>
+              <span>Search</span>
             </button>
 
-            {/* Reasoning / Thinking toggle */}
+            {/* Reasoning / Thinking Toggle */}
             <button
               type="button"
               onClick={() => setIsReasoning(!isReasoning)}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isReasoning
                   ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700 shadow-2xs'
-                  : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+                  : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-200/60 dark:hover:bg-gray-800 border border-transparent'
               }`}
               title="Toggle Deep Reasoning (CoT)"
             >
               <Lightbulb size={13} className={isReasoning ? 'text-purple-600 fill-purple-600 dark:text-purple-400' : ''} />
-              <span className="hidden sm:inline">Thinking</span>
+              <span>Thinking</span>
             </button>
 
-            {/* Voice Language Switcher (ML / EN) */}
-            <button
-              type="button"
-              onClick={toggleSpeechLang}
-              className="px-2 py-1 rounded-full text-[11px] font-bold bg-gray-200/80 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-              title={`Voice recognition language: ${speechLang === 'ml-IN' ? 'Malayalam (ml-IN)' : 'English (en-US)'}. Click to switch.`}
-            >
-              {speechLang === 'ml-IN' ? 'മല' : 'EN'}
-            </button>
+            {/* Live Auto-Detection Language Indicator */}
+            {isRecording && (
+              <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-medium animate-pulse">
+                <Sparkles size={11} />
+                {detectedVoiceLang === 'ml' ? 'Malayalam Detected' : detectedVoiceLang === 'en' ? 'English Detected' : 'Auto-Detecting'}
+              </span>
+            )}
+          </div>
 
-            {/* Voice Mic Button */}
+          {/* Right Action Icons: Voice Mic & Send Button */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Live Voice Mic - True Auto-Detection without separate options */}
             <button
               type="button"
               onClick={toggleRecording}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                 isRecording
-                  ? 'bg-red-500 text-white animate-pulse'
-                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'bg-rose-500 text-white animate-pulse shadow-md shadow-rose-500/30 ring-2 ring-rose-400'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200/60 dark:hover:bg-gray-800'
               }`}
-              title={speechLang === 'ml-IN' ? 'Speak in Malayalam (മലയാളത്തിൽ സംസാരിക്കാം)' : 'Speak in English'}
+              title={isRecording ? 'Stop recording' : 'Voice input (Auto-detects Malayalam & English)'}
             >
               <Mic size={17} />
             </button>
@@ -356,7 +361,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
               disabled={(!input.trim() && !attachment) || isLoading}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                 (input.trim() || attachment) && !isLoading
-                  ? 'bg-[#0D0D0D] dark:bg-white text-white dark:text-black hover:bg-black active:scale-95'
+                  ? 'bg-[#0D0D0D] dark:bg-white text-white dark:text-black hover:bg-black active:scale-95 shadow-xs'
                   : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
               }`}
               title="Send prompt"
