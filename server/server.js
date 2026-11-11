@@ -18,7 +18,7 @@ const {
   buildRagGroundingContext,
 } = require("./services/rag");
 const { applyGuardrails } = require("./services/guardrails");
-const { isImagePrompt, generateAndUploadImage } = require("./services/imageGen");
+const { isImagePrompt, classifyUserIntent, generateAndUploadImage } = require("./services/imageGen");
 
 const app = express();
 
@@ -223,32 +223,38 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
 
     const trimmedMsg = (message || "").trim();
 
-    // AI Image Generation Pipeline (Auto-detects natural language image requests or /image command)
-    const isImageGeneration = isImageGen || isImagePrompt(trimmedMsg);
-    if (isImageGeneration) {
+    // AI ML Intent Classification & Image Generation Pipeline
+    // Auto-detects image generation requests even with heavy typos, slang, Manglish, or /image command
+    let imageIntent = null;
+    if (isImageGen || isImagePrompt(trimmedMsg)) {
+      imageIntent = await classifyUserIntent(trimmedMsg);
+    }
+
+    if (imageIntent && (isImageGen || imageIntent.isImage)) {
       res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
       res.setHeader("Cache-Control", "no-cache, no-transform");
       res.setHeader("Connection", "keep-alive");
       res.setHeader("X-Accel-Buffering", "no");
       res.socket?.setNoDelay(true);
 
-      res.write(`data: ${JSON.stringify({ chunk: `✨ **Enhancing visual prompt with Gemini Creative Engine...**\n\n` })}\n\n`);
+      const targetSubject = imageIntent.cleanSubject || trimmedMsg;
+      res.write(`data: ${JSON.stringify({ chunk: `✨ **Nebula ML**: Understood visual request for **${targetSubject}**...\n\n` })}\n\n`);
 
       try {
-        const { cdnUrl, cleanPrompt, expandedPrompt } = await generateAndUploadImage(trimmedMsg);
+        const { cdnUrl, cleanPrompt, expandedPrompt } = await generateAndUploadImage(imageIntent);
 
         const replyMarkdown =
-          `Here is your generated image for **"${cleanPrompt}"**:\n\n` +
+          `Here is your generated image of **${cleanPrompt}**:\n\n` +
           `![${cleanPrompt}](${cdnUrl})\n\n` +
           `### 🎨 Visual Details\n` +
-          `* **Original Request**: \`${cleanPrompt}\`\n` +
+          `* **Subject (Normalized via ML)**: \`${cleanPrompt}\`\n` +
           `* **Enhanced Creative Prompt**: *${expandedPrompt}*\n` +
-          `* **Engine**: FLUX / SDXL High-Res Photorealism\n` +
+          `* **Engine**: Nebula High-Res Multi-Engine Visuals\n` +
           `* **Cloud Storage**: Cloudinary Global CDN\n\n` +
           `🔗 [Open Full High-Res Image](${cdnUrl})`;
 
         res.write(`data: ${JSON.stringify({ chunk: replyMarkdown, fullText: replyMarkdown, imageUrl: cdnUrl })}\n\n`);
-        res.write(`data: ${JSON.stringify({ done: true, model: "flux-photoreal-cloudinary" })}\n\n`);
+        res.write(`data: ${JSON.stringify({ done: true, model: "nebula-visual-cloudinary" })}\n\n`);
         res.end();
 
         // Save session in background
@@ -274,7 +280,7 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
                 userId: req.user ? req.user._id : null,
                 userEmail: req.user ? req.user.email : null,
               },
-              $set: { model: "flux-photoreal-cloudinary" },
+              $set: { model: "nebula-visual-cloudinary" },
               $push: { messages: { $each: [userMsg, assistantMsg] } },
             },
             { upsert: true, new: true }
@@ -283,8 +289,8 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
         return;
       } catch (err) {
         console.warn("⚠️ Image generation fallback:", err.message);
-        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(trimmedMsg)}?width=768&height=768&nologo=true`;
-        const fallbackReply = `Here is your visual for **"${trimmedMsg}"**:\n\n![${trimmedMsg}](${fallbackUrl})\n\n🔗 [Open High-Res](${fallbackUrl})`;
+        const fallbackUrl = `https://picsum.photos/seed/${encodeURIComponent(targetSubject)}/1024/768`;
+        const fallbackReply = `Here is your visual for **"${targetSubject}"**:\n\n![${targetSubject}](${fallbackUrl})\n\n🔗 [Open High-Res](${fallbackUrl})`;
         res.write(`data: ${JSON.stringify({ chunk: fallbackReply, fullText: fallbackReply, imageUrl: fallbackUrl })}\n\n`);
         res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
         return res.end();

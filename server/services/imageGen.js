@@ -1,15 +1,13 @@
 /**
- * Nebula AI - Next-Gen AI Image Generation Pipeline
- * Features:
- * 1. Intelligent intent detection (natural language & /image commands)
- * 2. Real entity / Celebrity / Cultural identification (e.g. Mohanlal, cars, landscapes)
- * 3. Gemini DALL-E 3 & Midjourney style prompt expansion
- * 4. Automatic Cloudinary CDN hosting & persistence (drxsezyyl)
- * 5. Zero-failure multi-tier fallback architecture
+ * Nebula AI - Deep Understanding & ML-Powered Image Pipeline
+ * Uses Gemini NLP for Zero-Shot Intent Classification, Typo Correction,
+ * Phonetic/Manglish Understanding, and High-Resolution Cloudinary CDN Delivery.
  */
 
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const { GoogleGenAI } = require("@google/genai");
-const { cloudinary, uploadToCloudinary } = require("./cloudinary");
+const { uploadToCloudinary } = require("./cloudinary");
 
 let aiClient = null;
 function getAi() {
@@ -20,78 +18,83 @@ function getAi() {
 }
 
 /**
- * Detects if a message is requesting image generation (natural language or explicit command)
+ * Fast synchronous check to detect if text likely contains an image generation intent
+ * Handles typos like 'generte', 'imge', 'drw', 'foto', 'varakkumo', etc.
  */
 function isImagePrompt(text) {
   if (!text || typeof text !== "string") return false;
-  const t = text.trim().toLowerCase();
-
-  // Explicit commands
-  if (t.startsWith("/image") || t.startsWith("image:") || t.startsWith("/img")) return true;
-
-  // Words that signify an image/visual
-  const hasImageNoun = /\b(image|images|img|picture|pictures|pic|pics|photo|photos|photograph|portrait|portraits|illustration|illustrations|wallpaper|painting|artwork|visual|visuals|ചിത്രം|ചിത്രങ്ങൾ|ഫോട്ടോ)\b/i.test(t);
-
-  // Verbs/intent words (including common typos like "generte", "creat")
-  const hasCreationVerb = /\b(generate|generte|create|creat|make|draw|paint|render|produce|show|give|display|need|want|varakkumo|undakkumo|വരയ്ക്കൂ|വരക്കണം|ഉണ്ടാക്കൂ|കാണിക്കൂ|വേണം)\b/i.test(t);
-
-  if (hasImageNoun && hasCreationVerb) return true;
-
-  // Patterns: "picture of X", "photo of X", "image of X"
-  if (/\b(image|picture|photo|pic|portrait|painting|drawing)\s+of\b/i.test(t)) return true;
-
-  // Patterns: "draw a cat", "paint a sunrise"
-  if (/\b(draw|paint)\s+(?:an?\s+)?/i.test(t)) return true;
-
-  return false;
+  const t = text.trim();
+  if (/^\/(?:image|img)\b/i.test(t)) return true;
+  return /(?:img|imag|pict|pik|foto|phot|drw|draw|pain|gener|creat|mak|varakk|padam|chithr|wallpaper|ചിത്രം|ഫോട്ടോ|പടം|വര)/i.test(t);
 }
 
 /**
- * Cleans user prompt down to the core visual subject
+ * ML Zero-Shot Semantic Intent Classifier & Typo Normalizer
+ * Understands typos, slang, broken grammar, Manglish, and Malayalam.
  */
-function extractRawImagePrompt(text) {
-  let cleaned = text.trim();
-  cleaned = cleaned.replace(/^\/(?:image|img)\s*/i, "");
-  cleaned = cleaned.replace(/^image:\s*/i, "");
-  cleaned = cleaned.replace(/^(?:please|pls|can you|could you|i need|i want|kindly)\s+/i, "");
-  cleaned = cleaned.replace(/^(?:generate|generte|create|creat|make|draw|paint|show me|give me)\s+(?:an?\s+|the\s+)?/i, "");
-  cleaned = cleaned.replace(/\b(?:image|images|picture|pictures|photo|photos|pic|pics|portrait)\b/gi, "");
-  cleaned = cleaned.replace(/^(?:of\s+)/i, "");
-  cleaned = cleaned.replace(/\s+/g, " ").trim();
-  return cleaned || "A vibrant futuristic cosmic nebula in deep space";
-}
-
-/**
- * Uses Gemini to expand the subject into an award-winning, colorful, cinematic prompt
- */
-async function expandImagePrompt(cleanSubject) {
-  const ai = getAi();
-  if (!ai) return `Photorealistic cinematic portrait of ${cleanSubject}, rich vibrant colors, 8k resolution, detailed texture, masterwork lighting`;
-
-  try {
-    const res = await ai.models.generateContent({
-      model: "gemini-3.5-flash-lite",
-      contents: `You are an expert AI visual prompt engineer like Midjourney and DALL-E 3.
-The user requested an image of: "${cleanSubject}".
-Extract the core visual subject and expand it into a breathtaking, colorful, highly detailed, photorealistic prompt (1-2 sentences, max 40 words).
-If a real person, celebrity, Indian actor (e.g. Mohanlal, Mammootty), or cultural landmark is mentioned, explicitly identify and accurately describe them with dignity, realistic facial features, and attire.
-Focus on rich saturated colors, cinematic studio lighting, detailed skin/material textures, and 8k photorealism.
-Output ONLY the expanded prompt string, nothing else.`,
-    });
-
-    const text = res.text?.trim();
-    if (text && text.length > 10) {
-      return text.replace(/^"|"$/g, "");
-    }
-  } catch (err) {
-    console.warn("⚠️ Prompt expansion fallback:", err.message);
+async function classifyUserIntent(userText) {
+  if (!userText || typeof userText !== "string") {
+    return { isImage: false, cleanSubject: "", cleanPrompt: "", isRealEntity: false, expandedPrompt: "" };
   }
 
-  return `A vibrant colorful photorealistic visual of ${cleanSubject}, cinematic lighting, 8k resolution, highly detailed texture`;
+  const trimmed = userText.trim();
+  const explicit = /^\/(?:image|img)\b/i.test(trimmed);
+
+  const ai = getAi();
+  if (!ai) {
+    const rawClean = trimmed.replace(/^\/(?:image|img)\s*/i, "").trim();
+    return {
+      isImage: explicit || isImagePrompt(trimmed),
+      cleanSubject: rawClean,
+      cleanPrompt: rawClean,
+      isRealEntity: false,
+      expandedPrompt: rawClean,
+    };
+  }
+
+  try {
+    const systemPrompt = `You are an expert NLP & ML Intent Classification Engine for Nebula AI.
+Analyze the user's input, even if it contains heavy typos, phonetic spelling, Manglish, Malayalam, or broken English.
+Determine:
+1. isImage: true if the user wants to see, draw, generate, or create an image/photo/picture/visual. If the user only wants conversation, information, coding, or facts, set false.
+2. cleanSubject: the corrected, normalized entity/subject (fix all spelling errors and phonetic typos, e.g. "mhnlal" -> "Mohanlal", "cr" -> "car", "orupadam mammootty" -> "Mammootty", "cypbpunk" -> "cyberpunk").
+3. isRealEntity: true if it is a real living celebrity, actor, Indian personality, politician, famous monument, place, or real car model. False if it is imaginary, fictional, or abstract.
+4. expandedPrompt: A breathtaking, colorful, highly detailed photorealistic prompt (max 35 words) with rich colors, cinematic lighting, and 8k photorealism.
+
+Output ONLY valid JSON:
+{"isImage": boolean, "cleanSubject": string, "isRealEntity": boolean, "expandedPrompt": string}`;
+
+    const res = await ai.models.generateContent({
+      model: "gemini-3.5-flash-lite",
+      contents: `${systemPrompt}\n\nUser input: "${trimmed}"`,
+    });
+
+    const cleanJson = res.text.trim().replace(/^```json|```$/g, "").trim();
+    const parsed = JSON.parse(cleanJson);
+
+    const subject = parsed.cleanSubject || trimmed.replace(/^\/(?:image|img)\s*/i, "").trim();
+    return {
+      isImage: explicit || Boolean(parsed.isImage),
+      cleanSubject: subject,
+      cleanPrompt: subject,
+      isRealEntity: Boolean(parsed.isRealEntity),
+      expandedPrompt: parsed.expandedPrompt || subject,
+    };
+  } catch (err) {
+    console.warn("⚠️ ML Intent Classification fallback:", err.message);
+    const rawClean = trimmed.replace(/^\/(?:image|img)\s*/i, "").trim();
+    return {
+      isImage: explicit || isImagePrompt(trimmed),
+      cleanSubject: rawClean,
+      cleanPrompt: rawClean,
+      isRealEntity: false,
+      expandedPrompt: rawClean,
+    };
+  }
 }
 
 /**
- * Searches for high-resolution authentic imagery (crucial for real people like Mohanlal, places, vehicles)
+ * Searches for high-resolution authentic imagery (crucial for real people, places, vehicles)
  */
 async function searchHighResVisual(query) {
   try {
@@ -127,35 +130,35 @@ async function searchHighResVisual(query) {
 }
 
 /**
- * Generates or retrieves image, uploads to Cloudinary CDN, and returns final verified asset info
+ * Executes visual generation / retrieval and uploads permanently to Cloudinary CDN (drxsezyyl)
  */
-async function generateAndUploadImage(userPrompt) {
-  const cleanPrompt = extractRawImagePrompt(userPrompt);
-  const expandedPrompt = await expandImagePrompt(cleanPrompt);
+async function generateAndUploadImage(input) {
+  let intentData;
+  if (typeof input === "string") {
+    intentData = await classifyUserIntent(input);
+  } else {
+    intentData = input || {};
+  }
+
+  const cleanSubject = intentData.cleanSubject || intentData.cleanPrompt || "artwork";
+  const expandedPrompt = intentData.expandedPrompt || cleanSubject;
+  const isRealEntity = Boolean(intentData.isRealEntity);
 
   let cdnUrl = null;
 
-  // Strategy 1: Check if prompt refers to a real person, celebrity, actor, landmark, or specific entity
-  const isRealEntity = /(mohanlal|mammootty|dulquer|fahadh|rajinikanth|kamal haasan|modi|pinarayi|satheesan|elon musk|trump|cricket|car|bike|temple|beach|palace|actor|actress|celebrity|minister)/i.test(cleanPrompt);
-
+  // Strategy 1: Real Entities, Celebrities, Actors, Places (e.g. Mohanlal, Mammootty, etc.)
   if (isRealEntity) {
     try {
-      const entityResult = await searchHighResVisual(`${cleanPrompt} portrait photo`);
+      const entityResult = await searchHighResVisual(`${cleanSubject} portrait photo`);
       if (entityResult?.imageUrl) {
-        const uploadRes = await cloudinary.uploader.upload(entityResult.imageUrl, {
-          folder: "nebula_ai/generated",
-          resource_type: "image",
-        });
-        if (uploadRes && uploadRes.secure_url) {
-          cdnUrl = uploadRes.secure_url;
-        }
+        cdnUrl = await uploadToCloudinary(entityResult.imageUrl, "nebula_ai/generated");
       }
     } catch (entityErr) {
       console.warn("⚠️ Real entity upload warning:", entityErr.message);
     }
   }
 
-  // Strategy 2: If not real entity or if Strategy 1 did not complete, try Pollinations FLUX engine
+  // Strategy 2: Creative / Imaginary Visuals via AI generation
   if (!cdnUrl) {
     const encodedPrompt = encodeURIComponent(expandedPrompt);
     const seed = Math.floor(Math.random() * 1000000);
@@ -163,7 +166,7 @@ async function generateAndUploadImage(userPrompt) {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const res = await fetch(pollUrl, {
         signal: controller.signal,
@@ -192,36 +195,32 @@ async function generateAndUploadImage(userPrompt) {
   // Strategy 3: Multi-tier fallback to verified visual search on Cloudinary CDN
   if (!cdnUrl) {
     try {
-      const visualFallback = await searchHighResVisual(cleanPrompt);
+      const visualFallback = await searchHighResVisual(cleanSubject);
       if (visualFallback?.imageUrl) {
-        const uploadRes = await cloudinary.uploader.upload(visualFallback.imageUrl, {
-          folder: "nebula_ai/generated",
-          resource_type: "image",
-        });
-        if (uploadRes && uploadRes.secure_url) {
-          cdnUrl = uploadRes.secure_url;
-        }
+        cdnUrl = await uploadToCloudinary(visualFallback.imageUrl, "nebula_ai/generated");
       }
     } catch (fallbackErr) {
       console.warn("⚠️ Visual fallback upload warning:", fallbackErr.message);
     }
   }
 
-  // Strategy 4: Ultimate guaranteed working image URL fallback
+  // Strategy 4: Guaranteed working image URL fallback
   if (!cdnUrl) {
-    cdnUrl = `https://picsum.photos/seed/${encodeURIComponent(cleanPrompt)}/1024/768`;
+    cdnUrl = `https://picsum.photos/seed/${encodeURIComponent(cleanSubject)}/1024/768`;
   }
 
   return {
     cdnUrl,
-    cleanPrompt,
+    cleanSubject,
+    cleanPrompt: cleanSubject,
     expandedPrompt,
+    isRealEntity,
   };
 }
 
 module.exports = {
   isImagePrompt,
-  extractRawImagePrompt,
-  expandImagePrompt,
+  classifyUserIntent,
   generateAndUploadImage,
+  searchHighResVisual,
 };
