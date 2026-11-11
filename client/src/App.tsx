@@ -324,7 +324,9 @@ export const App: React.FC = () => {
     setMessages(newMessages);
     setIsLoading(true);
 
-    const activeSessionId = currentSessionId || `session-${Date.now()}`;
+    const activeSessionId =
+      currentSessionId ||
+      `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
     if (!currentSessionId) {
       setCurrentSessionId(activeSessionId);
       pushRoute(`/c/${activeSessionId}`);
@@ -342,8 +344,8 @@ export const App: React.FC = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      // Sanitize history turns
-      const sanitizedHistory = baseHistory.slice(-6).map((m) => ({
+      // Sanitize history turns (16 messages = 8 full multi-turn exchanges)
+      const sanitizedHistory = baseHistory.slice(-16).map((m) => ({
         sender: m.sender,
         text: m.text,
       }));

@@ -49,9 +49,6 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      // Simulate gateway handshake + backend verification
-      await new Promise((r) => setTimeout(r, 1200));
-
       const res = await fetch(`${API_BASE}/api/payments/upgrade`, {
         method: 'POST',
         headers,
@@ -63,20 +60,17 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
       });
       const data = await res.json();
 
-      saveUserProFlag();
-      setReceipt({
-        receiptId: data.receiptId || `RCPT-${Date.now()}`,
-        activatedAt: new Date().toLocaleString(),
-        amount: data.stripePayment?.amountFormatted || (billingCycle === 'monthly' ? '$9.99 USD' : '$59.88 USD'),
-      });
-      onUpgradeSuccess?.();
-    } catch {
-      saveUserProFlag();
-      setReceipt({
-        receiptId: `RCPT-${Date.now()}`,
-        activatedAt: new Date().toLocaleString(),
-      });
-      onUpgradeSuccess?.();
+      if (res.ok && data.success) {
+        saveUserProFlag();
+        setReceipt({
+          receiptId: data.receiptId || `RCPT-${Date.now()}`,
+          activatedAt: new Date().toLocaleString(),
+          amount: data.stripePayment?.amountFormatted || (billingCycle === 'monthly' ? '$9.99 USD' : '$59.88 USD'),
+        });
+        onUpgradeSuccess?.();
+      }
+    } catch (err) {
+      console.error('Payment upgrade failed:', err);
     } finally {
       setIsProcessing(false);
     }

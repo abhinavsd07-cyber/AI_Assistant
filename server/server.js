@@ -128,8 +128,8 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// AI/ML Evaluation Endpoint: Vector RAG Inspection & Metrics
-app.post("/api/rag/inspect", async (req, res) => {
+// AI/ML Evaluation Endpoint: Vector RAG Inspection & Metrics (Authenticated)
+app.post("/api/rag/inspect", requireAuth, async (req, res) => {
   const startTime = Date.now();
   try {
     const { query, documentText } = req.body;
@@ -400,7 +400,13 @@ app.post("/api/flux/workflow", chatLimiter, requireAuth, async (req, res) => {
     if (!intentData.cleanSubject) intentData.cleanSubject = prompt.slice(0, 60);
     if (!intentData.expandedPrompt) intentData.expandedPrompt = prompt;
 
-    const result = await generateAndUploadImage(intentData);
+    const result = await generateAndUploadImage(intentData, {
+      width,
+      height,
+      model: unetModel,
+      steps,
+      sampler,
+    });
     const totalLatencyMs = Date.now() - workflowStart;
 
     return res.json({

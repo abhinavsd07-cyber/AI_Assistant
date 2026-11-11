@@ -157,40 +157,27 @@ router.post("/google", async (req, res) => {
     let googleId = null;
 
     if (credential) {
-      // Decode credential JWT or verify with Google API
-      if (googleClient && GOOGLE_CLIENT_ID) {
-        try {
-          const ticket = await googleClient.verifyIdToken({
-            idToken: credential,
-            audience: GOOGLE_CLIENT_ID,
-          });
-          const payload = ticket.getPayload();
-          email = payload.email;
-          name = payload.name;
-          picture = payload.picture;
-          googleId = payload.sub;
-        } catch (verifyErr) {
-          console.warn("Google verifyIdToken failed, parsing token claims:", verifyErr.message);
-          // Fallback parsing of Google JWT token claims if audience mismatch or offline
-          const parts = credential.split(".");
-          if (parts.length === 3) {
-            const claims = JSON.parse(Buffer.from(parts[1], "base64").toString("utf-8"));
-            email = claims.email;
-            name = claims.name;
-            picture = claims.picture;
-            googleId = claims.sub;
-          }
-        }
-      } else {
-        // Parse claims directly from Google ID Token
-        const parts = credential.split(".");
-        if (parts.length === 3) {
-          const claims = JSON.parse(Buffer.from(parts[1], "base64").toString("utf-8"));
-          email = claims.email;
-          name = claims.name;
-          picture = claims.picture;
-          googleId = claims.sub;
-        }
+      if (!googleClient || !GOOGLE_CLIENT_ID) {
+        return res.status(500).json({
+          success: false,
+          error: "Google OAuth Client ID is not configured on the server.",
+        });
+      }
+      try {
+        const ticket = await googleClient.verifyIdToken({
+          idToken: credential,
+          audience: GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        email = payload.email;
+        name = payload.name;
+        picture = payload.picture;
+        googleId = payload.sub;
+      } catch (verifyErr) {
+        return res.status(401).json({
+          success: false,
+          error: "Invalid or expired Google OAuth token. Please sign in again.",
+        });
       }
     } else {
       return res.status(400).json({

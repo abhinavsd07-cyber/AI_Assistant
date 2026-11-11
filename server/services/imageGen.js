@@ -144,7 +144,7 @@ async function searchHighResVisual(query) {
 /**
  * Executes visual generation / retrieval and uploads permanently to Cloudinary CDN (drxsezyyl)
  */
-async function generateAndUploadImage(input) {
+async function generateAndUploadImage(input, options = {}) {
   let intentData;
   if (typeof input === "string") {
     intentData = await classifyUserIntent(input);
@@ -155,6 +155,8 @@ async function generateAndUploadImage(input) {
   const cleanSubject = intentData.cleanSubject || intentData.cleanPrompt || "artwork";
   const expandedPrompt = intentData.expandedPrompt || cleanSubject;
   const isRealEntity = Boolean(intentData.isRealEntity);
+  const targetWidth = Number(options.width) || 1024;
+  const targetHeight = Number(options.height) || 1024;
 
   let cdnUrl = null;
 
@@ -174,7 +176,7 @@ async function generateAndUploadImage(input) {
   if (!cdnUrl) {
     const encodedPrompt = encodeURIComponent(expandedPrompt);
     const seed = Math.floor(Math.random() * 1000000);
-    const pollUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&seed=${seed}`;
+    const pollUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${targetWidth}&height=${targetHeight}&model=flux&nologo=true&seed=${seed}`;
 
     try {
       const controller = new AbortController();
