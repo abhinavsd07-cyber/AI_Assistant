@@ -9,8 +9,7 @@ import {
   Library,
   Compass,
   Code,
-  Calendar,
-  AtSign,
+  Brain,
   ChevronRight,
   Sparkles,
   Sliders,
@@ -29,6 +28,9 @@ interface SidebarProps {
   onDeleteSession: (id: string, e: React.MouseEvent) => void;
   onOpenSettings: () => void;
   onOpenUpgrade: () => void;
+  onOpenLibrary: () => void;
+  onOpenExplore: () => void;
+  onOpenCodex: () => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
 }
@@ -41,6 +43,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onDeleteSession,
   onOpenSettings,
   onOpenUpgrade,
+  onOpenLibrary,
+  onOpenExplore,
+  onOpenCodex,
   isOpenMobile,
   onCloseMobile,
 }) => {
@@ -119,15 +124,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
 
             <button
-              onClick={() => onOpenSettings()}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 dark:hover:bg-[#242424] transition-colors cursor-pointer text-left text-gray-700 dark:text-gray-300"
-            >
-              <Calendar size={16} className="text-[#5D5D5D] dark:text-[#A0A0A0]" />
-              <span>Scheduled</span>
-            </button>
-
-            <button
-              onClick={() => onOpenSettings()}
+              onClick={() => {
+                onOpenLibrary();
+                onCloseMobile();
+              }}
               className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 dark:hover:bg-[#242424] transition-colors cursor-pointer text-left text-gray-700 dark:text-gray-300"
             >
               <Library size={16} className="text-[#5D5D5D] dark:text-[#A0A0A0]" />
@@ -135,27 +135,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
 
             <button
-              onClick={() => onOpenSettings()}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 dark:hover:bg-[#242424] transition-colors cursor-pointer text-left text-gray-700 dark:text-gray-300"
-            >
-              <AtSign size={16} className="text-[#5D5D5D] dark:text-[#A0A0A0]" />
-              <span>Plugins</span>
-            </button>
-
-            <button
-              onClick={() => onOpenSettings()}
+              onClick={() => {
+                onOpenCodex();
+                onCloseMobile();
+              }}
               className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 dark:hover:bg-[#242424] transition-colors cursor-pointer text-left text-gray-700 dark:text-gray-300"
             >
               <Code size={16} className="text-[#5D5D5D] dark:text-[#A0A0A0]" />
-              <span>Codex</span>
+              <span>Codex Studio</span>
             </button>
 
             <button
-              onClick={() => onOpenSettings()}
+              onClick={() => {
+                onOpenExplore();
+                onCloseMobile();
+              }}
               className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 dark:hover:bg-[#242424] transition-colors cursor-pointer text-left text-gray-700 dark:text-gray-300"
             >
               <Compass size={16} className="text-[#5D5D5D] dark:text-[#A0A0A0]" />
-              <span>Explore</span>
+              <span>Explore Agents</span>
+            </button>
+
+            <button
+              onClick={() => {
+                onOpenSettings();
+                onCloseMobile();
+              }}
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#ECECEC]/70 dark:hover:bg-[#242424] transition-colors cursor-pointer text-left text-gray-700 dark:text-gray-300"
+            >
+              <Brain size={16} className="text-[#5D5D5D] dark:text-[#A0A0A0]" />
+              <span>AI Memory</span>
             </button>
           </div>
 
