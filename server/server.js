@@ -18,6 +18,7 @@ const {
   buildRagGroundingContext,
 } = require("./services/rag");
 const { applyGuardrails } = require("./services/guardrails");
+const { isImagePrompt, generateAndUploadImage } = require("./services/imageGen");
 
 const app = express();
 
@@ -222,36 +223,32 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
 
     const trimmedMsg = (message || "").trim();
 
-    // AI Image Generation Pipeline (/image <prompt> or isImageGen flag)
-    const isImageGeneration = isImageGen || /^\/image\b/i.test(trimmedMsg);
+    // AI Image Generation Pipeline (Auto-detects natural language image requests or /image command)
+    const isImageGeneration = isImageGen || isImagePrompt(trimmedMsg);
     if (isImageGeneration) {
-      const rawPrompt = trimmedMsg.replace(/^\/image\s*/i, "").trim() || "A futuristic AI nebula in deep space";
-      
       res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
       res.setHeader("Cache-Control", "no-cache, no-transform");
       res.setHeader("Connection", "keep-alive");
       res.setHeader("X-Accel-Buffering", "no");
       res.socket?.setNoDelay(true);
 
-      res.write(`data: ${JSON.stringify({ chunk: `🎨 **Generating high-resolution AI visual** for: *"${rawPrompt}"*...\n\n` })}\n\n`);
+      res.write(`data: ${JSON.stringify({ chunk: `✨ **Enhancing visual prompt with Gemini Creative Engine...**\n\n` })}\n\n`);
 
       try {
-        const seed = Math.floor(Math.random() * 1000000);
-        const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(rawPrompt)}?width=1024&height=1024&nologo=true&seed=${seed}`;
-        const imgFetch = await fetch(pollUrl);
-        if (!imgFetch.ok) throw new Error("Image service busy, please retry.");
-        const arrBuf = await imgFetch.arrayBuffer();
-        const dataUri = `data:image/jpeg;base64,${Buffer.from(arrBuf).toString("base64")}`;
-        
-        let cdnUrl = await uploadToCloudinary(dataUri, "nebula_ai/generated");
-        if (!cdnUrl) {
-          cdnUrl = pollUrl;
-        }
+        const { cdnUrl, cleanPrompt, expandedPrompt } = await generateAndUploadImage(trimmedMsg);
 
-        const replyMarkdown = `Here is your generated image for **"${rawPrompt}"**:\n\n![${rawPrompt}](${cdnUrl})\n\n- 🖼️ **CDN Link**: [Open Full High-Res Image](${cdnUrl})\n- 🚀 **Storage**: Cloudinary Global CDN\n- 💡 **Prompt**: \`${rawPrompt}\``;
+        const replyMarkdown =
+          `Here is your generated image for **"${cleanPrompt}"**:\n\n` +
+          `![${cleanPrompt}](${cdnUrl})\n\n` +
+          `### 🎨 Visual Details\n` +
+          `* **Original Request**: \`${cleanPrompt}\`\n` +
+          `* **Enhanced Creative Prompt**: *${expandedPrompt}*\n` +
+          `* **Engine**: FLUX / SDXL High-Res Photorealism\n` +
+          `* **Cloud Storage**: Cloudinary Global CDN\n\n` +
+          `🔗 [Open Full High-Res Image](${cdnUrl})`;
 
         res.write(`data: ${JSON.stringify({ chunk: replyMarkdown, fullText: replyMarkdown, imageUrl: cdnUrl })}\n\n`);
-        res.write(`data: ${JSON.stringify({ done: true, model: "pollinations-flux-cloudinary" })}\n\n`);
+        res.write(`data: ${JSON.stringify({ done: true, model: "flux-photoreal-cloudinary" })}\n\n`);
         res.end();
 
         // Save session in background
@@ -273,11 +270,11 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
             { sessionId },
             {
               $setOnInsert: {
-                title: `🎨 ${rawPrompt.slice(0, 28)}`,
+                title: `🎨 ${cleanPrompt.slice(0, 28)}`,
                 userId: req.user ? req.user._id : null,
                 userEmail: req.user ? req.user.email : null,
               },
-              $set: { model: "pollinations-flux-cloudinary" },
+              $set: { model: "flux-photoreal-cloudinary" },
               $push: { messages: { $each: [userMsg, assistantMsg] } },
             },
             { upsert: true, new: true }
@@ -285,8 +282,10 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
         }
         return;
       } catch (err) {
-        const errMsg = `⚠️ Image generation failed: ${err.message}`;
-        res.write(`data: ${JSON.stringify({ chunk: errMsg, fullText: errMsg })}\n\n`);
+        console.warn("⚠️ Image generation fallback:", err.message);
+        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(trimmedMsg)}?width=768&height=768&nologo=true`;
+        const fallbackReply = `Here is your visual for **"${trimmedMsg}"**:\n\n![${trimmedMsg}](${fallbackUrl})\n\n🔗 [Open High-Res](${fallbackUrl})`;
+        res.write(`data: ${JSON.stringify({ chunk: fallbackReply, fullText: fallbackReply, imageUrl: fallbackUrl })}\n\n`);
         res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
         return res.end();
       }
