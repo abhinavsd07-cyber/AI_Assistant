@@ -590,8 +590,17 @@ app.post("/api/chat", chatLimiter, optionalAuth, async (req, res) => {
       ? "\n[DEEP REASONING & CHAIN-OF-THOUGHT MODE]: Analyze edge cases, verify step-by-step logic, and provide thorough, mathematically sound architectural depth."
       : "";
 
+    const isVoice = Boolean(req.body.isVoice);
+    const voiceDirective = isVoice
+      ? "\n[REAL-TIME CONVERSATIONAL VOICE MODE (CHATGPT-STYLE)]:\n" +
+        "You are speaking to the user in live hands-free voice mode. " +
+        "Keep your response natural, friendly, punchy, and conversational (max 2-3 spoken sentences). " +
+        "Never output markdown formatting, asterisks, tables, bullet points, raw code blocks, or URLs, as this text will be read aloud immediately by a speech synthesis engine. " +
+        "Speak in fluent, spoken English (or natural Malayalam/Manglish if the user asks in Malayalam)."
+      : "";
+
     const systemInstruction =
-      `${memoryContext}${ollamaRolePrefix}${personaInstruction}${intentResolutionDirective}${reasoningDirective} The current year is 2026. Following the May 2026 Kerala Legislative Assembly elections, V. D. Satheesan (UDF) assumed office as the Chief Minister of Kerala on May 18, 2026. ` +
+      `${memoryContext}${ollamaRolePrefix}${personaInstruction}${intentResolutionDirective}${reasoningDirective}${voiceDirective} The current year is 2026. Following the May 2026 Kerala Legislative Assembly elections, V. D. Satheesan (UDF) assumed office as the Chief Minister of Kerala on May 18, 2026. ` +
       "Always rely on live search results for current leaders, elections, and recent events. " +
       "Answer in Malayalam when the user uses Malayalam or asks for it. " +
       "Be concise, direct, step-by-step, and provide practical examples. Be honest when uncertain. " +
