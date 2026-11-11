@@ -4,6 +4,7 @@ const AiModel = require("./AiModel");
 const PromptPreset = require("./PromptPreset");
 const UsageLog = require("./UsageLog");
 const ApiKey = require("./ApiKey");
+const Memory = require("./Memory");
 
 module.exports = {
   User,
@@ -12,5 +13,5 @@ module.exports = {
   PromptPreset,
   UsageLog,
   ApiKey,
+  Memory,
 };
-

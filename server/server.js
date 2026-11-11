@@ -20,6 +20,7 @@ const {
 const { applyGuardrails } = require("./services/guardrails");
 const { isImagePrompt, classifyUserIntent, generateAndUploadImage } = require("./services/imageGen");
 const { checkOllamaStatus, streamOllamaChat, OLLAMA_HOST } = require("./services/ollama");
+const { getUserMemories, extractAndSaveMemories } = require("./services/memory");
 
 const app = express();
 
@@ -195,6 +196,44 @@ app.delete("/api/sessions/:sessionId", optionalAuth, async (req, res) => {
   }
 });
 
+// GET /api/memories - Fetch all persistent user memories
+app.get("/api/memories", optionalAuth, async (req, res) => {
+  try {
+    const { memories } = await getUserMemories({
+      userId: req.user ? req.user._id : null,
+      userEmail: req.user ? req.user.email : null,
+    });
+    res.json({ success: true, memories });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// DELETE /api/memories/:id - Delete a specific memory
+app.delete("/api/memories/:id", optionalAuth, async (req, res) => {
+  try {
+    const { Memory } = require("./models");
+    await Memory.deleteOne({ _id: req.params.id });
+    res.json({ success: true, message: "Memory removed" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// DELETE /api/memories - Clear all user memories
+app.delete("/api/memories", optionalAuth, async (req, res) => {
+  try {
+    const { Memory } = require("./models");
+    const query = req.user
+      ? { $or: [{ userId: req.user._id }, { userEmail: req.user.email }] }
+      : { userEmail: "guest@nebula.local" };
+    await Memory.deleteMany(query);
+    res.json({ success: true, message: "All memories cleared" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Main Chat endpoint with Contextual History, Documents, Live Web Search Grounding & Sub-Second Latency
 app.post("/api/chat", optionalAuth, async (req, res) => {
   const startTime = Date.now();
@@ -334,9 +373,15 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
       math_tutor: "You are Nebula Math & Science Tutor. You break down complex equations, calculus, physics, and chemistry concepts step-by-step with KaTeX formulas and intuitive analogies."
     };
 
+    // Retrieve long-term persistent memory for the user (MemGPT architecture)
+    const { contextString: memoryContext } = await getUserMemories({
+      userId: req.user ? req.user._id : null,
+      userEmail: req.user ? req.user.email : null,
+    });
+
     const personaInstruction = PERSONA_PROMPTS[persona] || PERSONA_PROMPTS.general;
     const systemInstruction =
-      `${personaInstruction} The current year is 2026. Following the May 2026 Kerala Legislative Assembly elections, V. D. Satheesan (UDF) assumed office as the Chief Minister of Kerala on May 18, 2026. ` +
+      `${memoryContext}${personaInstruction} The current year is 2026. Following the May 2026 Kerala Legislative Assembly elections, V. D. Satheesan (UDF) assumed office as the Chief Minister of Kerala on May 18, 2026. ` +
       "Always rely on live search results for current leaders, elections, and recent events. " +
       "Answer in Malayalam when the user uses Malayalam or asks for it. " +
       "Be concise, direct, step-by-step, and provide practical examples. Be honest when uncertain. " +
@@ -565,6 +610,13 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
           isReasoning: !!isReasoning,
           status: "success",
         });
+
+        // Asynchronously extract and persist user profile facts (MemGPT Long-Term Memory)
+        extractAndSaveMemories({
+          userId: req.user ? req.user._id : null,
+          userEmail: req.user ? req.user.email : null,
+          userMessage: trimmedMsg,
+        }).catch(() => {});
       } catch (dbErr) {
         console.warn("Could not save chat/usage to MongoDB:", dbErr.message);
       }

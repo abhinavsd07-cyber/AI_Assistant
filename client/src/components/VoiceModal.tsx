@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Mic, MicOff, Volume2, Sparkles, AlertCircle } from 'lucide-react';
+import { X, Mic, MicOff, Volume2, Sparkles, AlertCircle, Globe, Square } from 'lucide-react';
 
 interface VoiceModalProps {
   isOpen: boolean;
@@ -12,6 +12,8 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
   const [transcript, setTranscript] = useState('');
   const [lastAiReply, setLastAiReply] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [voiceLang, setVoiceLang] = useState<'en-US' | 'ml-IN'>('en-US');
+
   const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const isMountedRef = useRef(true);
@@ -59,13 +61,19 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = true;
-      recognition.lang = 'en-US'; // Or auto/multi-language
+      recognition.lang = voiceLang;
 
       recognition.onstart = () => {
         if (isMountedRef.current) setStatus('listening');
       };
 
       recognition.onresult = (event: any) => {
+        // If AI was speaking and user interrupts, immediately cancel AI speech!
+        if (synthRef.current && synthRef.current.speaking) {
+          synthRef.current.cancel();
+          setStatus('listening');
+        }
+
         let currentText = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
           currentText += event.results[i][0].transcript;
@@ -126,9 +134,14 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
 
     synthRef.current.cancel();
     // Clean markdown code blocks for voice playback
-    const cleanText = text.replace(/```[\s\S]*?```/g, 'Code block omitted.').replace(/[#*_`]/g, '');
+    const cleanText = text
+      .replace(/```[\s\S]*?```/g, 'Code block omitted.')
+      .replace(/[#*_`]/g, '')
+      .replace(/https?:\/\/\S+/g, 'link omitted');
+
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.rate = 1.05;
+    utterance.lang = voiceLang;
 
     utterance.onstart = () => {
       if (isMountedRef.current) setStatus('speaking');
@@ -153,6 +166,14 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
     synthRef.current.speak(utterance);
   };
 
+  const interruptSpeech = () => {
+    if (synthRef.current) {
+      synthRef.current.cancel();
+    }
+    setTranscript('');
+    startListening();
+  };
+
   useEffect(() => {
     if (isOpen) {
       setTranscript('');
@@ -161,65 +182,89 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
     } else {
       stopAll();
     }
-  }, [isOpen]);
+  }, [isOpen, voiceLang]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xl animate-in fade-in duration-200">
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg rounded-3xl bg-[#111111] border border-[#2B2B2B] shadow-2xl p-8 text-white flex flex-col items-center justify-between min-h-[460px] relative overflow-hidden"
+        className="w-full max-w-lg rounded-3xl bg-[#111111] border border-[#2B2B2B] shadow-2xl p-8 text-white flex flex-col items-center justify-between min-h-[500px] relative overflow-hidden"
       >
         {/* Top Header */}
         <div className="w-full flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles size={16} className="text-purple-400" />
-            <span className="text-sm font-bold tracking-tight">Nebula Voice Assistant</span>
+            <span className="text-sm font-bold tracking-tight">Nebula Conversational Voice</span>
           </div>
-          <button 
-            onClick={() => {
-              stopAll();
-              onClose();
-            }}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-300 hover:text-white transition-colors cursor-pointer"
-          >
-            <X size={16} />
-          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Language Switcher */}
+            <button
+              onClick={() => setVoiceLang(voiceLang === 'en-US' ? 'ml-IN' : 'en-US')}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-gray-200 transition-all cursor-pointer"
+              title="Toggle Recognition Language"
+            >
+              <Globe size={13} className="text-emerald-400" />
+              <span>{voiceLang === 'en-US' ? 'English' : 'മലയാളം'}</span>
+            </button>
+
+            <button 
+              onClick={() => {
+                stopAll();
+                onClose();
+              }}
+              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-300 hover:text-white transition-colors cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
-        {/* Central Animated Orb */}
+        {/* Central Animated Liquid Orb */}
         <div className="relative flex items-center justify-center my-6">
           {/* Outer glow rings based on state */}
-          <div className={`absolute w-48 h-48 rounded-full blur-2xl transition-all duration-700 ${
-            status === 'listening' ? 'bg-blue-600/30 scale-125' :
-            status === 'thinking' ? 'bg-amber-600/30 scale-110 animate-pulse' :
-            status === 'speaking' ? 'bg-purple-600/40 scale-135' :
+          <div className={`absolute w-52 h-52 rounded-full blur-3xl transition-all duration-700 ${
+            status === 'listening' ? 'bg-blue-600/40 scale-125 animate-pulse' :
+            status === 'thinking' ? 'bg-amber-500/40 scale-115 animate-spin' :
+            status === 'speaking' ? 'bg-purple-600/50 scale-140' :
             'bg-gray-700/20 scale-90'
           }`} />
 
           {/* Main Cosmic Orb */}
-          <div className={`w-32 h-32 rounded-full flex items-center justify-center relative shadow-2xl transition-all duration-500 ${
-            status === 'listening' ? 'bg-radial from-blue-400 via-indigo-600 to-blue-900 animate-pulse' :
-            status === 'thinking' ? 'bg-radial from-amber-300 via-orange-600 to-amber-900 animate-spin' :
+          <div className={`w-36 h-36 rounded-full flex flex-col items-center justify-center relative shadow-2xl transition-all duration-500 cursor-pointer ${
+            status === 'listening' ? 'bg-radial from-blue-400 via-indigo-600 to-blue-950 animate-pulse' :
+            status === 'thinking' ? 'bg-radial from-amber-300 via-orange-600 to-amber-950 animate-spin' :
             status === 'speaking' ? 'bg-radial from-purple-400 via-fuchsia-600 to-indigo-950 scale-105' :
             'bg-radial from-gray-500 via-gray-700 to-gray-900'
-          }`}>
+          }`}
+          onClick={status === 'speaking' ? interruptSpeech : () => {}}
+          >
             {status === 'listening' ? (
-              <Mic size={36} className="text-white drop-shadow-md animate-bounce" />
+              <Mic size={40} className="text-white drop-shadow-md animate-bounce" />
             ) : status === 'thinking' ? (
-              <Sparkles size={36} className="text-white drop-shadow-md" />
+              <Sparkles size={40} className="text-white drop-shadow-md" />
             ) : status === 'speaking' ? (
-              <Volume2 size={36} className="text-white drop-shadow-md animate-pulse" />
+              <Volume2 size={40} className="text-white drop-shadow-md animate-pulse" />
             ) : (
-              <MicOff size={36} className="text-gray-400" />
+              <MicOff size={40} className="text-gray-400" />
+            )}
+
+            {/* Soundwave Bars */}
+            {(status === 'listening' || status === 'speaking') && (
+              <div className="flex items-center gap-1 mt-2">
+                <span className="w-1 h-3 bg-white/80 rounded-full animate-bounce [animation-delay:0.1s]" />
+                <span className="w-1 h-5 bg-white/80 rounded-full animate-bounce [animation-delay:0.2s]" />
+                <span className="w-1 h-3 bg-white/80 rounded-full animate-bounce [animation-delay:0.3s]" />
+              </div>
             )}
           </div>
         </div>
 
-        {/* Status Indicator & Transcript */}
+        {/* Status Indicator & Transcript Subtitles */}
         <div className="w-full flex flex-col items-center text-center px-4 gap-2">
-          <div className="px-3 py-1 rounded-full bg-white/10 text-xs font-semibold uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
+          <div className="px-3.5 py-1.5 rounded-full bg-white/10 text-xs font-semibold uppercase tracking-wider text-gray-300 flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full ${
               status === 'listening' ? 'bg-blue-400 animate-ping' :
               status === 'thinking' ? 'bg-amber-400 animate-spin' :
@@ -227,15 +272,15 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
               'bg-gray-500'
             }`} />
             <span>
-              {status === 'listening' ? 'Listening to you...' :
+              {status === 'listening' ? (voiceLang === 'ml-IN' ? 'ശ്രദ്ധിക്കുന്നു (മലയാളം)...' : 'Listening to you...') :
                status === 'thinking' ? 'Nebula is thinking...' :
-               status === 'speaking' ? 'Speaking...' :
+               status === 'speaking' ? 'Speaking (Click orb to interrupt)...' :
                'Tap Mic to Start'}
             </span>
           </div>
 
-          <p className="text-sm font-medium text-gray-200 line-clamp-3 min-h-[42px] leading-relaxed">
-            {transcript || lastAiReply.slice(0, 160) || "Start speaking in English or Malayalam..."}
+          <p className="text-[14px] font-medium text-gray-200 line-clamp-3 min-h-[44px] leading-relaxed max-w-sm">
+            {transcript || lastAiReply.slice(0, 160) || (voiceLang === 'ml-IN' ? 'മലയാളത്തിൽ സംസാരിച്ചു തുടങ്ങാം...' : 'Start speaking in English or Malayalam...')}
           </p>
 
           {errorMessage && (
@@ -247,7 +292,17 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         </div>
 
         {/* Bottom Control Bar */}
-        <div className="w-full flex items-center justify-center gap-4 mt-4 pt-4 border-t border-white/10">
+        <div className="w-full flex items-center justify-center gap-3 mt-4 pt-4 border-t border-white/10">
+          {status === 'speaking' && (
+            <button
+              onClick={interruptSpeech}
+              className="px-4 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold bg-white/15 hover:bg-white/25 text-white transition-all cursor-pointer"
+            >
+              <Square size={13} className="text-amber-400" />
+              <span>Interrupt AI</span>
+            </button>
+          )}
+
           <button
             onClick={() => {
               if (status === 'listening') {

@@ -7,6 +7,7 @@ import { ChatInput, type FileAttachment } from './components/ChatInput';
 import { SettingsModal } from './components/SettingsModal';
 import { UpgradeModal } from './components/UpgradeModal';
 import { VoiceModal } from './components/VoiceModal';
+import { CanvasStudio } from './components/CanvasStudio';
 import { AuthPage } from './pages/AuthPage';
 import { useAuth } from './context/AuthContext';
 import type { Message, ChatSession, PersonaType } from './types';
@@ -81,6 +82,19 @@ export const App: React.FC = () => {
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Interactive Canvas Studio state
+  const [isCanvasOpen, setIsCanvasOpen] = useState(false);
+  const [canvasCode, setCanvasCode] = useState('');
+  const [canvasLanguage, setCanvasLanguage] = useState('html');
+  const [canvasTitle, setCanvasTitle] = useState('Interactive Canvas');
+
+  const handleOpenCanvas = (code: string, language: string, title?: string) => {
+    setCanvasCode(code);
+    setCanvasLanguage(language);
+    setCanvasTitle(title || `Artifact: ${language.toUpperCase()}`);
+    setIsCanvasOpen(true);
+  };
 
   // Sync sessions to localStorage
   useEffect(() => {
@@ -487,25 +501,38 @@ export const App: React.FC = () => {
           onExportText={handleExportText}
         />
 
-        {/* Center Stage: Hero Welcome Screen OR Chat Message Thread */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
-          <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
-            {messages.length === 0 ? (
-              <Hero onSelectSuggestion={(prompt) => handleSendMessage(prompt, false, null)} />
-            ) : (
-              <ChatThread
-                messages={messages}
-                isLoading={isLoading}
-                onRegenerate={handleRegenerate}
-                onEditMessage={handleEditMessage}
-              />
-            )}
+        {/* Center Stage: Hero Welcome Screen OR Chat Message Thread + Split-Screen Canvas */}
+        <div className="flex-1 flex min-h-0 overflow-hidden relative">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+            <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+              {messages.length === 0 ? (
+                <Hero onSelectSuggestion={(prompt) => handleSendMessage(prompt, false, null)} />
+              ) : (
+                <ChatThread
+                  messages={messages}
+                  isLoading={isLoading}
+                  onRegenerate={handleRegenerate}
+                  onEditMessage={handleEditMessage}
+                  onOpenCanvas={handleOpenCanvas}
+                />
+              )}
+            </div>
+
+            {/* Bottom Floating Chat Input with Vision, Documents & Speech */}
+            <div className="flex-shrink-0">
+              <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+            </div>
           </div>
 
-          {/* Bottom Floating Chat Input with Vision, Documents & Speech */}
-          <div className="flex-shrink-0">
-            <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
-          </div>
+          {/* Interactive Split-Screen Canvas Studio */}
+          {isCanvasOpen && (
+            <CanvasStudio
+              initialCode={canvasCode}
+              initialLanguage={canvasLanguage}
+              title={canvasTitle}
+              onClose={() => setIsCanvasOpen(false)}
+            />
+          )}
         </div>
       </div>
 
