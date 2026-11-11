@@ -24,7 +24,7 @@ COPY server/ ./
 COPY --from=client-builder /app/client/dist /app/client/dist
 
 ENV NODE_ENV=production
-ENV PORT=5000
-EXPOSE 5000
+ENV GOOGLE_CLIENT_ID=966040753081-ni3e6p4sen6pau4mb6eeeglmmfdjbe8g.apps.googleusercontent.com
+EXPOSE 10000 5000
 
 CMD ["node", "server.js"]

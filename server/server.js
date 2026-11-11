@@ -55,9 +55,10 @@ app.use(express.json({ limit: "25mb" }));
 
 // MongoDB Connection
 let isMongoConnected = false;
-if (process.env.MONGODB_URI && process.env.MONGODB_URI.trim()) {
+const mongoUri = (process.env.MONGODB_URI || process.env.MONGO_URI || "").trim();
+if (mongoUri) {
   mongoose
-    .connect(process.env.MONGODB_URI)
+    .connect(mongoUri)
     .then(async () => {
       isMongoConnected = true;
       console.log("🍃 MongoDB connected successfully!");
@@ -70,9 +71,15 @@ if (process.env.MONGODB_URI && process.env.MONGODB_URI.trim()) {
   console.log("ℹ️ MONGODB_URI not set in .env. Running with local storage fallback.");
 }
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+let aiClient = null;
+function getAiClient() {
+  if (!aiClient && process.env.GEMINI_API_KEY) {
+    aiClient = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+    });
+  }
+  return aiClient;
+}
 
 // Helper for fetching live real-time web search results (Grounding)
 async function fetchLiveWebResults(query) {
@@ -569,10 +576,11 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
       }
     }
 
-    if (!process.env.GEMINI_API_KEY) {
+    const ai = getAiClient();
+    if (!ai) {
       return res.status(500).json({
         success: false,
-        error: "AI API key is not configured.",
+        error: "AI API key (GEMINI_API_KEY) is not configured in server environment variables.",
       });
     }
 
@@ -1020,11 +1028,11 @@ if (process.env.NODE_ENV === "production" && hasClientBuild) {
   });
 }
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`✨ Nebula AI server running on port ${PORT}`);
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`✨ Nebula AI server running on http://0.0.0.0:${PORT}`);
   });
 }
 

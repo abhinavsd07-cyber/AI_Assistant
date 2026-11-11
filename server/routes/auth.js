@@ -7,7 +7,10 @@ const { requireAuth, generateToken } = require("../middleware/auth");
 
 const router = express.Router();
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || "";
+const GOOGLE_CLIENT_ID =
+  process.env.GOOGLE_CLIENT_ID ||
+  process.env.VITE_GOOGLE_CLIENT_ID ||
+  "966040753081-ni3e6p4sen6pau4mb6eeeglmmfdjbe8g.apps.googleusercontent.com";
 const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
 
 // ==========================================
