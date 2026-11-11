@@ -37,22 +37,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Synchronize route view with window hash: #/login, #/signup, #/
-  const [currentView, setCurrentView] = useState<ViewType>(() => {
+  // Synchronize route view with clean HTML5 pathname (/login, /signup, /) + Back/Forward popstate
+  const getViewFromLocation = (): ViewType => {
+    const path = window.location.pathname.toLowerCase();
     const hash = window.location.hash.toLowerCase();
-    if (hash.includes('login')) return 'login';
-    if (hash.includes('signup')) return 'signup';
+    if (path === '/login' || hash.includes('login')) return 'login';
+    if (path === '/signup' || hash.includes('signup')) return 'signup';
     return 'chat';
-  });
+  };
+
+  const [currentView, setCurrentView] = useState<ViewType>(getViewFromLocation);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentView(getViewFromLocation());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const navigateTo = useCallback((view: ViewType) => {
     setCurrentView(view);
-    if (view === 'login') {
-      window.location.hash = '#/login';
-    } else if (view === 'signup') {
-      window.location.hash = '#/signup';
-    } else {
-      window.location.hash = '#/';
+    const targetPath = view === 'login' ? '/login' : view === 'signup' ? '/signup' : '/';
+    if (window.location.pathname !== targetPath || window.location.hash) {
+      window.history.pushState({ view }, '', targetPath);
     }
   }, []);
 
