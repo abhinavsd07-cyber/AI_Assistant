@@ -141,7 +141,29 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Multilingual Neural Text-to-Speech (TTS) Audio Stream Endpoint (Supports Malayalam, Tamil, Hindi, Telugu, Kannada, Arabic, English, etc.)
+// Helper: Wrap 24kHz 16-bit Mono Linear PCM buffer into standard browser-playable WAV (RIFF) format
+function pcm24kToWav(pcmBuffer, sampleRate = 24000) {
+  const header = Buffer.alloc(44);
+  const dataLen = pcmBuffer.length;
+  header.write("RIFF", 0);
+  header.writeUInt32LE(36 + dataLen, 4);
+  header.write("WAVE", 8);
+  header.write("fmt ", 12);
+  header.writeUInt32LE(16, 16); // Subchunk1Size (16 for PCM)
+  header.writeUInt16LE(1, 20);  // AudioFormat (1 = PCM)
+  header.writeUInt16LE(1, 22);  // NumChannels (1 = Mono)
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(sampleRate * 2, 28); // ByteRate (SampleRate * 1 * 16/8)
+  header.writeUInt16LE(2, 32);  // BlockAlign (1 * 16/8)
+  header.writeUInt16LE(16, 34); // BitsPerSample (16-bit)
+  header.write("data", 36);
+  header.writeUInt32LE(dataLen, 40);
+  return Buffer.concat([header, pcmBuffer]);
+}
+
+// Multilingual Native-Accent Neural Text-to-Speech (TTS) Endpoint
+// Primary Engine: Gemini 2.5 Flash Native Audio (Authentic Kerala Malayali, Tamil Nadu, Hindi & Indian English accents)
+// Fallback Engine: Google Neural TTS stream
 app.get("/api/tts", async (req, res) => {
   try {
     const rawText = String(req.query.text || "").trim();
@@ -163,8 +185,52 @@ app.get("/api/tts", async (req, res) => {
       lang = lang.split("-")[0];
     }
 
-    // Split text into safe sentence chunks (<= 180 chars each) for neural TTS synthesis
-    const clean = rawText.slice(0, 900).replace(/\s+/g, " ").trim();
+    const clean = rawText.slice(0, 700).replace(/\s+/g, " ").trim();
+
+    // 1. Primary Engine: Gemini 2.5 Native Audio with Authentic Native Accent Conditioning
+    const ai = getAiClient();
+    if (ai) {
+      try {
+        const accentDirectives = {
+          ml: "Speak the following Malayalam text with a 100% authentic, warm, natural native Kerala Malayali accent, cadence, and friendly conversational intonation (never sound like a foreigner or robotic reader): ",
+          ta: "Speak the following Tamil text with a 100% authentic, warm, natural native Tamil Nadu accent, cadence, and friendly conversational intonation (never sound like a foreigner): ",
+          hi: "Speak the following Hindi text with a 100% authentic, warm, natural native Indian Hindi accent and conversational intonation: ",
+          te: "Speak the following Telugu text with a 100% authentic, warm, natural native Telugu accent and conversational intonation: ",
+          kn: "Speak the following Kannada text with a 100% authentic, warm, natural native Karnataka Kannada accent and conversational intonation: ",
+          en: "Speak the following English text in a warm, natural, friendly Indian English conversational voice: ",
+        };
+        const stylePrefix = accentDirectives[lang] || "Speak naturally and warmly in a native accent: ";
+
+        const ttsRes = await ai.models.generateContent({
+          model: "gemini-2.5-flash-preview-tts",
+          contents: `${stylePrefix}"${clean}"`,
+          config: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: {
+                  voiceName: "Aoede",
+                },
+              },
+            },
+          },
+        });
+
+        const inlineAudio = ttsRes?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+        if (inlineAudio?.data) {
+          const pcmBuffer = Buffer.from(inlineAudio.data, "base64");
+          const wavBuffer = pcm24kToWav(pcmBuffer, 24000);
+          res.setHeader("Content-Type", "audio/wav");
+          res.setHeader("Content-Length", String(wavBuffer.length));
+          res.setHeader("Cache-Control", "public, max-age=3600");
+          return res.send(wavBuffer);
+        }
+      } catch (geminiTtsErr) {
+        console.warn("Gemini Native Audio TTS fallback to stream:", geminiTtsErr.message);
+      }
+    }
+
+    // 2. Fallback Engine: Chunked Neural MP3 Stream
     const chunks = [];
     let remaining = clean;
     while (remaining.length > 0) {
@@ -713,11 +779,14 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
 
     const isVoice = Boolean(req.body.isVoice);
     const voiceDirective = isVoice
-      ? "\n[REAL-TIME MULTILINGUAL CONVERSATIONAL VOICE MODE]:\n" +
+      ? "\n[REAL-TIME NATIVE-SPEAKER CONVERSATIONAL VOICE MODE]:\n" +
         "You are speaking live with the user in hands-free voice mode. " +
-        "CRITICAL LANGUAGE RULE: Detect whether the user spoke in Malayalam (or Manglish), Tamil (or Tanglish), Hindi (or Hinglish), Telugu, Kannada, Arabic, or English, and reply 100% in that SAME language using its native script (e.g. Malayalam in മലയാളം script, Tamil in தமிழ் script, Hindi in हिन्दी script, English in English). " +
-        "Keep your response natural, warm, friendly, and conversational (max 2-3 spoken sentences). " +
-        "Never output markdown formatting, asterisks, tables, bullet points, raw code blocks, or URLs, because your text will be spoken aloud immediately by our multilingual neural TTS engine."
+        "1. NATIVE COLLOQUIAL SPEECH STYLE (CRITICAL): " +
+        "If the user speaks in Malayalam (or Manglish), speak like a real, born-and-raised Kerala Malayali friend using natural spoken Malayalam (സംസാരഭാഷ, e.g., 'അതേയല്ലോ', 'തീർച്ചയായും', 'നമുക്ക് നോക്കാം', 'വളരെ എളുപ്പമാണ്') — NEVER use stiff, robotic textbook translation Malayalam that sounds like a foreigner! " +
+        "If the user speaks in Tamil (or Tanglish), speak like a real native Tamil speaker using natural spoken Tamil (பேச்சுத் தமிழ், e.g., 'நிச்சயமா', 'ரொம்ப சுலபம்', 'வாங்க பார்க்கலாம்') — NEVER use stiff literary Tamil! " +
+        "If the user speaks in Hindi (or Hinglish), speak in warm, natural conversational Hindi (हिन्दी). " +
+        "2. Always write your response in the native script of that language (മലയാളം script for Malayalam, தமிழ் script for Tamil, हिन्दी script for Hindi) so the Gemini Native Audio voice engine pronounces every phoneme with 100% authentic regional intonation. " +
+        "3. Keep your response warm, punchy, and conversational (max 2-3 spoken sentences) with zero markdown symbols, asterisks, or URLs."
       : "";
 
     const systemInstruction =
