@@ -107,13 +107,19 @@ async function fetchLiveWebResults(query) {
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api", modelRoutes);
 
-app.get("/", (req, res) => {
-  res.json({
-    message: "Welcome to Nebula AI",
-    status: "Backend is running",
-    database: isMongoConnected ? "Connected (MongoDB)" : "Local Storage Mode",
+const fs = require("fs");
+const clientDistPath = path.join(__dirname, "../client/dist");
+const hasClientBuild = fs.existsSync(path.join(clientDistPath, "index.html"));
+
+if (process.env.NODE_ENV !== "production" || !hasClientBuild) {
+  app.get("/", (req, res) => {
+    res.json({
+      message: "Welcome to Nebula AI",
+      status: "Backend is running",
+      database: isMongoConnected ? "Connected (MongoDB)" : "Local Storage Mode",
+    });
   });
-});
+}
 
 app.get("/api/health", (req, res) => {
   res.json({
@@ -1005,6 +1011,14 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
     });
   }
 });
+
+// Serve built React Frontend in Production (Single-Service Render / Docker Deployment)
+if (process.env.NODE_ENV === "production" && hasClientBuild) {
+  app.use(express.static(clientDistPath));
+  app.get(/^(?!\/api).*/, (req, res) => {
+    res.sendFile(path.join(clientDistPath, "index.html"));
+  });
+}
 
 const PORT = process.env.PORT || 5000;
 

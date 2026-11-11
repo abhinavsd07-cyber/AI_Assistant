@@ -27,7 +27,7 @@ const FluxWorkflowStudio = React.lazy(() =>
   import('./components/FluxWorkflowStudio').then((m) => ({ default: m.FluxWorkflowStudio }))
 );
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
 export const App: React.FC = () => {
   const { user, token, isAuthenticated, isLoading: isAuthLoading, currentView } = useAuth();
