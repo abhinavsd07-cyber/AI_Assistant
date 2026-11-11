@@ -1,5 +1,6 @@
 const express = require("express");
 const { AiModel, PromptPreset } = require("../models");
+const { checkOllamaStatus } = require("../services/ollama");
 
 const router = express.Router();
 
@@ -107,16 +108,59 @@ async function seedDefaultsIfNeeded() {
   }
 }
 
-// GET /api/models - List all active AI models
+// GET /api/models/ollama/status - Check if Ollama daemon is active
+router.get("/models/ollama/status", async (req, res) => {
+  const status = await checkOllamaStatus();
+  return res.json({ success: true, ...status });
+});
+
+// GET /api/models - List all active AI models including auto-detected local Ollama models
 router.get("/models", async (req, res) => {
   try {
     let models = await AiModel.find({ isActive: true }).sort({ sortOrder: 1 });
     if (!models || models.length === 0) {
-      models = DEFAULT_MODELS;
+      models = [...DEFAULT_MODELS];
+    } else {
+      models = models.map(m => (typeof m.toObject === "function" ? m.toObject() : m));
     }
-    return res.json({ success: true, models });
+
+    // Auto-detect local Ollama models dynamically
+    const ollamaStatus = await checkOllamaStatus();
+    if (ollamaStatus.isRunning && ollamaStatus.models.length > 0) {
+      for (const om of ollamaStatus.models) {
+        const sizeGB = om.size ? ` (${(om.size / (1024 * 1024 * 1024)).toFixed(1)} GB)` : "";
+        models.push({
+          modelId: `ollama:${om.name}`,
+          displayName: `Ollama (${om.name})`,
+          tag: `Local Offline GPU/CPU${sizeGB}`,
+          badge: "Local AI",
+          description: `Locally running open-weights model ${om.name} on your hardware without internet.`,
+          provider: "Ollama Local",
+          supportsVision: om.name.toLowerCase().includes("llava") || om.name.toLowerCase().includes("vision"),
+          supportsReasoning: om.name.toLowerCase().includes("r1") || om.name.toLowerCase().includes("reasoning"),
+          isLocal: true,
+          isOnline: true,
+        });
+      }
+    } else {
+      // Add standard Ollama local model entry with status
+      models.push({
+        modelId: "ollama:llama3",
+        displayName: "Ollama (Llama 3 - Local Offline)",
+        tag: ollamaStatus.isRunning ? "Ready on Localhost" : "Offline Mode (Install Ollama)",
+        badge: "Local AI",
+        description: "Run open-source models (Llama 3, DeepSeek, Mistral) locally on your PC without internet.",
+        provider: "Ollama Local",
+        supportsVision: false,
+        supportsReasoning: false,
+        isLocal: true,
+        isOnline: ollamaStatus.isRunning,
+      });
+    }
+
+    return res.json({ success: true, models, ollamaActive: ollamaStatus.isRunning });
   } catch (err) {
-    return res.json({ success: true, models: DEFAULT_MODELS });
+    return res.json({ success: true, models: DEFAULT_MODELS, ollamaActive: false });
   }
 });
 

@@ -19,6 +19,7 @@ const {
 } = require("./services/rag");
 const { applyGuardrails } = require("./services/guardrails");
 const { isImagePrompt, classifyUserIntent, generateAndUploadImage } = require("./services/imageGen");
+const { checkOllamaStatus, streamOllamaChat, OLLAMA_HOST } = require("./services/ollama");
 
 const app = express();
 
@@ -313,7 +314,7 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
       candidateModels = ["gemini-3.8-flash", "gemini-3.5-flash"];
     } else {
       let preferred = requestedModel;
-      if (!preferred || preferred === "Nebula 4.0e" || preferred === "gemini-3.8-flash") {
+      if (!preferred || (typeof preferred === "string" && preferred.startsWith("ollama:")) || preferred === "Nebula 4.0e" || preferred === "gemini-3.8-flash") {
         preferred = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
       }
       candidateModels = [
@@ -340,6 +341,48 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
       "Answer in Malayalam when the user uses Malayalam or asks for it. " +
       "Be concise, direct, step-by-step, and provide practical examples. Be honest when uncertain. " +
       "IMPORTANT: Do not hallucinate or output markdown image links like ![...](https://res.cloudinary.com/...) yourself.";
+
+    // Support Local Offline Ollama execution (Llama 3, DeepSeek, Mistral, Gemma)
+    if (requestedModel && requestedModel.startsWith("ollama:")) {
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+      res.socket?.setNoDelay(true);
+
+      const ollamaStatus = await checkOllamaStatus();
+      if (ollamaStatus.isRunning) {
+        try {
+          await streamOllamaChat({
+            modelName: requestedModel,
+            systemInstruction,
+            history,
+            message: trimmedMsg,
+            res,
+            sessionId,
+            ChatSession,
+            req,
+            isMongoConnected,
+          });
+          return;
+        } catch (ollamaErr) {
+          console.warn("⚠️ Ollama streaming error, failing over to Gemini:", ollamaErr.message);
+          res.write(`data: ${JSON.stringify({ chunk: `⚠️ *Local Ollama stream encountered an issue (${ollamaErr.message}). Seamlessly connecting to Nebula Cloud Intelligence...*\n\n` })}\n\n`);
+        }
+      } else {
+        const setupNotice =
+          `> 💡 **Ollama Local Engine is Offline**\n\n` +
+          `Nebula AI supports 100% private, offline chat with open-source models (like Llama 3, DeepSeek, Mistral) via Ollama, but the local daemon was not detected on \`${OLLAMA_HOST}\`.\n\n` +
+          `**To start local offline AI on your PC:**\n` +
+          `1. Download Ollama from [ollama.com](https://ollama.com/download)\n` +
+          `2. Open PowerShell and run: \`ollama run llama3\`\n` +
+          `3. Refresh and choose **Ollama** in the Model Dropdown to chat offline!\n\n` +
+          `---\n\n` +
+          `*Connecting to Nebula Cloud Intelligence for this response...*\n\n`;
+
+        res.write(`data: ${JSON.stringify({ chunk: setupNotice })}\n\n`);
+      }
+    }
 
     // Build multi-turn context
     const contents = [];
@@ -528,17 +571,19 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
     };
 
     // If client requested real-time streaming (SSE)
-    if (req.body.stream) {
-      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-      res.setHeader("Cache-Control", "no-cache, no-transform");
-      res.setHeader("Connection", "keep-alive");
-      res.setHeader("X-Accel-Buffering", "no");
+    if (req.body.stream || res.headersSent) {
+      if (!res.headersSent) {
+        res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+        res.setHeader("Cache-Control", "no-cache, no-transform");
+        res.setHeader("Connection", "keep-alive");
+        res.setHeader("X-Accel-Buffering", "no");
 
-      if (typeof res.flushHeaders === "function") {
-        res.flushHeaders();
-      }
-      if (res.socket) {
-        res.socket.setNoDelay(true);
+        if (typeof res.flushHeaders === "function") {
+          res.flushHeaders();
+        }
+        if (res.socket) {
+          res.socket.setNoDelay(true);
+        }
       }
 
       let streamSuccess = false;
@@ -631,6 +676,11 @@ app.post("/api/chat", optionalAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("AI request failed:", error.message);
+
+    if (res.headersSent) {
+      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+      return res.end();
+    }
 
     res.status(500).json({
       success: false,
