@@ -610,9 +610,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          {/* ChatGPT-Style Primary GPT & Workspace Stack */}
+          {/* Primary Workspace Navigation Stack */}
           <div className="flex flex-col gap-0.5 text-[13px] font-medium text-[#1F1F1F] dark:text-[#E3E3E3]">
-            {/* Primary Model Row (Identical to ChatGPT top row) */}
+            {/* New Chat Row (Clean Icon — No Duplicate Brand Logo) */}
             <button
               onClick={() => {
                 onNewChat();
@@ -621,19 +621,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="group w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer text-left"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0 shadow-2xs">
-                  <img
-                    src="/cosmic_orb.jpg"
-                    alt="Nebula AI"
-                    className="w-full h-full object-cover"
-                  />
+                <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#262626] text-[#1F1F1F] dark:text-[#E3E3E3] flex items-center justify-center shrink-0">
+                  <SquarePen size={13} />
                 </div>
-                <span className="font-semibold truncate">Nebula AI</span>
+                <span className="font-semibold truncate">New chat</span>
               </div>
-              <SquarePen
-                size={14}
-                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-opacity shrink-0"
-              />
+              <span className="text-[10px] font-medium text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                Ctrl+K
+              </span>
             </button>
 
             {/* FLUX.1 Visual Studio */}

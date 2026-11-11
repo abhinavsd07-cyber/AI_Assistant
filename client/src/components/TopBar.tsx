@@ -96,18 +96,26 @@ export const TopBar: React.FC<TopBarProps> = ({
           <Menu size={18} />
         </button>
 
-        {/* Model Selector Dropdown */}
+        {/* Model Selector Dropdown (Clean Typography — No Redundant Logo) */}
         <div className="relative">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-[#ECECEC]/70 dark:hover:bg-[#252525] text-sm font-semibold text-[#0D0D0D] dark:text-[#ECECEC] transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-[#ECECEC]/70 dark:hover:bg-[#252525] text-sm font-semibold text-[#0D0D0D] dark:text-[#ECECEC] transition-colors cursor-pointer"
           >
-            <img
-              src="/cosmic_orb.jpg"
-              alt="Nebula AI"
-              className="w-5 h-5 rounded-full object-cover border border-purple-400/30 shadow-2xs shrink-0"
-            />
-            <span className="text-base font-bold">Nebula AI</span>
+            <span className="text-[15px] font-bold tracking-tight text-[#0D0D0D] dark:text-white">
+              {selectedModel === 'gemini-3.5-flash'
+                ? 'Gemini 3.5'
+                : selectedModel === 'gemini-3.8-flash'
+                ? 'Gemini 3.8'
+                : 'Nebula'}
+            </span>
+            <span className="text-[14px] font-semibold text-gray-500 dark:text-gray-400">
+              {selectedModel === 'gemini-3.5-flash'
+                ? 'Flash'
+                : selectedModel === 'gemini-3.8-flash'
+                ? 'Reasoning'
+                : '4.0e'}
+            </span>
             {isPro && (
               <span className="px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[9px] font-extrabold uppercase tracking-wider shadow-xs">
                 PRO
