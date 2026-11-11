@@ -8,7 +8,7 @@ const { GoogleGenAI } = require("@google/genai");
 const { ChatSession, User, UsageLog } = require("./models");
 const authRoutes = require("./routes/auth");
 const { router: modelRoutes, seedDefaultsIfNeeded } = require("./routes/models");
-const { optionalAuth } = require("./middleware/auth");
+const { requireAuth, optionalAuth } = require("./middleware/auth");
 const { uploadToCloudinary } = require("./services/cloudinary");
 const {
   extractTextFromAttachment,
