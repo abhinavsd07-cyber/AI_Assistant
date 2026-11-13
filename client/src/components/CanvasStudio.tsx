@@ -120,7 +120,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
         const rect = parentEl.getBoundingClientRect();
         if (rect.width <= 0) return;
         const pct = ((rect.right - e.clientX) / rect.width) * 100;
-        setCustomPanelPct(Math.round(Math.min(82, Math.max(28, pct))));
+        setCustomPanelPct(Math.round(Math.min(95, Math.max(25, pct))));
       } else if (activeDrag === 'inner') {
         const stageEl = splitStageRef.current;
         if (!stageEl) return;
@@ -877,12 +877,12 @@ json.dumps(__nebula_plots__)
           ? ({ '--canvas-w': `${panelWidthPct}%` } as React.CSSProperties)
           : undefined
       }
-      className={`relative flex flex-col bg-white dark:bg-[#161616] border-l border-gray-200 dark:border-gray-800 shadow-2xl ${
+      className={`flex flex-col bg-white dark:bg-[#161616] border-l border-gray-200 dark:border-gray-800 shadow-2xl ${
         activeDrag ? 'transition-none select-none' : 'transition-all duration-300'
       } ${
         isFullscreen
           ? 'fixed inset-0 w-screen h-screen z-50'
-          : 'fixed inset-0 z-50 w-full h-full lg:static lg:z-40 lg:shrink-0 canvas-panel-width'
+          : 'fixed inset-0 z-50 w-full h-full lg:relative lg:inset-auto lg:z-40 lg:shrink-0 canvas-panel-width'
       }`}
     >
       {/* Full-viewport pointer shield while sliding to avoid iframe / chat mouse capture */}
@@ -903,8 +903,8 @@ json.dumps(__nebula_plots__)
           aria-orientation="vertical"
           aria-label="Resize Canvas panel width"
           aria-valuenow={panelWidthPct}
-          aria-valuemin={28}
-          aria-valuemax={82}
+          aria-valuemin={25}
+          aria-valuemax={95}
           tabIndex={0}
           onPointerDown={(e) => {
             e.preventDefault();
@@ -914,30 +914,30 @@ json.dumps(__nebula_plots__)
           onKeyDown={(e) => {
             if (e.key === 'ArrowLeft') {
               e.preventDefault();
-              setCustomPanelPct((prev) => Math.min(82, (prev ?? panelWidthPct) + 2));
+              setCustomPanelPct((prev) => Math.min(95, (prev ?? panelWidthPct) + 2));
             } else if (e.key === 'ArrowRight') {
               e.preventDefault();
-              setCustomPanelPct((prev) => Math.max(28, (prev ?? panelWidthPct) - 2));
+              setCustomPanelPct((prev) => Math.max(25, (prev ?? panelWidthPct) - 2));
             }
           }}
-          title="Drag slider to resize Canvas width (double-click to reset)"
+          title="Drag slider left/right to resize Canvas width (double-click to reset)"
           className="hidden lg:flex absolute -left-2 inset-y-0 w-4 z-50 cursor-col-resize group items-center justify-center touch-none focus:outline-none"
         >
           <div
             className={`w-[2px] h-full transition-colors ${
               activeDrag === 'outer'
                 ? 'bg-emerald-500'
-                : 'bg-transparent group-hover:bg-emerald-500/70'
+                : 'bg-gray-300/60 dark:bg-gray-700/60 group-hover:bg-emerald-500/80'
             }`}
           />
           <div
-            className={`absolute flex items-center justify-center w-4 h-9 rounded-full border shadow-sm transition-all ${
+            className={`absolute flex items-center justify-center w-4 h-12 rounded-full border shadow-sm transition-all ${
               activeDrag === 'outer'
                 ? 'bg-emerald-500 border-emerald-400 text-white scale-105'
-                : 'bg-white dark:bg-[#232323] border-gray-300 dark:border-gray-700 text-gray-400 group-hover:text-emerald-500 group-hover:border-emerald-500/60'
+                : 'bg-white dark:bg-[#232323] border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 group-hover:border-emerald-500/70'
             }`}
           >
-            <GripVertical size={11} />
+            <GripVertical size={12} />
           </div>
           {activeDrag === 'outer' && (
             <div className="absolute left-5 px-2 py-0.5 rounded-md bg-gray-900 text-white text-[10px] font-mono shadow-md whitespace-nowrap pointer-events-none">
@@ -1112,20 +1112,35 @@ json.dumps(__nebula_plots__)
                 </div>
 
                 {!isFullscreen && (
-                  <label className="hidden lg:block space-y-1">
+                  <div className="hidden lg:block space-y-1.5">
                     <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 font-mono">
                       <span>Canvas Panel Width</span>
                       <span>{panelWidthPct}%</span>
                     </div>
                     <input
                       type="range"
-                      min={28}
-                      max={82}
+                      min={25}
+                      max={95}
                       value={panelWidthPct}
                       onChange={(e) => setCustomPanelPct(Number(e.target.value))}
                       className="w-full accent-emerald-500 cursor-pointer"
                     />
-                  </label>
+                    <div className="flex items-center gap-1 pt-0.5">
+                      {[50, 75, 92].map((preset) => (
+                        <button
+                          key={preset}
+                          onClick={() => setCustomPanelPct(preset)}
+                          className={`flex-1 py-0.5 rounded text-[10px] font-mono border transition-colors cursor-pointer ${
+                            panelWidthPct === preset
+                              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-300 font-semibold'
+                              : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:text-gray-900 dark:hover:text-gray-200'
+                          }`}
+                        >
+                          {preset}%
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
 
                 {activeTab === 'split' && (

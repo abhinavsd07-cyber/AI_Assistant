@@ -714,7 +714,7 @@ export const App: React.FC = () => {
       />
 
       {/* Right Main Chat Stage */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#FCFCFC] dark:bg-[#121212]">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#FCFCFC] dark:bg-[#121212]">
         {/* Top Bar */}
         <TopBar
           selectedModel={selectedModel}
