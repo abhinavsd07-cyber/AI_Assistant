@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { Hero } from './components/Hero';
@@ -171,13 +171,18 @@ export const App: React.FC = () => {
     pushRoute('/codex');
   };
 
+  const sessionsRef = useRef(sessions);
+  useEffect(() => {
+    sessionsRef.current = sessions;
+  }, [sessions]);
+
   // Synchronize UI modals, studios, and active chat session with URL pathname & Browser Back/Forward (popstate)
   useEffect(() => {
     const syncFromUrl = () => {
       const path = window.location.pathname;
       const params = new URLSearchParams(window.location.search);
 
-      // Reset overlays first
+      // Reset overlays when route changes or on initial load
       setIsSettingsOpen(path === '/settings');
       setIsUpgradeOpen(path === '/pricing');
       setIsVoiceModalOpen(path === '/voice');
@@ -195,7 +200,7 @@ export const App: React.FC = () => {
         const sid = decodeURIComponent(path.slice(3));
         if (sid) {
           setCurrentSessionId(sid);
-          const match = sessions.find((s) => s.id === sid);
+          const match = sessionsRef.current.find((s) => s.id === sid);
           if (match) setMessages(match.messages);
         }
       }
@@ -215,7 +220,7 @@ export const App: React.FC = () => {
             }
           })
           .catch(() => {
-            const localMatch = sessions.find((s) => s.id === shareId);
+            const localMatch = sessionsRef.current.find((s) => s.id === shareId);
             if (localMatch) {
               setCurrentSessionId(localMatch.id);
               setMessages(localMatch.messages);
@@ -227,7 +232,21 @@ export const App: React.FC = () => {
     syncFromUrl();
     window.addEventListener('popstate', syncFromUrl);
     return () => window.removeEventListener('popstate', syncFromUrl);
-  }, [sessions.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Hydrate /c/:sessionId messages once async sessions load without resetting active modals or Canvas
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (!path.startsWith('/c/') || messages.length > 0) return;
+    const sid = decodeURIComponent(path.slice(3));
+    if (!sid) return;
+    const match = sessions.find((s) => s.id === sid);
+    if (match && match.messages.length > 0) {
+      setCurrentSessionId(sid);
+      setMessages(match.messages);
+    }
+  }, [sessions, messages.length]);
 
   const handleShareChat = async () => {
     if (!currentSessionId || messages.length === 0) return;

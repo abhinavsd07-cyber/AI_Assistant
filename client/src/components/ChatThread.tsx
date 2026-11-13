@@ -318,7 +318,11 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                           );
                         }
 
-                        const codeId = `code-${Math.random().toString(36).substring(2, 9)}`;
+                        const hashCode = Array.from(codeString).reduce(
+                          (acc, ch) => ((acc << 5) - acc + ch.charCodeAt(0)) | 0,
+                          0
+                        );
+                        const codeId = `code-${message.id}-${language || 'txt'}-${(hashCode >>> 0).toString(36)}`;
 
                         return (
                           <div className="relative my-4 rounded-2xl overflow-hidden border border-gray-800 bg-[#0D1117] text-gray-100 shadow-md">
