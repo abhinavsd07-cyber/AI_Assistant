@@ -144,7 +144,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 md:px-12 py-8 space-y-7 max-w-3xl mx-auto w-full">
+    <div className="@container flex-1 overflow-y-auto px-3 sm:px-5 @lg:px-12 py-6 sm:py-8 space-y-7 max-w-3xl mx-auto w-full min-w-0">
       {messages.map((message) => {
         const isUser = message.sender === 'user';
 
@@ -157,9 +157,9 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
           >
             {/* User message */}
             {isUser ? (
-              <div className="relative group max-w-[85%] md:max-w-[75%] flex flex-col items-end">
+              <div className="relative group max-w-[92%] @md:max-w-[75%] flex flex-col items-end">
                 {editingId === message.id ? (
-                  <div className="w-full min-w-[280px] md:min-w-[420px] rounded-[20px] p-3 bg-white dark:bg-[#1E1E1E] border border-blue-500 shadow-md flex flex-col gap-2">
+                  <div className="w-full max-w-full min-w-[200px] sm:min-w-[260px] rounded-[20px] p-3 bg-white dark:bg-[#1E1E1E] border border-blue-500 shadow-md flex flex-col gap-2">
                     <textarea
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}

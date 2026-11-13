@@ -7,7 +7,7 @@ WORKDIR /app/client
 COPY client/package*.json ./
 RUN npm install --no-audit --no-fund
 
-# Copy frontend source and build production bundle (v4.10 Fix Outer Canvas Drag Slider Anchor & Expand Range)
+# Copy frontend source and build production bundle (v4.11 Container-Responsive Hero Cards & Chat Input)
 COPY client/ ./
 ENV VITE_GOOGLE_CLIENT_ID=966040753081-ni3e6p4sen6pau4mb6eeeglmmfdjbe8g.apps.googleusercontent.com
 RUN npm run build

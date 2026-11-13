@@ -191,7 +191,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 pb-4">
+    <div className="@container w-full max-w-3xl mx-auto px-3 sm:px-4 pb-4 min-w-0">
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -203,7 +203,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
 
       <form
         onSubmit={handleSubmit}
-        className="relative flex flex-col bg-[#F4F4F4] dark:bg-[#1E1E1E] rounded-[26px] border border-[#E5E5E5] dark:border-[#2E2E2E] p-2.5 shadow-xs focus-within:border-gray-400 dark:focus-within:border-gray-600 focus-within:bg-white dark:focus-within:bg-[#202020] transition-all"
+        className="relative flex flex-col bg-[#F4F4F4] dark:bg-[#1E1E1E] rounded-[26px] border border-[#E5E5E5] dark:border-[#2E2E2E] p-2 sm:p-2.5 shadow-xs focus-within:border-gray-400 dark:focus-within:border-gray-600 focus-within:bg-white dark:focus-within:bg-[#202020] transition-all overflow-hidden"
       >
         {/* Attachment preview banner */}
         {attachment && (
@@ -237,7 +237,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           </div>
         )}
 
-        <div className="flex items-center gap-2.5 w-full">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 w-full min-w-0">
           {/* Plus icon on the left */}
           <button
             type="button"
@@ -269,16 +269,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
                 : 'Ask Nebula anything...'
             }
             rows={1}
-            className="flex-1 bg-transparent border-0 outline-hidden resize-none text-[15px] text-[#0D0D0D] dark:text-[#ECECEC] placeholder-gray-400 py-1.5 max-h-[140px] leading-relaxed font-normal"
+            className="flex-1 min-w-[110px] bg-transparent border-0 outline-hidden resize-none text-[15px] text-[#0D0D0D] dark:text-[#ECECEC] placeholder-gray-400 py-1.5 max-h-[140px] leading-relaxed font-normal"
           />
 
           {/* Right Action Icons */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-auto">
             {/* AI Image Gen toggle */}
             <button
               type="button"
               onClick={toggleImageGen}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-2 @md:px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isImageGen
                   ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs'
                   : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
@@ -286,14 +286,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
               title="Generate AI Images with Cloudinary CDN (/image <prompt>)"
             >
               <ImageIcon size={13} className={isImageGen ? 'text-emerald-600 dark:text-emerald-400' : ''} />
-              <span className="hidden sm:inline">Image</span>
+              <span className="hidden @lg:inline">Image</span>
             </button>
 
             {/* Live Web Search toggle */}
             <button
               type="button"
               onClick={() => setIsWebSearch(!isWebSearch)}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-2 @md:px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isWebSearch
                   ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700 shadow-2xs'
                   : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
@@ -301,14 +301,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
               title="Toggle Live Web Search (Real-time Internet Grounding)"
             >
               <Globe size={13} className={isWebSearch ? 'text-blue-600 dark:text-blue-400' : ''} />
-              <span className="hidden sm:inline">Search</span>
+              <span className="hidden @lg:inline">Search</span>
             </button>
 
             {/* Reasoning / Thinking toggle */}
             <button
               type="button"
               onClick={() => setIsReasoning(!isReasoning)}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-2 @md:px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isReasoning
                   ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700 shadow-2xs'
                   : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
@@ -316,7 +316,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
               title="Toggle Deep Reasoning (CoT)"
             >
               <Lightbulb size={13} className={isReasoning ? 'text-purple-600 fill-purple-600 dark:text-purple-400' : ''} />
-              <span className="hidden sm:inline">Thinking</span>
+              <span className="hidden @lg:inline">Thinking</span>
             </button>
 
             {/* Voice Mic Button */}
