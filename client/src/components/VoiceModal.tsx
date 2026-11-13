@@ -6,7 +6,7 @@ const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'h
 export type VoiceLangCode = 'auto' | 'ml-IN' | 'ta-IN' | 'hi-IN' | 'en-IN';
 
 const VOICE_LANGUAGES: { code: VoiceLangCode; label: string; sttLang: string }[] = [
-  { code: 'auto', label: '🌐 Auto-Detect', sttLang: 'en-IN' },
+  { code: 'auto', label: 'Auto', sttLang: 'en-IN' },
   { code: 'ml-IN', label: 'മലയാളം', sttLang: 'ml-IN' },
   { code: 'ta-IN', label: 'தமிழ்', sttLang: 'ta-IN' },
   { code: 'hi-IN', label: 'हिन्दी', sttLang: 'hi-IN' },
@@ -442,52 +442,66 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xl animate-in fade-in duration-200">
-      <div 
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
+      <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg rounded-3xl bg-[#111111] border border-[#2B2B2B] shadow-2xl p-8 text-white flex flex-col items-center justify-between min-h-[500px] relative overflow-hidden"
+        className="w-full max-w-[460px] rounded-[28px] bg-gradient-to-b from-[#16171E] via-[#101116] to-[#0B0C10] border border-white/[0.08] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.9)] p-6 sm:p-7 text-white flex flex-col items-center justify-between min-h-[510px] relative overflow-hidden"
       >
         {/* Top Header */}
-        <div className="w-full flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles size={16} className="text-purple-400" />
-            <span className="text-sm font-bold tracking-tight">Nebula Conversational Voice</span>
+        <div className="w-full flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center shrink-0">
+              <Sparkles size={15} className="text-purple-400" />
+            </div>
+            <div className="flex flex-col text-left min-w-0">
+              <span className="text-[14px] font-semibold tracking-tight text-white/95 truncate">
+                Nebula Voice
+              </span>
+              <span className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                <span className="truncate">{detectedLangLabel}</span>
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 text-xs font-semibold text-emerald-400">
-              <Globe size={12} className="text-emerald-400" />
-              <span>{detectedLangLabel}</span>
-            </span>
-
-            <button 
-              onClick={() => {
-                stopAll();
-                onClose();
-              }}
-              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-gray-300 hover:text-white transition-colors cursor-pointer"
-            >
-              <X size={16} />
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              stopAll();
+              onClose();
+            }}
+            aria-label="Close voice mode"
+            className="w-8 h-8 rounded-full bg-white/[0.05] hover:bg-white/[0.12] border border-white/[0.08] flex items-center justify-center text-gray-400 hover:text-white transition-all cursor-pointer shrink-0"
+          >
+            <X size={15} />
+          </button>
         </div>
 
-        {/* Multilingual Language Selector Pills */}
-        <div className="w-full flex flex-wrap items-center justify-center gap-1.5 mt-3">
-          {VOICE_LANGUAGES.map((l) => (
-            <button
-              key={l.code}
-              type="button"
-              onClick={() => handleLanguageSelect(l)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
-                selectedLang === l.code
-                  ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-900/40'
-                  : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/15 hover:text-white'
-              }`}
-            >
-              {l.label}
-            </button>
-          ))}
+        {/* Sleek Segmented Language Selector */}
+        <div
+          role="tablist"
+          aria-label="Voice language"
+          className="inline-flex flex-wrap items-center justify-center gap-0.5 p-1 mt-5 rounded-2xl sm:rounded-full bg-white/[0.04] border border-white/[0.07]"
+        >
+          {VOICE_LANGUAGES.map((l) => {
+            const isSelected = selectedLang === l.code;
+            return (
+              <button
+                key={l.code}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                onClick={() => handleLanguageSelect(l)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-white text-[#0B0C10] font-semibold shadow-sm'
+                    : 'text-gray-400 hover:text-white hover:bg-white/[0.06] font-medium'
+                }`}
+              >
+                {l.code === 'auto' && <Globe size={11} className={isSelected ? 'text-[#0B0C10]/75' : 'text-gray-400'} />}
+                <span>{l.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Central Living Nebula Cosmic Orb */}
@@ -596,13 +610,13 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         </div>
 
         {/* Bottom Control Bar */}
-        <div className="w-full flex items-center justify-center gap-3 mt-4 pt-4 border-t border-white/10">
+        <div className="w-full flex items-center justify-center gap-3 mt-5 pt-4 border-t border-white/[0.08]">
           {status === 'speaking' && (
             <button
               onClick={interruptSpeech}
-              className="px-4 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold bg-white/15 hover:bg-white/25 text-white transition-all cursor-pointer"
+              className="px-4 py-2.5 rounded-full flex items-center gap-1.5 text-xs font-semibold bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.08] text-white transition-all cursor-pointer"
             >
-              <Square size={13} className="text-amber-400" />
+              <Square size={12} className="text-amber-400 fill-amber-400" />
               <span>Interrupt AI</span>
             </button>
           )}
@@ -619,10 +633,10 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
                 startListening();
               }
             }}
-            className={`px-5 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-bold transition-all cursor-pointer ${
+            className={`px-5 py-2.5 rounded-full flex items-center gap-2 text-xs font-semibold transition-all cursor-pointer ${
               status === 'listening'
-                ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-900/30'
-                : 'bg-white text-black hover:bg-gray-200 shadow-lg'
+                ? 'bg-rose-500/90 hover:bg-rose-500 text-white shadow-lg shadow-rose-950/50 border border-rose-400/30'
+                : 'bg-white text-[#0B0C10] hover:bg-gray-100 shadow-lg'
             }`}
           >
             {status === 'listening' ? (
