@@ -505,22 +505,22 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
           })}
         </div>
 
-        {/* Central Living Nebula Cosmic Orb */}
+        {/* Central Living Bouncing Polar Bear Mascot */}
         <div className="relative flex items-center justify-center my-8 h-44 w-44">
-          {/* Outer atmospheric aurora glow */}
+          {/* Diffused atmospheric mood glow (no hard ring or circle border) */}
           <div
-            className={`absolute inset-0 rounded-full blur-3xl transition-all duration-700 ${
+            className={`absolute inset-2 rounded-full blur-3xl pointer-events-none transition-all duration-700 ${
               status === 'listening'
-                ? 'bg-indigo-500/45 scale-125 animate-pulse'
+                ? 'bg-indigo-500/30 scale-125 animate-pulse'
                 : status === 'thinking'
-                  ? 'bg-amber-500/45 scale-130 animate-pulse'
+                  ? 'bg-amber-500/30 scale-125 animate-pulse'
                   : status === 'speaking'
-                    ? 'bg-fuchsia-500/55 scale-140 animate-pulse'
-                    : 'bg-purple-600/25 scale-100'
+                    ? 'bg-fuchsia-500/35 scale-135 animate-pulse'
+                    : 'bg-purple-600/20 scale-100'
             }`}
           />
 
-          {/* Bouncing / Jumping Cosmic Container */}
+          {/* Floating Backgroundless Bouncing & Smiling Polar Bear */}
           <button
             type="button"
             onClick={() => {
@@ -534,54 +534,32 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
               status === 'speaking'
                 ? 'Interrupt Nebula speech'
                 : status === 'idle'
-                  ? 'Tap orb to start talking'
-                  : 'Nebula Voice Orb'
+                  ? 'Tap polar bear to start talking'
+                  : 'Nebula Voice Mascot'
             }
-            className={`relative w-36 h-36 rounded-full p-[3px] cursor-pointer focus:outline-none transition-shadow duration-500 ${
+            className={`relative w-32 h-32 sm:w-36 sm:h-36 bg-transparent border-0 p-0 cursor-pointer focus:outline-none flex items-center justify-center transition-transform duration-300 hover:scale-105 ${
               status === 'listening'
-                ? 'nebula-orb-listening shadow-[0_0_45px_rgba(99,102,241,0.65)]'
+                ? 'nebula-bear-listening'
                 : status === 'thinking'
-                  ? 'nebula-orb-thinking shadow-[0_0_50px_rgba(245,158,11,0.65)]'
+                  ? 'nebula-bear-thinking'
                   : status === 'speaking'
-                    ? 'nebula-orb-speaking shadow-[0_0_55px_rgba(192,38,211,0.75)]'
-                    : 'nebula-orb-idle shadow-[0_0_28px_rgba(147,51,234,0.35)]'
+                    ? 'nebula-bear-speaking'
+                    : 'nebula-bear-idle'
             }`}
           >
-            {/* Spinning conic cosmic border ring */}
-            <div
-              className={`absolute inset-0 rounded-full ${
-                status === 'thinking'
-                  ? 'bg-gradient-to-tr from-amber-400 via-fuchsia-500 to-cyan-400 nebula-logo-spin-thinking'
-                  : status === 'speaking'
-                    ? 'bg-gradient-to-tr from-purple-400 via-pink-500 to-indigo-400 nebula-logo-spin-speaking'
-                    : status === 'listening'
-                      ? 'bg-gradient-to-tr from-blue-400 via-purple-500 to-cyan-400 nebula-logo-spin-listening'
-                      : 'bg-gradient-to-tr from-purple-500/70 via-indigo-500/70 to-fuchsia-500/70 nebula-logo-spin-idle'
+            <NebulaLogo
+              expression={status}
+              className={`w-full h-full text-white select-none pointer-events-none transition-all duration-500 ${
+                status === 'listening'
+                  ? 'drop-shadow-[0_10px_28px_rgba(99,102,241,0.55)]'
+                  : status === 'thinking'
+                    ? 'drop-shadow-[0_10px_28px_rgba(245,158,11,0.5)]'
+                    : status === 'speaking'
+                      ? 'drop-shadow-[0_10px_32px_rgba(192,38,211,0.6)]'
+                      : 'drop-shadow-[0_8px_22px_rgba(255,255,255,0.2)]'
               }`}
+              title="Nebula Polar Bear Voice Co-pilot"
             />
-
-            {/* Bouncing & Smiling Polar Bear Voice Mascot */}
-            <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-b from-[#151B28] via-[#0E131D] to-[#080B12] flex items-center justify-center">
-              <div
-                className={`w-24 h-24 select-none pointer-events-none transition-transform duration-300 ${
-                  status === 'listening'
-                    ? 'nebula-bear-listening'
-                    : status === 'thinking'
-                      ? 'nebula-bear-thinking'
-                      : status === 'speaking'
-                        ? 'nebula-bear-speaking'
-                        : 'nebula-bear-idle'
-                }`}
-              >
-                <NebulaLogo
-                  expression={status}
-                  className="w-full h-full text-white drop-shadow-[0_4px_14px_rgba(168,85,247,0.35)]"
-                  title="Nebula Polar Bear Voice Co-pilot"
-                />
-              </div>
-              {/* Subtle living inner glass sheen */}
-              <div className="absolute inset-0 rounded-full bg-radial from-white/10 via-transparent to-black/35 pointer-events-none" />
-            </div>
           </button>
         </div>
 
