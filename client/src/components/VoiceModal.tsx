@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Mic, MicOff, Volume2, Sparkles, AlertCircle, Square, Globe } from 'lucide-react';
+import { X, Mic, MicOff, Sparkles, AlertCircle, Square, Globe } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
@@ -490,44 +490,80 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
           ))}
         </div>
 
-        {/* Central Animated Liquid Orb */}
-        <div className="relative flex items-center justify-center my-6">
-          {/* Outer glow rings based on state */}
-          <div className={`absolute w-52 h-52 rounded-full blur-3xl transition-all duration-700 ${
-            status === 'listening' ? 'bg-blue-600/40 scale-125 animate-pulse' :
-            status === 'thinking' ? 'bg-amber-500/40 scale-115 animate-spin' :
-            status === 'speaking' ? 'bg-purple-600/50 scale-140' :
-            'bg-gray-700/20 scale-90'
-          }`} />
+        {/* Central Living Nebula Cosmic Orb */}
+        <div className="relative flex items-center justify-center my-8 h-44 w-44">
+          {/* Outer atmospheric aurora glow */}
+          <div
+            className={`absolute inset-0 rounded-full blur-3xl transition-all duration-700 ${
+              status === 'listening'
+                ? 'bg-indigo-500/45 scale-125 animate-pulse'
+                : status === 'thinking'
+                  ? 'bg-amber-500/45 scale-130 animate-pulse'
+                  : status === 'speaking'
+                    ? 'bg-fuchsia-500/55 scale-140 animate-pulse'
+                    : 'bg-purple-600/25 scale-100'
+            }`}
+          />
 
-          {/* Main Cosmic Orb */}
-          <div className={`w-36 h-36 rounded-full flex flex-col items-center justify-center relative shadow-2xl transition-all duration-500 cursor-pointer ${
-            status === 'listening' ? 'bg-radial from-blue-400 via-indigo-600 to-blue-950 animate-pulse' :
-            status === 'thinking' ? 'bg-radial from-amber-300 via-orange-600 to-amber-950 animate-spin' :
-            status === 'speaking' ? 'bg-radial from-purple-400 via-fuchsia-600 to-indigo-950 scale-105' :
-            'bg-radial from-gray-500 via-gray-700 to-gray-900'
-          }`}
-          onClick={status === 'speaking' ? interruptSpeech : () => {}}
+          {/* Bouncing / Jumping Cosmic Container */}
+          <button
+            type="button"
+            onClick={() => {
+              if (status === 'speaking') {
+                interruptSpeech();
+              } else if (status === 'idle') {
+                startListening();
+              }
+            }}
+            aria-label={
+              status === 'speaking'
+                ? 'Interrupt Nebula speech'
+                : status === 'idle'
+                  ? 'Tap orb to start talking'
+                  : 'Nebula Voice Orb'
+            }
+            className={`relative w-36 h-36 rounded-full p-[3px] cursor-pointer focus:outline-none transition-shadow duration-500 ${
+              status === 'listening'
+                ? 'nebula-orb-listening shadow-[0_0_45px_rgba(99,102,241,0.65)]'
+                : status === 'thinking'
+                  ? 'nebula-orb-thinking shadow-[0_0_50px_rgba(245,158,11,0.65)]'
+                  : status === 'speaking'
+                    ? 'nebula-orb-speaking shadow-[0_0_55px_rgba(192,38,211,0.75)]'
+                    : 'nebula-orb-idle shadow-[0_0_28px_rgba(147,51,234,0.35)]'
+            }`}
           >
-            {status === 'listening' ? (
-              <Mic size={40} className="text-white drop-shadow-md animate-bounce" />
-            ) : status === 'thinking' ? (
-              <Sparkles size={40} className="text-white drop-shadow-md" />
-            ) : status === 'speaking' ? (
-              <Volume2 size={40} className="text-white drop-shadow-md animate-pulse" />
-            ) : (
-              <MicOff size={40} className="text-gray-400" />
-            )}
+            {/* Spinning conic cosmic border ring */}
+            <div
+              className={`absolute inset-0 rounded-full ${
+                status === 'thinking'
+                  ? 'bg-gradient-to-tr from-amber-400 via-fuchsia-500 to-cyan-400 nebula-logo-spin-thinking'
+                  : status === 'speaking'
+                    ? 'bg-gradient-to-tr from-purple-400 via-pink-500 to-indigo-400 nebula-logo-spin-speaking'
+                    : status === 'listening'
+                      ? 'bg-gradient-to-tr from-blue-400 via-purple-500 to-cyan-400 nebula-logo-spin-listening'
+                      : 'bg-gradient-to-tr from-purple-500/70 via-indigo-500/70 to-fuchsia-500/70 nebula-logo-spin-idle'
+              }`}
+            />
 
-            {/* Soundwave Bars */}
-            {(status === 'listening' || status === 'speaking') && (
-              <div className="flex items-center gap-1 mt-2">
-                <span className="w-1 h-3 bg-white/80 rounded-full animate-bounce [animation-delay:0.1s]" />
-                <span className="w-1 h-5 bg-white/80 rounded-full animate-bounce [animation-delay:0.2s]" />
-                <span className="w-1 h-3 bg-white/80 rounded-full animate-bounce [animation-delay:0.3s]" />
-              </div>
-            )}
-          </div>
+            {/* Clipped Rotating Original Nebula Logo */}
+            <div className="relative w-full h-full rounded-full overflow-hidden bg-black">
+              <img
+                src="/cosmic_orb.jpg"
+                alt="Nebula Original Cosmic Orb"
+                className={`w-full h-full object-cover select-none pointer-events-none ${
+                  status === 'listening'
+                    ? 'nebula-logo-spin-listening'
+                    : status === 'thinking'
+                      ? 'nebula-logo-spin-thinking'
+                      : status === 'speaking'
+                        ? 'nebula-logo-spin-speaking'
+                        : 'nebula-logo-spin-idle'
+                }`}
+              />
+              {/* Subtle living inner glass sheen */}
+              <div className="absolute inset-0 rounded-full bg-radial from-white/15 via-transparent to-black/30 pointer-events-none" />
+            </div>
+          </button>
         </div>
 
         {/* Status Indicator & Transcript Subtitles */}
@@ -543,7 +579,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
               {status === 'listening' ? 'Listening to you...' :
                status === 'thinking' ? 'Nebula is thinking...' :
                status === 'speaking' ? 'Speaking (Click orb to interrupt)...' :
-               'Tap Mic to Start'}
+               'Tap Orb to Start'}
             </span>
           </div>
 

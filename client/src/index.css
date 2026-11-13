@@ -88,3 +88,84 @@
     width: var(--split-second, 50%);
   }
 }
+
+/* Living, breathing, jumping & rotating Nebula Voice Orb animations */
+@keyframes nebulaOrbIdle {
+  0%, 100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.02, 1.02);
+  }
+}
+
+@keyframes nebulaOrbJump {
+  0%, 100% {
+    transform: translateY(0) scale(1.03, 0.97);
+  }
+  25% {
+    transform: translateY(-14px) scale(0.97, 1.04);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.04, 0.96);
+  }
+  75% {
+    transform: translateY(-9px) scale(0.99, 1.02);
+  }
+}
+
+@keyframes nebulaOrbSpeak {
+  0%, 100% {
+    transform: translateY(0) scale(1.05, 0.95);
+  }
+  30% {
+    transform: translateY(-18px) scale(0.96, 1.06);
+  }
+  55% {
+    transform: translateY(1px) scale(1.06, 0.94);
+  }
+  80% {
+    transform: translateY(-11px) scale(0.99, 1.03);
+  }
+}
+
+@keyframes nebulaLogoRotate {
+  from {
+    transform: rotate(0deg) scale(1.1);
+  }
+  to {
+    transform: rotate(360deg) scale(1.1);
+  }
+}
+
+.nebula-orb-idle {
+  animation: nebulaOrbIdle 3.2s ease-in-out infinite;
+}
+
+.nebula-orb-listening {
+  animation: nebulaOrbJump 1.8s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+}
+
+.nebula-orb-thinking {
+  animation: nebulaOrbJump 1.3s ease-in-out infinite;
+}
+
+.nebula-orb-speaking {
+  animation: nebulaOrbSpeak 1.15s cubic-bezier(0.34, 1.3, 0.64, 1) infinite;
+}
+
+.nebula-logo-spin-idle {
+  animation: nebulaLogoRotate 16s linear infinite;
+}
+
+.nebula-logo-spin-listening {
+  animation: nebulaLogoRotate 8s linear infinite;
+}
+
+.nebula-logo-spin-thinking {
+  animation: nebulaLogoRotate 2.8s linear infinite;
+}
+
+.nebula-logo-spin-speaking {
+  animation: nebulaLogoRotate 4.5s linear infinite;
+}
