@@ -61,3 +61,30 @@
 .animate-cosmic-orb {
   animation: pulseSlow 5s ease-in-out infinite;
 }
+
+/* Interactive split & panel slider sizing */
+@media (min-width: 1024px) {
+  .canvas-panel-width {
+    width: var(--canvas-w, 58%);
+  }
+}
+
+.canvas-split-first {
+  height: var(--split-first, 50%);
+}
+
+.canvas-split-second {
+  height: var(--split-second, 50%);
+}
+
+@media (min-width: 768px) {
+  .canvas-split-first {
+    height: 100%;
+    width: var(--split-first, 50%);
+  }
+
+  .canvas-split-second {
+    height: 100%;
+    width: var(--split-second, 50%);
+  }
+}

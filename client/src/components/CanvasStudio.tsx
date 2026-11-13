@@ -16,7 +16,10 @@ import {
   Sparkles,
   Columns2,
   RotateCw,
-  Trash2
+  Trash2,
+  GripVertical,
+  GripHorizontal,
+  SlidersHorizontal
 } from 'lucide-react';
 
 interface CanvasStudioProps {
@@ -93,12 +96,57 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
   const [pythonPlots, setPythonPlots] = useState<string[]>([]);
   const [previewNonce, setPreviewNonce] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [customPanelPct, setCustomPanelPct] = useState<number | null>(null);
+  const [splitRatio, setSplitRatio] = useState(50);
+  const [activeDrag, setActiveDrag] = useState<'outer' | 'inner' | null>(null);
+  const [isSliderMenuOpen, setIsSliderMenuOpen] = useState(false);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const pyodideRef = useRef<any>(null);
+  const studioRootRef = useRef<HTMLDivElement>(null);
+  const splitStageRef = useRef<HTMLDivElement>(null);
   const previewChannelRef = useRef(`nebula-canvas-${Math.random().toString(36).slice(2, 10)}`);
 
   const isPython = language === 'python' || language === 'py';
+
+  // Drag handler for both outer Chat<->Canvas width slider and inner Code<->Preview split slider
+  useEffect(() => {
+    if (!activeDrag) return;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (activeDrag === 'outer') {
+        const parentEl = studioRootRef.current?.parentElement;
+        if (!parentEl) return;
+        const rect = parentEl.getBoundingClientRect();
+        if (rect.width <= 0) return;
+        const pct = ((rect.right - e.clientX) / rect.width) * 100;
+        setCustomPanelPct(Math.round(Math.min(82, Math.max(28, pct))));
+      } else if (activeDrag === 'inner') {
+        const stageEl = splitStageRef.current;
+        if (!stageEl) return;
+        const rect = stageEl.getBoundingClientRect();
+        const isHorizontal = window.innerWidth >= 768;
+        if (isHorizontal && rect.width > 0) {
+          const pct = ((e.clientX - rect.left) / rect.width) * 100;
+          setSplitRatio(Math.round(Math.min(80, Math.max(20, pct))));
+        } else if (!isHorizontal && rect.height > 0) {
+          const pct = ((e.clientY - rect.top) / rect.height) * 100;
+          setSplitRatio(Math.round(Math.min(80, Math.max(20, pct))));
+        }
+      }
+    };
+
+    const stopDrag = () => setActiveDrag(null);
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', stopDrag);
+    window.addEventListener('pointercancel', stopDrag);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', stopDrag);
+      window.removeEventListener('pointercancel', stopDrag);
+    };
+  }, [activeDrag]);
 
   // Sync state if initial props change
   useEffect(() => {
@@ -815,6 +863,7 @@ json.dumps(__nebula_plots__)
 
   const showEditor = activeTab === 'split' || activeTab === 'code';
   const showPreview = activeTab === 'split' || activeTab === 'preview';
+  const panelWidthPct = customPanelPct ?? (activeTab === 'split' ? 58 : 50);
   const languageOptions = SUPPORTED_LANGUAGES.some((opt) => opt.value === language)
     ? SUPPORTED_LANGUAGES
     : [...SUPPORTED_LANGUAGES, { value: language, label: language.toUpperCase() }];
@@ -822,16 +871,84 @@ json.dumps(__nebula_plots__)
 
   return (
     <div
-      className={`flex flex-col bg-white dark:bg-[#161616] border-l border-gray-200 dark:border-gray-800 shadow-2xl transition-all duration-300 ${
+      ref={studioRootRef}
+      style={
+        !isFullscreen
+          ? ({ '--canvas-w': `${panelWidthPct}%` } as React.CSSProperties)
+          : undefined
+      }
+      className={`relative flex flex-col bg-white dark:bg-[#161616] border-l border-gray-200 dark:border-gray-800 shadow-2xl ${
+        activeDrag ? 'transition-none select-none' : 'transition-all duration-300'
+      } ${
         isFullscreen
           ? 'fixed inset-0 w-screen h-screen z-50'
-          : activeTab === 'split'
-            ? 'fixed inset-0 z-50 w-full h-full lg:static lg:z-40 lg:w-[56vw] xl:w-[58vw]'
-            : 'fixed inset-0 z-50 w-full h-full lg:static lg:z-40 lg:w-[50vw] xl:w-[48vw]'
+          : 'fixed inset-0 z-50 w-full h-full lg:static lg:z-40 lg:shrink-0 canvas-panel-width'
       }`}
     >
+      {/* Full-viewport pointer shield while sliding to avoid iframe / chat mouse capture */}
+      {activeDrag && (
+        <div
+          className={`fixed inset-0 z-[70] select-none ${
+            activeDrag === 'inner' && typeof window !== 'undefined' && window.innerWidth < 768
+              ? 'cursor-row-resize'
+              : 'cursor-col-resize'
+          }`}
+        />
+      )}
+
+      {/* Outer Chat <-> Canvas Resizable Slider Handle (Desktop) */}
+      {!isFullscreen && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize Canvas panel width"
+          aria-valuenow={panelWidthPct}
+          aria-valuemin={28}
+          aria-valuemax={82}
+          tabIndex={0}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            setActiveDrag('outer');
+          }}
+          onDoubleClick={() => setCustomPanelPct(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowLeft') {
+              e.preventDefault();
+              setCustomPanelPct((prev) => Math.min(82, (prev ?? panelWidthPct) + 2));
+            } else if (e.key === 'ArrowRight') {
+              e.preventDefault();
+              setCustomPanelPct((prev) => Math.max(28, (prev ?? panelWidthPct) - 2));
+            }
+          }}
+          title="Drag slider to resize Canvas width (double-click to reset)"
+          className="hidden lg:flex absolute -left-2 inset-y-0 w-4 z-50 cursor-col-resize group items-center justify-center touch-none focus:outline-none"
+        >
+          <div
+            className={`w-[2px] h-full transition-colors ${
+              activeDrag === 'outer'
+                ? 'bg-emerald-500'
+                : 'bg-transparent group-hover:bg-emerald-500/70'
+            }`}
+          />
+          <div
+            className={`absolute flex items-center justify-center w-4 h-9 rounded-full border shadow-sm transition-all ${
+              activeDrag === 'outer'
+                ? 'bg-emerald-500 border-emerald-400 text-white scale-105'
+                : 'bg-white dark:bg-[#232323] border-gray-300 dark:border-gray-700 text-gray-400 group-hover:text-emerald-500 group-hover:border-emerald-500/60'
+            }`}
+          >
+            <GripVertical size={11} />
+          </div>
+          {activeDrag === 'outer' && (
+            <div className="absolute left-5 px-2 py-0.5 rounded-md bg-gray-900 text-white text-[10px] font-mono shadow-md whitespace-nowrap pointer-events-none">
+              Canvas {panelWidthPct}%
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Top Studio Control Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-[#1B1B1B]">
+      <div className="relative flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-[#1B1B1B]">
         <div className="flex items-center gap-2 min-w-0">
           <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
             <Sparkles size={16} />
@@ -963,6 +1080,82 @@ json.dumps(__nebula_plots__)
             </button>
           )}
 
+          {/* Panel & Split Sliders Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setIsSliderMenuOpen((v) => !v)}
+              title="Adjust Panel & Split Sliders"
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                isSliderMenuOpen
+                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                  : 'text-gray-500 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+            >
+              <SlidersHorizontal size={14} />
+            </button>
+
+            {isSliderMenuOpen && (
+              <div className="absolute right-0 top-9 z-[60] w-64 p-3 rounded-xl bg-white dark:bg-[#1F1F1F] border border-gray-200 dark:border-gray-700 shadow-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                    Layout Sliders
+                  </span>
+                  <button
+                    onClick={() => {
+                      setCustomPanelPct(null);
+                      setSplitRatio(50);
+                    }}
+                    className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                {!isFullscreen && (
+                  <label className="hidden lg:block space-y-1">
+                    <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 font-mono">
+                      <span>Canvas Panel Width</span>
+                      <span>{panelWidthPct}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={28}
+                      max={82}
+                      value={panelWidthPct}
+                      onChange={(e) => setCustomPanelPct(Number(e.target.value))}
+                      className="w-full accent-emerald-500 cursor-pointer"
+                    />
+                  </label>
+                )}
+
+                {activeTab === 'split' && (
+                  <label className="block space-y-1">
+                    <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 font-mono">
+                      <span>Code / Preview Split</span>
+                      <span>
+                        {splitRatio}% / {100 - splitRatio}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={20}
+                      max={80}
+                      value={splitRatio}
+                      onChange={(e) => setSplitRatio(Number(e.target.value))}
+                      className="w-full accent-emerald-500 cursor-pointer"
+                    />
+                  </label>
+                )}
+
+                {activeTab !== 'split' && isFullscreen && (
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    Switch to Split view or exit Fullscreen to adjust pane sliders.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Copy Button */}
           <button
             onClick={handleCopy}
@@ -1003,14 +1196,23 @@ json.dumps(__nebula_plots__)
 
       {/* Main Workspace Stage */}
       <div className="flex-1 flex flex-col min-h-0 relative bg-[#F8F9FA] dark:bg-[#0F0F0F] overflow-hidden">
-        <div className={`flex-1 flex min-h-0 overflow-hidden ${activeTab === 'split' ? 'flex-col md:flex-row' : 'flex-col'}`}>
+        <div
+          ref={splitStageRef}
+          style={
+            activeTab === 'split'
+              ? ({
+                  '--split-first': `${splitRatio}%`,
+                  '--split-second': `${100 - splitRatio}%`,
+                } as React.CSSProperties)
+              : undefined
+          }
+          className={`flex-1 flex min-h-0 overflow-hidden ${activeTab === 'split' ? 'flex-col md:flex-row' : 'flex-col'}`}
+        >
           {/* Live Editable Code Editor */}
           {showEditor && (
             <div
-              className={`flex flex-col p-2.5 sm:p-3 overflow-hidden min-h-0 ${
-                activeTab === 'split'
-                  ? 'h-1/2 md:h-full md:w-1/2 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-800'
-                  : 'flex-1 h-full'
+              className={`flex flex-col p-2.5 sm:p-3 overflow-hidden min-h-0 min-w-0 shrink-0 ${
+                activeTab === 'split' ? 'canvas-split-first' : 'flex-1 h-full'
               }`}
             >
               <div className="flex items-center justify-between px-3 py-1.5 bg-[#161B22] border border-gray-800 rounded-t-xl text-xs text-gray-400 font-mono">
@@ -1036,11 +1238,56 @@ json.dumps(__nebula_plots__)
             </div>
           )}
 
+          {/* Draggable Split Slider between Source Editor and Live Preview */}
+          {activeTab === 'split' && (
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize Editor and Preview split"
+              aria-valuenow={splitRatio}
+              aria-valuemin={20}
+              aria-valuemax={80}
+              tabIndex={0}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                setActiveDrag('inner');
+              }}
+              onDoubleClick={() => setSplitRatio(50)}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setSplitRatio((v) => Math.max(20, v - 2));
+                } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setSplitRatio((v) => Math.min(80, v + 2));
+                }
+              }}
+              title="Drag slider to resize Code / Preview split (double-click to reset 50/50)"
+              className="relative flex items-center justify-center shrink-0 h-2.5 w-full md:h-full md:w-2.5 cursor-row-resize md:cursor-col-resize group touch-none bg-gray-100 dark:bg-[#141414] border-y md:border-y-0 md:border-x border-gray-200 dark:border-gray-800 hover:bg-emerald-500/10 transition-colors focus:outline-none"
+            >
+              <div
+                className={`flex items-center justify-center w-9 h-3.5 md:w-3.5 md:h-9 rounded-full border shadow-2xs transition-all ${
+                  activeDrag === 'inner'
+                    ? 'bg-emerald-500 border-emerald-400 text-white'
+                    : 'bg-white dark:bg-[#242424] border-gray-300 dark:border-gray-700 text-gray-400 group-hover:text-emerald-500 group-hover:border-emerald-500/60'
+                }`}
+              >
+                <GripHorizontal size={11} className="md:hidden" />
+                <GripVertical size={11} className="hidden md:block" />
+              </div>
+              {activeDrag === 'inner' && (
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-4 z-50 px-2 py-0.5 rounded-md bg-gray-900 text-white text-[10px] font-mono shadow-md whitespace-nowrap pointer-events-none">
+                  {splitRatio}% / {100 - splitRatio}%
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Live Running Output / Preview Pane */}
           {showPreview && (
             <div
-              className={`flex flex-col min-h-0 overflow-hidden ${
-                activeTab === 'split' ? 'h-1/2 md:h-full md:w-1/2' : 'flex-1 h-full'
+              className={`flex flex-col min-h-0 min-w-0 overflow-hidden ${
+                activeTab === 'split' ? 'flex-1 canvas-split-second' : 'flex-1 h-full'
               }`}
             >
               <div className="flex-1 flex items-center justify-center p-2.5 sm:p-3 overflow-auto min-h-0">
@@ -1111,7 +1358,7 @@ json.dumps(__nebula_plots__)
                       title="Canvas Preview"
                       sandbox="allow-scripts allow-modals"
                       srcDoc={previewHtml}
-                      className="w-full h-full border-none bg-white dark:bg-[#121212]"
+                      className={`w-full h-full border-none bg-white dark:bg-[#121212] ${activeDrag ? 'pointer-events-none' : ''}`}
                     />
                   </div>
                 )}

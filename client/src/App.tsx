@@ -740,8 +740,8 @@ export const App: React.FC = () => {
         />
 
         {/* Center Stage: Hero Welcome Screen OR Chat Message Thread + Split-Screen Canvas */}
-        <div className="flex-1 flex min-h-0 overflow-hidden relative">
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+        <div className="flex-1 flex min-h-0 min-w-0 overflow-hidden relative">
+          <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative">
             <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
               {messages.length === 0 ? (
                 <Hero onSelectSuggestion={(prompt) => handleSendMessage(prompt, false, null)} />
