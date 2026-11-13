@@ -16,6 +16,7 @@ import {
   ArrowRight,
   Image as ImageIcon,
 } from 'lucide-react';
+import { NebulaLogo } from './NebulaLogo';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
@@ -312,12 +313,8 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
       <div className="min-h-[56px] bg-white border-b border-slate-200 px-3 sm:px-6 py-2 flex items-center justify-between gap-2 shrink-0 z-30 shadow-2xs">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs min-w-0">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden p-0.5 bg-gradient-to-tr from-purple-500/40 via-indigo-500/30 to-transparent border border-purple-200 shrink-0 shadow-xs">
-              <img
-                src="/cosmic_orb.jpg"
-                alt="Nebula AI Logo"
-                className="w-full h-full rounded-full object-cover"
-              />
+            <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shrink-0">
+              <NebulaLogo className="w-full h-full text-[#0F172A]" title="Nebula AI Logo" />
             </div>
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-sm sm:text-[15px] font-extrabold tracking-tight text-slate-900 truncate">

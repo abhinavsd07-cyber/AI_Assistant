@@ -1,6 +1,7 @@
 import React from 'react';
 import { Code2, Compass, Lightbulb, Sparkles } from 'lucide-react';
 import type { SuggestionPrompt } from '../types';
+import { NebulaLogo } from './NebulaLogo';
 
 interface HeroProps {
   onSelectSuggestion: (prompt: string) => void;
@@ -33,14 +34,13 @@ export const Hero: React.FC<HeroProps> = ({ onSelectSuggestion }) => {
 
   return (
     <div className="@container my-auto flex flex-col items-center px-3 sm:px-6 py-4 md:py-6 max-w-3xl mx-auto w-full min-w-0 text-center">
-      {/* Glowing 3D Cosmic Orb Logo */}
+      {/* Clean Vector Polar Bear Brand Logo */}
       <div className="relative mb-3 group cursor-pointer">
-        <div className="absolute -inset-3 bg-gradient-to-tr from-purple-500/20 via-fuchsia-500/15 to-indigo-500/20 rounded-full blur-2xl opacity-75 group-hover:opacity-100 transition-opacity" />
-        <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden p-0.5 bg-gradient-to-b from-purple-400/30 via-indigo-500/15 to-transparent shadow-xl shadow-purple-900/10 border border-gray-200 dark:border-gray-700">
-          <img
-            src="/cosmic_orb.jpg"
-            alt="Nebula Cosmic Orb"
-            className="w-full h-full rounded-full object-cover animate-cosmic-orb"
+        <div className="absolute -inset-3 bg-gradient-to-tr from-purple-500/15 via-fuchsia-500/10 to-indigo-500/15 rounded-full blur-2xl opacity-70 group-hover:opacity-100 transition-opacity" />
+        <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+          <NebulaLogo
+            className="w-full h-full text-[#0F172A] dark:text-white animate-cosmic-orb"
+            title="Nebula AI"
           />
         </div>
       </div>

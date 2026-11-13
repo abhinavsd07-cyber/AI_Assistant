@@ -5,6 +5,7 @@ import { Hero } from './components/Hero';
 import { ChatThread } from './components/ChatThread';
 import { ChatInput, type FileAttachment } from './components/ChatInput';
 import { AuthPage } from './pages/AuthPage';
+import { NebulaLogo } from './components/NebulaLogo';
 import { useAuth } from './context/AuthContext';
 import type { Message, ChatSession, PersonaType } from './types';
 
@@ -665,8 +666,8 @@ export const App: React.FC = () => {
   if (isAuthLoading) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#FCFCFC] dark:bg-[#121212] text-[#0D0D0D] dark:text-[#ECECEC] gap-3">
-        <div className="w-12 h-12 rounded-full overflow-hidden p-0.5 bg-gradient-to-tr from-purple-500 to-indigo-500 animate-pulse">
-          <img src="/cosmic_orb.jpg" alt="Nebula AI" className="w-full h-full rounded-full object-cover" />
+        <div className="w-12 h-12 flex items-center justify-center animate-pulse">
+          <NebulaLogo className="w-full h-full text-[#0F172A] dark:text-white" title="Nebula AI" />
         </div>
         <span className="text-xs font-semibold text-gray-500">Verifying Nebula session...</span>
       </div>

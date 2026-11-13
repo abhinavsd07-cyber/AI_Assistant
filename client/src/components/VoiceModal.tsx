@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Mic, MicOff, Sparkles, AlertCircle, Square, Globe } from 'lucide-react';
+import { X, Mic, MicOff, AlertCircle, Square, Globe } from 'lucide-react';
+import { NebulaLogo } from './NebulaLogo';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
@@ -450,8 +451,8 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         {/* Top Header */}
         <div className="w-full flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center shrink-0">
-              <Sparkles size={15} className="text-purple-400" />
+            <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center shrink-0 p-1.5">
+              <NebulaLogo className="w-full h-full text-white" title="Nebula Voice" />
             </div>
             <div className="flex flex-col text-left min-w-0">
               <span className="text-[14px] font-semibold tracking-tight text-white/95 truncate">
@@ -559,23 +560,27 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
               }`}
             />
 
-            {/* Clipped Rotating Original Nebula Logo */}
-            <div className="relative w-full h-full rounded-full overflow-hidden bg-black">
-              <img
-                src="/cosmic_orb.jpg"
-                alt="Nebula Original Cosmic Orb"
-                className={`w-full h-full object-cover select-none pointer-events-none ${
+            {/* Bouncing & Smiling Polar Bear Voice Mascot */}
+            <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-b from-[#151B28] via-[#0E131D] to-[#080B12] flex items-center justify-center">
+              <div
+                className={`w-24 h-24 select-none pointer-events-none transition-transform duration-300 ${
                   status === 'listening'
-                    ? 'nebula-logo-spin-listening'
+                    ? 'nebula-bear-listening'
                     : status === 'thinking'
-                      ? 'nebula-logo-spin-thinking'
+                      ? 'nebula-bear-thinking'
                       : status === 'speaking'
-                        ? 'nebula-logo-spin-speaking'
-                        : 'nebula-logo-spin-idle'
+                        ? 'nebula-bear-speaking'
+                        : 'nebula-bear-idle'
                 }`}
-              />
+              >
+                <NebulaLogo
+                  expression={status}
+                  className="w-full h-full text-white drop-shadow-[0_4px_14px_rgba(168,85,247,0.35)]"
+                  title="Nebula Polar Bear Voice Co-pilot"
+                />
+              </div>
               {/* Subtle living inner glass sheen */}
-              <div className="absolute inset-0 rounded-full bg-radial from-white/15 via-transparent to-black/30 pointer-events-none" />
+              <div className="absolute inset-0 rounded-full bg-radial from-white/10 via-transparent to-black/35 pointer-events-none" />
             </div>
           </button>
         </div>
