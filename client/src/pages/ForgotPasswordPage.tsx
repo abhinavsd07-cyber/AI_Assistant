@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { AuthLayout, AuthRouteLink } from '../components/AuthLayout';
 import { useAuth } from '../context/useAuth';
 import { EMAIL_REGEX, buildPathWithQuery, readQueryParam } from '../utils/authHelpers';
@@ -54,16 +54,25 @@ export const ForgotPasswordPage: React.FC = () => {
             href={backToLoginHref}
             className="text-[#0D0D0D] font-semibold hover:underline transition-colors no-underline"
           >
-            Back to Sign In →
+            Sign in here →
           </AuthRouteLink>
         </span>
       }
     >
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3 text-xs">
         <div className="flex flex-col gap-1">
-          <label htmlFor="forgot-email" className="text-[11px] font-semibold text-gray-700">
-            Account Email Address
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="forgot-email" className="text-[11px] font-semibold text-gray-700">
+              Account Email Address
+            </label>
+            <AuthRouteLink
+              to="reset-password"
+              href={resetHref}
+              className="text-[10.5px] text-gray-500 hover:text-black hover:underline transition-colors no-underline"
+            >
+              Already have a code?
+            </AuthRouteLink>
+          </div>
           <div className="relative flex items-center">
             <Mail size={13} className="absolute left-3.5 text-gray-400" />
             <input
@@ -95,25 +104,6 @@ export const ForgotPasswordPage: React.FC = () => {
             </>
           )}
         </button>
-
-        <div className="flex items-center justify-between pt-1 text-[11px] text-gray-500">
-          <AuthRouteLink
-            to="login"
-            href={backToLoginHref}
-            className="inline-flex items-center gap-1 text-gray-600 hover:text-black font-medium no-underline"
-          >
-            <ArrowLeft size={12} />
-            <span>Back to Sign In</span>
-          </AuthRouteLink>
-
-          <AuthRouteLink
-            to="reset-password"
-            href={resetHref}
-            className="text-gray-600 hover:text-black underline"
-          >
-            Already have a code?
-          </AuthRouteLink>
-        </div>
       </form>
     </AuthLayout>
   );

@@ -52,7 +52,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentView(getViewFromLocation());
+      const nextView = getViewFromLocation();
+      if (getStoredToken() && (nextView === 'login' || nextView === 'signup')) {
+        setCurrentView('chat');
+        window.history.replaceState({ view: 'chat' }, '', '/');
+        return;
+      }
+      setCurrentView(nextView);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);

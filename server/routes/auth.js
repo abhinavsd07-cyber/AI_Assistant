@@ -7,6 +7,7 @@ const ChatSession = require("../models/ChatSession");
 const Memory = require("../models/Memory");
 const UsageLog = require("../models/UsageLog");
 const { requireAuth, generateToken } = require("../middleware/auth");
+const { isEmailDeliveryConfigured, sendPasswordResetEmail } = require("../services/email");
 
 const router = express.Router();
 
@@ -419,8 +420,7 @@ router.post("/forgot-password", async (req, res) => {
     }
     const email = req.body.email.toLowerCase().trim();
 
-    const resendApiKey = (process.env.RESEND_API_KEY || "").trim();
-    if (!resendApiKey) {
+    if (!isEmailDeliveryConfigured()) {
       return res.status(501).json({
         success: false,
         code: "EMAIL_DELIVERY_NOT_CONFIGURED",
@@ -436,29 +436,14 @@ router.post("/forgot-password", async (req, res) => {
       user.resetTokenExpires = new Date(Date.now() + 15 * 60 * 1000);
       await user.save();
 
-      const fromEmail = (process.env.RESEND_FROM_EMAIL || "Nebula AI <no-reply@nebula.ai>").trim();
-      const emailRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: fromEmail,
-          to: [email],
-          subject: "Nebula AI Password Reset Code",
-          text: `Your Nebula AI password reset code is: ${rawCode}\n\nThis code expires in 15 minutes. If you did not request this, ignore this email.`,
-        }),
-      });
-
-      if (!emailRes.ok) {
-        const errPayload = await emailRes.json().catch(() => null);
-        console.warn("Resend forgot-password notice:", emailRes.status, errPayload?.message || "");
-        return res.status(502).json({
+      try {
+        await sendPasswordResetEmail({ to: email, code: rawCode });
+      } catch (mailErr) {
+        console.warn("Forgot-password email dispatch notice:", mailErr.message);
+        return res.status(mailErr.statusCode || 502).json({
           success: false,
-          error:
-            errPayload?.message ||
-            "Unable to dispatch password reset email right now. Please try again later.",
+          code: mailErr.code,
+          error: mailErr.message,
         });
       }
     }

@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 
 const { app, isOriginAllowed, isProUser, buildSubscriptionFields } = require("../server");
 const { generateToken, JWT_SECRET } = require("../middleware/auth");
+const { getEmailProvider, isEmailDeliveryConfigured } = require("../services/email");
 const { createRateLimiter } = require("../middleware/security");
 const {
   isLiveStripeKey,
@@ -29,6 +30,8 @@ describe("Nebula AI Full-Stack HTTP & Security Integration Suite", () => {
     RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
     RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
+    SMTP_USER: process.env.SMTP_USER,
+    SMTP_PASS: process.env.SMTP_PASS,
   };
 
   before(async () => {
@@ -215,6 +218,11 @@ describe("Nebula AI Full-Stack HTTP & Security Integration Suite", () => {
     assert.equal(longSession.exp - longSession.iat, 30 * 24 * 60 * 60);
 
     delete process.env.RESEND_API_KEY;
+    delete process.env.SMTP_USER;
+    delete process.env.SMTP_PASS;
+    assert.equal(isEmailDeliveryConfigured(), false);
+    assert.equal(getEmailProvider(), null);
+
     const forgotRes = await fetch(`${baseUrl}/api/auth/forgot-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -223,6 +231,14 @@ describe("Nebula AI Full-Stack HTTP & Security Integration Suite", () => {
     assert.equal(forgotRes.status, 501);
     const forgotData = await forgotRes.json();
     assert.equal(forgotData.code, "EMAIL_DELIVERY_NOT_CONFIGURED");
+
+    process.env.RESEND_API_KEY = "re_test_123";
+    assert.equal(isEmailDeliveryConfigured(), true);
+    assert.equal(getEmailProvider(), "resend");
+
+    process.env.SMTP_USER = "sender@gmail.com";
+    process.env.SMTP_PASS = "app_password_123";
+    assert.equal(getEmailProvider(), "smtp");
   });
 
   it("Validates Stripe key classifiers, session ID format, Razorpay HMAC, subscription builder, and Pro rate limits", async () => {

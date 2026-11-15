@@ -34,4 +34,10 @@ services:
         value: usd
       - key: RESEND_API_KEY
         sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
 

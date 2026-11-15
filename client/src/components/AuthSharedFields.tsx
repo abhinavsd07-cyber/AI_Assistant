@@ -41,7 +41,6 @@ export const GoogleAuthSection: React.FC<GoogleAuthSectionProps> = ({
   onError,
 }) => {
   const { loginWithGoogle } = useAuth();
-  const googleBtnRef = useRef<HTMLDivElement>(null);
   const rememberMeRef = useRef(rememberMe);
   const googleClientId =
     import.meta.env.VITE_GOOGLE_CLIENT_ID ||
@@ -57,37 +56,32 @@ export const GoogleAuthSection: React.FC<GoogleAuthSectionProps> = ({
     let attempts = 0;
     const initGis = () => {
       const win = window as any;
-      if (win.google?.accounts?.id && googleBtnRef.current) {
-        try {
-          win.google.accounts.id.initialize({
-            client_id: googleClientId,
-            callback: async (response: any) => {
-              if (response.credential) {
-                onBusyChange(true);
-                onError(null);
-                const result = await loginWithGoogle(
-                  response.credential,
-                  undefined,
-                  undefined,
-                  rememberMeRef.current
-                );
-                onBusyChange(false);
-                if (!result.success) {
-                  onError(result.error || 'Google authentication failed');
+      if (win.google?.accounts?.id) {
+        if (!win.__nebulaGisInitialized) {
+          try {
+            win.google.accounts.id.initialize({
+              client_id: googleClientId,
+              callback: async (response: any) => {
+                if (response.credential) {
+                  onBusyChange(true);
+                  onError(null);
+                  const result = await loginWithGoogle(
+                    response.credential,
+                    undefined,
+                    undefined,
+                    rememberMeRef.current
+                  );
+                  onBusyChange(false);
+                  if (!result.success) {
+                    onError(result.error || 'Google authentication failed');
+                  }
                 }
-              }
-            },
-          });
-
-          win.google.accounts.id.renderButton(googleBtnRef.current, {
-            theme: 'outline',
-            size: 'large',
-            shape: 'pill',
-            width: 360,
-            text: mode === 'login' ? 'continue_with' : 'signup_with',
-          });
-        } catch (err) {
-          console.warn('Google GIS init notice:', err);
+              },
+            });
+            win.__nebulaGisInitialized = true;
+          } catch (err) {
+            console.warn('Google GIS init notice:', err);
+          }
         }
         return true;
       }
@@ -103,7 +97,7 @@ export const GoogleAuthSection: React.FC<GoogleAuthSectionProps> = ({
       }, 200);
       return () => clearInterval(timer);
     }
-  }, [mode, googleClientId, loginWithGoogle, onBusyChange, onError]);
+  }, [googleClientId, loginWithGoogle, onBusyChange, onError]);
 
   const handleGoogleClick = () => {
     onError(null);
@@ -168,7 +162,6 @@ export const GoogleAuthSection: React.FC<GoogleAuthSectionProps> = ({
   return (
     <>
       <div className="flex flex-col gap-1 w-full">
-        <div ref={googleBtnRef} className="w-full hidden" />
         <button
           type="button"
           onClick={handleGoogleClick}

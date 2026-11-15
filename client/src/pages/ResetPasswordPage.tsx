@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, KeyRound, Lock, Eye, EyeOff, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, KeyRound, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import { AuthLayout, AuthRouteLink } from '../components/AuthLayout';
 import { PasswordStrengthMeter } from '../components/AuthSharedFields';
 import { useAuth } from '../context/useAuth';
@@ -77,13 +77,13 @@ export const ResetPasswordPage: React.FC = () => {
       successMessage={successMessage}
       footer={
         <span>
-          Didn&apos;t receive a code?{' '}
+          Remembered your password?{' '}
           <AuthRouteLink
-            to="forgot-password"
-            href={resendHref}
+            to="login"
+            href={backToLoginHref}
             className="text-[#0D0D0D] font-semibold hover:underline transition-colors no-underline"
           >
-            Request a new one →
+            Sign in here →
           </AuthRouteLink>
         </span>
       }
@@ -108,9 +108,18 @@ export const ResetPasswordPage: React.FC = () => {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="reset-code" className="text-[11px] font-semibold text-gray-700">
-            8-Character Reset Code
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="reset-code" className="text-[11px] font-semibold text-gray-700">
+              8-Character Reset Code
+            </label>
+            <AuthRouteLink
+              to="forgot-password"
+              href={resendHref}
+              className="text-[10.5px] text-gray-500 hover:text-black hover:underline transition-colors no-underline"
+            >
+              Resend code
+            </AuthRouteLink>
+          </div>
           <div className="relative flex items-center">
             <KeyRound size={13} className="absolute left-3.5 text-gray-400" />
             <input
@@ -206,17 +215,6 @@ export const ResetPasswordPage: React.FC = () => {
             </>
           )}
         </button>
-
-        <div className="flex items-center justify-start pt-1 text-[11px]">
-          <AuthRouteLink
-            to="login"
-            href={backToLoginHref}
-            className="inline-flex items-center gap-1 text-gray-600 hover:text-black font-medium no-underline"
-          >
-            <ArrowLeft size={12} />
-            <span>Back to Sign In</span>
-          </AuthRouteLink>
-        </div>
       </form>
     </AuthLayout>
   );
