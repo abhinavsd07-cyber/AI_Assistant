@@ -312,11 +312,11 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
       <div className="min-h-[56px] bg-white border-b border-slate-200 px-3 sm:px-6 py-2 flex items-center justify-between gap-2 shrink-0 z-30 shadow-2xs">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs min-w-0">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden p-0.5 bg-gradient-to-tr from-purple-500/40 via-indigo-500/30 to-transparent border border-purple-200 shrink-0 shadow-xs">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shrink-0">
               <img
-                src="/cosmic_orb.jpg"
+                src="/nebula-logo.png"
                 alt="Nebula AI Logo"
-                className="w-full h-full rounded-full object-cover"
+                className="w-full h-full object-contain drop-shadow-[0_2px_6px_rgba(15,23,42,0.16)]"
               />
             </div>
             <div className="flex items-center gap-2 min-w-0">

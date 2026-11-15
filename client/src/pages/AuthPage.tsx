@@ -256,8 +256,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
       <header className="relative z-20 w-full px-6 py-2.5 md:px-10 flex items-center justify-between border-b border-[#E5E5E5]/60 bg-white/70 backdrop-blur-md">
         {/* Brand identity */}
         <div className="flex items-center gap-2.5 select-none">
-          <div className="w-7 h-7 rounded-lg overflow-hidden border border-gray-200 shrink-0">
-            <img src="/cosmic_orb.jpg" alt="Nebula Logo" className="w-full h-full object-cover" />
+          <div className="w-7 h-7 flex items-center justify-center shrink-0">
+            <img src="/nebula-logo.png" alt="Nebula Logo" className="w-full h-full object-contain drop-shadow-[0_1px_4px_rgba(15,23,42,0.16)]" />
           </div>
           <span className="font-bold text-base tracking-tight text-[#0D0D0D]">Nebula AI</span>
         </div>
@@ -287,12 +287,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
             {/* Centered Brand & Glowing Orb */}
             <div className="flex flex-col items-center text-center">
               <div className="relative mb-2 group cursor-pointer" onClick={() => navigateTo('chat')}>
-                <div className="absolute -inset-2 bg-gradient-to-tr from-purple-500/20 via-indigo-500/15 to-blue-500/20 rounded-full blur-xl opacity-75 group-hover:opacity-100 transition-opacity" />
-                <div className="relative w-12 h-12 rounded-full overflow-hidden p-0.5 bg-gradient-to-b from-purple-400/30 via-indigo-500/15 to-transparent border border-gray-200 shadow-md">
+                <div className="absolute -inset-2.5 bg-gradient-to-tr from-purple-500/20 via-indigo-500/15 to-blue-500/20 rounded-full blur-xl opacity-75 group-hover:opacity-100 transition-opacity" />
+                <div className="relative w-14 h-14 flex items-center justify-center">
                   <img
-                    src="/cosmic_orb.jpg"
-                    alt="Nebula Cosmic Orb"
-                    className="w-full h-full rounded-full object-cover animate-cosmic-orb"
+                    src="/nebula-logo.png"
+                    alt="Nebula AI Logo"
+                    className="w-full h-full object-contain animate-cosmic-orb"
                   />
                 </div>
               </div>

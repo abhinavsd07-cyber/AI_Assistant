@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Mic, MicOff, Sparkles, AlertCircle, Square, Globe } from 'lucide-react';
+import { X, Mic, MicOff, AlertCircle, Square, Globe } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
@@ -450,8 +450,12 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         {/* Top Header */}
         <div className="w-full flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center shrink-0">
-              <Sparkles size={15} className="text-purple-400" />
+            <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center shrink-0 p-1">
+              <img
+                src="/nebula-logo.png"
+                alt="Nebula AI"
+                className="w-full h-full object-contain brightness-125 drop-shadow-[0_0_8px_rgba(196,181,253,0.45)]"
+              />
             </div>
             <div className="flex flex-col text-left min-w-0">
               <span className="text-[14px] font-semibold tracking-tight text-white/95 truncate">
@@ -559,23 +563,23 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
               }`}
             />
 
-            {/* Clipped Rotating Original Nebula Logo */}
-            <div className="relative w-full h-full rounded-full overflow-hidden bg-black">
+            {/* Frosted Deep Cosmic Core with Floating Metallic Nebula Logo */}
+            <div className="relative w-full h-full rounded-full overflow-hidden bg-radial from-[#221E38] via-[#131420] to-[#0A0B10] flex items-center justify-center">
               <img
-                src="/cosmic_orb.jpg"
-                alt="Nebula Original Cosmic Orb"
-                className={`w-full h-full object-cover select-none pointer-events-none ${
+                src="/nebula-logo.png"
+                alt="Nebula AI Emblem"
+                className={`w-[78%] h-[78%] object-contain select-none pointer-events-none brightness-115 drop-shadow-[0_0_16px_rgba(167,139,250,0.45)] ${
                   status === 'listening'
-                    ? 'nebula-logo-spin-listening'
+                    ? 'nebula-emblem-listening'
                     : status === 'thinking'
-                      ? 'nebula-logo-spin-thinking'
+                      ? 'nebula-emblem-thinking'
                       : status === 'speaking'
-                        ? 'nebula-logo-spin-speaking'
-                        : 'nebula-logo-spin-idle'
+                        ? 'nebula-emblem-speaking'
+                        : 'nebula-emblem-idle'
                 }`}
               />
               {/* Subtle living inner glass sheen */}
-              <div className="absolute inset-0 rounded-full bg-radial from-white/15 via-transparent to-black/30 pointer-events-none" />
+              <div className="absolute inset-0 rounded-full bg-radial from-white/15 via-transparent to-black/35 pointer-events-none" />
             </div>
           </button>
         </div>
