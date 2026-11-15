@@ -12,20 +12,42 @@ import type { UserProfile, AuthResponse } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
+function getDefaultPathForView(view: ViewType): string {
+  switch (view) {
+    case 'login':
+      return '/login';
+    case 'signup':
+      return '/signup';
+    case 'forgot-password':
+      return '/forgot-password';
+    case 'reset-password':
+      return '/reset-password';
+    case 'chat':
+    default:
+      return '/';
+  }
+}
+
+function getViewFromLocation(): ViewType {
+  const path = window.location.pathname.toLowerCase();
+  const hash = window.location.hash.toLowerCase();
+  if (path === '/login' || hash.includes('login')) return 'login';
+  if (path === '/signup' || hash.includes('signup')) return 'signup';
+  if (path === '/forgot-password' || hash.includes('forgot-password')) return 'forgot-password';
+  if (path === '/reset-password' || hash.includes('reset-password')) return 'reset-password';
+  return 'chat';
+}
+
+function isPublicSharePath(): boolean {
+  const path = window.location.pathname.toLowerCase();
+  const params = new URLSearchParams(window.location.search);
+  return path.startsWith('/share/') || params.has('share');
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(getStoredUser);
   const [token, setToken] = useState<string | null>(getStoredToken);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  const getViewFromLocation = (): ViewType => {
-    const path = window.location.pathname.toLowerCase();
-    const hash = window.location.hash.toLowerCase();
-    if (path === '/login' || hash.includes('login')) return 'login';
-    if (path === '/signup' || hash.includes('signup')) return 'signup';
-    if (path === '/forgot-password' || hash.includes('forgot-password')) return 'forgot-password';
-    return 'chat';
-  };
-
   const [currentView, setCurrentView] = useState<ViewType>(getViewFromLocation);
 
   useEffect(() => {
@@ -36,18 +58,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const navigateTo = useCallback((view: ViewType) => {
+  const navigateTo = useCallback((view: ViewType, urlPath?: string) => {
     setCurrentView(view);
-    const targetPath =
-      view === 'login'
-        ? '/login'
-        : view === 'signup'
-          ? '/signup'
-          : view === 'forgot-password'
-            ? '/forgot-password'
-            : '/';
-    if (window.location.pathname !== targetPath || window.location.hash) {
-      window.history.pushState({ view }, '', targetPath);
+    const targetUrl = urlPath || getDefaultPathForView(view);
+    const currentFull = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (currentFull !== targetUrl) {
+      window.history.pushState({ view }, '', targetUrl);
+    }
+  }, []);
+
+  const redirectToLoginUrlIfNeeded = useCallback(() => {
+    if (isPublicSharePath()) return;
+    const viewFromUrl = getViewFromLocation();
+    if (viewFromUrl === 'chat') {
+      setCurrentView('login');
+      window.history.replaceState({ view: 'login' }, '', '/login');
+    } else {
+      setCurrentView(viewFromUrl);
     }
   }, []);
 
@@ -56,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     clearAuthStorage();
     setCurrentView('login');
-    if (window.location.pathname !== '/login') {
+    if (window.location.pathname !== '/login' || window.location.search) {
       window.history.pushState({ view: 'login' }, '', '/login');
     }
   }, []);
@@ -68,6 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setToken(null);
         setUser(null);
         clearAuthStorage();
+        redirectToLoginUrlIfNeeded();
         setIsLoading(false);
         return;
       }
@@ -85,6 +113,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(data.user);
             setToken(storedToken);
             updateStoredUser(data.user);
+            const urlView = getViewFromLocation();
+            if (urlView === 'login' || urlView === 'signup') {
+              setCurrentView('chat');
+              window.history.replaceState({ view: 'chat' }, '', '/');
+            }
           } else {
             logout();
           }
@@ -99,13 +132,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     verifySession();
-  }, [logout]);
+  }, [logout, redirectToLoginUrlIfNeeded]);
 
   const handleAuthSuccess = (newToken: string, newUser: UserProfile, rememberMe = true) => {
     setToken(newToken);
     setUser(newUser);
     persistAuthSession(newToken, newUser, rememberMe);
-    navigateTo('chat');
+    navigateTo('chat', '/');
   };
 
   const login = async (

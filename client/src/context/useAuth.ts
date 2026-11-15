@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 import type { UserProfile } from '../types';
 
-export type ViewType = 'chat' | 'login' | 'signup' | 'forgot-password';
+export type ViewType = 'chat' | 'login' | 'signup' | 'forgot-password' | 'reset-password';
 
 const AUTH_KEYS = [
   'nebula_token',
@@ -80,7 +80,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   currentView: ViewType;
-  navigateTo: (view: ViewType) => void;
+  navigateTo: (view: ViewType, urlPath?: string) => void;
   login: (
     email: string,
     password: string,

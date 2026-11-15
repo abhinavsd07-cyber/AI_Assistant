@@ -4,7 +4,10 @@ import { TopBar } from './components/TopBar';
 import { Hero } from './components/Hero';
 import { ChatThread } from './components/ChatThread';
 import { ChatInput, type FileAttachment } from './components/ChatInput';
-import { AuthPage } from './pages/AuthPage';
+import { LoginPage } from './pages/LoginPage';
+import { SignupPage } from './pages/SignupPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { useAuth } from './context/useAuth';
 import type { VerifiedPaymentReceipt } from './components/UpgradeModal';
 import type { Message, ChatSession, PersonaType } from './types';
@@ -758,19 +761,17 @@ export const App: React.FC = () => {
     );
   }
 
-  if (
-    (!isAuthenticated && !isPublicShareRoute) ||
+  const isAuthView =
     currentView === 'login' ||
     currentView === 'signup' ||
-    currentView === 'forgot-password'
-  ) {
-    const authInitialMode =
-      currentView === 'signup'
-        ? 'signup'
-        : currentView === 'forgot-password'
-          ? 'forgot-password'
-          : 'login';
-    return <AuthPage initialMode={authInitialMode} />;
+    currentView === 'forgot-password' ||
+    currentView === 'reset-password';
+
+  if ((!isAuthenticated && (!isPublicShareRoute || isAuthView)) || currentView === 'forgot-password' || currentView === 'reset-password') {
+    if (currentView === 'signup') return <SignupPage />;
+    if (currentView === 'forgot-password') return <ForgotPasswordPage />;
+    if (currentView === 'reset-password') return <ResetPasswordPage />;
+    return <LoginPage />;
   }
 
   return (
