@@ -243,8 +243,8 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
                   onClick={() => setGateway('razorpay')}
                   className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                     gateway === 'razorpay'
-                      ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300'
-                      : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400'
+                      ? 'border-[#0D0D0D] dark:border-white bg-[#F4F4F5] dark:bg-[#242428] text-[#0D0D0D] dark:text-white'
+                      : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700'
                   }`}
                 >
                   <Smartphone size={14} />
@@ -254,8 +254,8 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
                   onClick={() => setGateway('stripe')}
                   className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                     gateway === 'stripe'
-                      ? 'border-purple-500 bg-purple-50/50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300'
-                      : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400'
+                      ? 'border-[#0D0D0D] dark:border-white bg-[#F4F4F5] dark:bg-[#242428] text-[#0D0D0D] dark:text-white'
+                      : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700'
                   }`}
                 >
                   <CreditCard size={14} />
@@ -285,7 +285,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
                 <button
                   onClick={handleOpenStripeHostedPage}
                   disabled={isOpeningStripePage || isProcessing}
-                  className="w-full py-2 rounded-xl border border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 font-semibold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  className="w-full py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-100 hover:bg-gray-200/80 dark:bg-[#242428] dark:hover:bg-[#2D2D33] text-[#0D0D0D] dark:text-white font-semibold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   {isOpeningStripePage ? (
                     <>

@@ -278,24 +278,24 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                           href={href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                          className="inline-flex items-center gap-1 text-zinc-900 dark:text-zinc-100 underline decoration-zinc-300 dark:decoration-zinc-600 underline-offset-4 hover:decoration-zinc-900 dark:hover:decoration-zinc-100 font-medium transition-colors"
                         >
                           <span>{children}</span>
                           <ExternalLink size={12} className="opacity-70" />
                         </a>
                       ),
                       img: ({ src, alt }) => (
-                        <div className="my-3 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm max-w-lg">
-                          <img src={src} alt={alt || 'Generated visual'} className="w-full object-cover max-h-96" />
-                          <div className="p-2 bg-gray-50 dark:bg-gray-900 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                            <span className="truncate max-w-[300px]">{alt || 'AI Visual'}</span>
+                        <div className="my-3 rounded-2xl overflow-hidden border border-gray-200 dark:border-[#2A2A32] bg-[#F4F4F6] dark:bg-[#111215] shadow-sm max-w-lg">
+                          <img src={src} alt={alt || 'Generated visual'} className="w-full max-h-[440px] object-contain" />
+                          <div className="px-3 py-2 bg-white dark:bg-[#16161A] border-t border-gray-200 dark:border-[#26262C] flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+                            <span className="truncate max-w-[300px] font-medium">{alt || 'Generated Visual'}</span>
                             {src && (
-                              <a 
-                                href={src} 
-                                target="_blank" 
+                              <a
+                                href={src}
+                                target="_blank"
                                 rel="noopener noreferrer"
-                                download 
-                                className="inline-flex items-center gap-1 hover:text-black dark:hover:text-white"
+                                download
+                                className="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors font-medium"
                               >
                                 <Download size={13} />
                                 <span>Save</span>
@@ -312,7 +312,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
 
                         if (!isBlock) {
                           return (
-                            <code className="px-1.5 py-0.5 rounded-md text-[13px] font-mono bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 border border-gray-200/80 dark:border-gray-700" {...props}>
+                            <code className="px-1.5 py-0.5 rounded-md text-[13px] font-mono bg-[#F1F5F9] dark:bg-[#242429] text-[#0F172A] dark:text-[#E2E8F0] border border-black/[0.06] dark:border-white/[0.08]" {...props}>
                               {children}
                             </code>
                           );

@@ -206,10 +206,10 @@ export const TopBar: React.FC<TopBarProps> = ({
         {onOpenVoiceMode && (
           <button
             onClick={onOpenVoiceMode}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-800/60 text-xs font-semibold transition-all cursor-pointer shadow-2xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F4F4F5] dark:bg-[#222226] text-[#0D0D0D] dark:text-[#ECECEC] hover:bg-[#EAEAEF] dark:hover:bg-[#2C2C32] border border-[#E4E4E7] dark:border-[#323238] text-xs font-semibold transition-colors cursor-pointer"
             title="Open Hands-Free Voice Conversation"
           >
-            <Mic size={14} className="animate-pulse" />
+            <Mic size={13.5} className="text-zinc-600 dark:text-zinc-300" />
             <span className="hidden sm:inline">Voice Mode</span>
           </button>
         )}
@@ -220,7 +220,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           className="p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
           title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
-          {theme === 'dark' ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} />}
+          {theme === 'dark' ? <Sun size={17} className="text-zinc-300" /> : <Moon size={17} />}
         </button>
 
         {/* Share / Actions Menu */}
@@ -251,7 +251,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   }}
                   className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer text-left"
                 >
-                  <Download size={14} className="text-blue-500" />
+                  <Download size={14} className="text-gray-500 dark:text-gray-400" />
                   <span>Export as Markdown (.md)</span>
                 </button>
                 <button
@@ -261,7 +261,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   }}
                   className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer text-left"
                 >
-                  <Download size={14} className="text-emerald-500" />
+                  <Download size={14} className="text-gray-500 dark:text-gray-400" />
                   <span>Export as Text (.txt)</span>
                 </button>
                 <button

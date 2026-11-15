@@ -155,12 +155,12 @@ export const App: React.FC = () => {
 <head>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-950 text-white min-h-screen flex items-center justify-center p-6 font-sans">
-  <div class="max-w-md w-full bg-slate-900/90 border border-purple-500/30 rounded-2xl p-6 shadow-2xl text-center">
-    <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 mx-auto mb-4 flex items-center justify-center text-xl font-bold">N</div>
+<body class="bg-zinc-950 text-white min-h-screen flex items-center justify-center p-6 font-sans">
+  <div class="max-w-md w-full bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 shadow-2xl text-center">
+    <div class="w-12 h-12 rounded-xl bg-zinc-800 border border-zinc-700 mx-auto mb-4 flex items-center justify-center text-xl font-bold text-zinc-100">N</div>
     <h1 class="text-xl font-bold mb-2">Nebula Codex Live Studio</h1>
-    <p class="text-xs text-slate-400 mb-5">Edit HTML, Tailwind CSS, React, or Python code in the Code tab and preview it live!</p>
-    <button onclick="document.getElementById('counter').innerText = Number(document.getElementById('counter').innerText) + 1" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 font-semibold text-sm transition cursor-pointer">
+    <p class="text-xs text-zinc-400 mb-5">Edit HTML, Tailwind CSS, React, or Python code in the Code tab and preview it live!</p>
+    <button onclick="document.getElementById('counter').innerText = Number(document.getElementById('counter').innerText) + 1" class="px-5 py-2.5 rounded-xl bg-white text-zinc-950 hover:bg-zinc-200 font-semibold text-sm transition cursor-pointer">
       Interactive Clicks: <span id="counter">0</span>
     </button>
   </div>
@@ -666,7 +666,7 @@ export const App: React.FC = () => {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#FCFCFC] dark:bg-[#121212] text-[#0D0D0D] dark:text-[#ECECEC] gap-3">
         <div className="w-14 h-14 flex items-center justify-center animate-pulse dark:brightness-125">
-          <img src="/nebula-logo.png" alt="Nebula AI" className="w-full h-full object-contain drop-shadow-[0_0_16px_rgba(168,85,247,0.45)]" />
+          <img src="/nebula-logo.png" alt="Nebula AI" className="w-full h-full object-contain drop-shadow-[0_6px_14px_rgba(15,23,42,0.18)]" />
         </div>
         <span className="text-xs font-semibold text-gray-500">Verifying Nebula session...</span>
       </div>

@@ -121,7 +121,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
       case 2:
         return { score: 2, label: 'Fair', color: 'bg-amber-500' };
       case 3:
-        return { score: 3, label: 'Good', color: 'bg-indigo-500' };
+        return { score: 3, label: 'Good', color: 'bg-sky-600' };
       case 4:
       default:
         return { score: 4, label: 'Strong', color: 'bg-emerald-500' };
@@ -244,11 +244,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
 
   return (
     <div className="min-h-screen w-full flex flex-col justify-between bg-[#FCFCFC] text-[#0D0D0D] relative overflow-x-hidden selection:bg-[#E5E5E5] selection:text-[#0D0D0D]">
-      {/* Ambient background glow matching the Cosmic Orb */}
+      {/* Ambient neutral backdrop gradient */}
       <div 
         className="fixed inset-0 pointer-events-none opacity-40 select-none"
         style={{
-          backgroundImage: `radial-gradient(circle at 50% 28%, rgba(147, 51, 234, 0.05) 0%, rgba(59, 130, 246, 0.03) 40%, transparent 70%)`,
+          backgroundImage: `radial-gradient(circle at 50% 25%, rgba(15, 23, 42, 0.04) 0%, transparent 65%)`,
         }}
       />
 
@@ -287,7 +287,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
             {/* Centered Brand & Glowing Orb */}
             <div className="flex flex-col items-center text-center">
               <div className="relative mb-2 group cursor-pointer" onClick={() => navigateTo('chat')}>
-                <div className="absolute -inset-2.5 bg-gradient-to-tr from-purple-500/20 via-indigo-500/15 to-blue-500/20 rounded-full blur-xl opacity-75 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute -inset-3 bg-radial from-slate-200/50 via-transparent to-transparent rounded-full blur-xl opacity-75 group-hover:opacity-100 transition-opacity" />
                 <div className="relative w-14 h-14 flex items-center justify-center">
                   <img
                     src="/nebula-logo.png"

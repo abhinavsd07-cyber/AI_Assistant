@@ -678,20 +678,14 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
       res.socket?.setNoDelay(true);
 
       const targetSubject = imageIntent.cleanSubject || trimmedMsg;
-      res.write(`data: ${JSON.stringify({ chunk: `✨ **Nebula ML**: Understood visual request for **${targetSubject}**...\n\n` })}\n\n`);
+      res.write(`data: ${JSON.stringify({ chunk: `Generating visual for **${targetSubject}**...\n\n` })}\n\n`);
 
       try {
-        const { cdnUrl, cleanPrompt, expandedPrompt } = await generateAndUploadImage(imageIntent);
+        const { cdnUrl, cleanPrompt } = await generateAndUploadImage(imageIntent);
 
         const replyMarkdown =
-          `Here is your generated image of **${cleanPrompt}**:\n\n` +
-          `![${cleanPrompt}](${cdnUrl})\n\n` +
-          `### 🎨 Visual Details\n` +
-          `* **Subject (Normalized via ML)**: \`${cleanPrompt}\`\n` +
-          `* **Enhanced Creative Prompt**: *${expandedPrompt}*\n` +
-          `* **Engine**: Nebula High-Res Multi-Engine Visuals\n` +
-          `* **Cloud Storage**: Cloudinary Global CDN\n\n` +
-          `🔗 [Open Full High-Res Image](${cdnUrl})`;
+          `Here is your generated visual for **${cleanPrompt}**:\n\n` +
+          `![${cleanPrompt}](${cdnUrl})`;
 
         res.write(`data: ${JSON.stringify({ chunk: replyMarkdown, fullText: replyMarkdown, imageUrl: cdnUrl })}\n\n`);
         res.write(`data: ${JSON.stringify({ done: true, model: "nebula-visual-cloudinary" })}\n\n`);
@@ -716,7 +710,7 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
             { sessionId, userId: req.user._id },
             {
               $setOnInsert: {
-                title: `🎨 ${cleanPrompt.slice(0, 28)}`,
+                title: cleanPrompt.slice(0, 32),
                 userId: req.user._id,
                 userEmail: req.user.email,
               },

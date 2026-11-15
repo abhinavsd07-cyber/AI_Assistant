@@ -451,7 +451,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {onOpenFluxStudio && (
               <button
                 onClick={onOpenFluxStudio}
-                className="p-2 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer"
+                className="p-2 rounded-xl text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] hover:text-[#0D0D0D] dark:hover:text-white transition-colors cursor-pointer"
                 title="FLUX.1 Visual Studio"
               >
                 <Sparkles size={18} />
@@ -461,7 +461,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Canvas & Artifacts */}
             <button
               onClick={onOpenCodex}
-              className="p-2 rounded-xl text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] hover:text-[#0D0D0D] dark:hover:text-white transition-colors cursor-pointer"
               title="Canvas & Artifacts"
             >
               <Code size={18} />
@@ -504,7 +504,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-2xs"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+              <div className="w-8 h-8 rounded-full bg-[#18181B] dark:bg-[#2E2E34] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
                 {initials}
               </div>
             )}
@@ -641,12 +641,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer text-left"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#262626] text-[#1F1F1F] dark:text-[#E3E3E3] flex items-center justify-center shrink-0">
                     <Sparkles size={13} />
                   </div>
                   <span className="truncate">FLUX.1 Visual Studio</span>
                 </div>
-                <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-300">
+                <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-gray-200/80 dark:bg-[#26262A] text-gray-600 dark:text-gray-300">
                   HD
                 </span>
               </button>
@@ -662,7 +662,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }}
                   className="flex-1 flex items-center gap-2.5 px-2 py-2 cursor-pointer text-left min-w-0"
                 >
-                  <div className="w-6 h-6 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#262626] text-[#1F1F1F] dark:text-[#E3E3E3] flex items-center justify-center shrink-0">
                     <Code size={13} />
                   </div>
                   <span className="truncate">Canvas & Artifacts</span>
@@ -696,7 +696,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }}
                       className="w-full flex items-center gap-2 px-2 py-1 rounded-md text-xs text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-[#ECECEC]/70 dark:hover:bg-[#242424] transition-colors text-left cursor-pointer"
                     >
-                      <FileCode size={12} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <FileCode size={12} className="text-gray-500 dark:text-gray-400 shrink-0" />
                       <span className="truncate">{art.title}</span>
                     </button>
                   ))}
@@ -704,7 +704,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
 
-            {/* Explore GPTs / Specialized Personas */}
+            {/* Explore Specialized AI Agents */}
             <button
               onClick={() => {
                 onOpenExplore();
@@ -715,7 +715,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#262626] text-[#424242] dark:text-[#B4B4B4] flex items-center justify-center shrink-0">
                 <Compass size={13} />
               </div>
-              <span>Explore GPTs</span>
+              <span>Explore Agents</span>
             </button>
 
             {/* Prompt Library */}
@@ -901,7 +901,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-200 dark:border-gray-700 shadow-2xs"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                      <div className="w-8 h-8 rounded-full bg-[#18181B] dark:bg-[#2E2E34] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                         {initials}
                       </div>
                     )}
@@ -926,7 +926,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }}
                   className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] dark:hover:bg-[#2A2A2A] transition-colors text-left text-[13px] font-medium text-[#0D0D0D] dark:text-[#ECECEC] cursor-pointer"
                 >
-                  <Sparkles size={16} className="text-purple-600 dark:text-purple-400 shrink-0" />
+                  <Sparkles size={16} className="text-[#0D0D0D] dark:text-white shrink-0" />
                   <span>Upgrade plan</span>
                 </button>
 
@@ -996,7 +996,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-200 dark:border-gray-700 shadow-2xs"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                <div className="w-8 h-8 rounded-full bg-[#18181B] dark:bg-[#2E2E34] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                   {initials}
                 </div>
               )}

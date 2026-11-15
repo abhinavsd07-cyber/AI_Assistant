@@ -35,7 +35,7 @@ export const Hero: React.FC<HeroProps> = ({ onSelectSuggestion }) => {
     <div className="@container my-auto flex flex-col items-center px-3 sm:px-6 py-4 md:py-6 max-w-3xl mx-auto w-full min-w-0 text-center">
       {/* Floating 3D Metallic Nebula Logo */}
       <div className="relative mb-3 group cursor-pointer">
-        <div className="absolute -inset-3 bg-gradient-to-tr from-purple-500/20 via-indigo-500/15 to-slate-400/20 rounded-full blur-2xl opacity-75 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute -inset-4 bg-radial from-slate-200/50 via-transparent to-transparent dark:from-white/[0.08] rounded-full blur-xl opacity-80 group-hover:opacity-100 transition-opacity" />
         <div className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center dark:brightness-125">
           <img
             src="/nebula-logo.png"
@@ -51,7 +51,7 @@ export const Hero: React.FC<HeroProps> = ({ onSelectSuggestion }) => {
       </h1>
 
       {/* Subtitle */}
-      <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 max-w-lg mb-6 leading-relaxed font-normal">
+      <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 max-w-xl mb-6 leading-relaxed font-normal">
         I am Nebula. You can ask me to write, code, plan, generate visuals, or explore any idea.
       </p>
 
@@ -62,18 +62,18 @@ export const Hero: React.FC<HeroProps> = ({ onSelectSuggestion }) => {
             key={item.id}
             onClick={() => onSelectSuggestion(item.prompt)}
             className="group relative flex flex-col items-start w-full min-w-0 overflow-hidden p-3.5 sm:p-4 rounded-2xl text-left
-              bg-white dark:bg-[#1A1A1A] hover:bg-[#F9FAFB] dark:hover:bg-[#222222]
-              border border-[#E5E5E5] dark:border-[#2C2C2C] hover:border-gray-400 dark:hover:border-gray-600
-              shadow-2xs hover:shadow-md hover:shadow-black/5
-              transition-all duration-200 active:scale-[0.98] cursor-pointer"
+              bg-white dark:bg-[#19191B] hover:bg-[#FAFAFB] dark:hover:bg-[#202024]
+              border border-[#E5E5E5] dark:border-[#2C2C30] hover:border-zinc-300 dark:hover:border-zinc-600
+              shadow-2xs hover:shadow-sm hover:shadow-black/[0.04]
+              transition-all duration-200 active:scale-[0.99] cursor-pointer"
           >
             {/* Card Header with Icon Badge + Title */}
             <div className="flex items-center gap-2.5 mb-2 w-full min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 group-hover:bg-[#0D0D0D] dark:group-hover:bg-white border border-gray-200 dark:border-gray-700 group-hover:border-[#0D0D0D] dark:group-hover:border-white flex items-center justify-center shrink-0 transition-colors">
-                {item.icon === 'code' && <Code2 size={15} className="text-gray-700 dark:text-gray-300 group-hover:text-white dark:group-hover:text-black transition-colors" />}
-                {item.icon === 'trip' && <Compass size={15} className="text-gray-700 dark:text-gray-300 group-hover:text-white dark:group-hover:text-black transition-colors" />}
-                {item.icon === 'brainstorm' && <Lightbulb size={15} className="text-gray-700 dark:text-gray-300 group-hover:text-white dark:group-hover:text-black transition-colors" />}
-                {item.icon === 'sparkles' && <Sparkles size={15} className="text-purple-600 dark:text-purple-400 group-hover:text-white dark:group-hover:text-black transition-colors" />}
+              <div className="w-7 h-7 rounded-lg bg-[#F4F4F5] dark:bg-[#242428] group-hover:bg-[#18181B] dark:group-hover:bg-white border border-[#E4E4E7] dark:border-[#323238] group-hover:border-[#18181B] dark:group-hover:border-white flex items-center justify-center shrink-0 transition-colors">
+                {item.icon === 'code' && <Code2 size={14} className="text-zinc-700 dark:text-zinc-300 group-hover:text-white dark:group-hover:text-black transition-colors" />}
+                {item.icon === 'trip' && <Compass size={14} className="text-zinc-700 dark:text-zinc-300 group-hover:text-white dark:group-hover:text-black transition-colors" />}
+                {item.icon === 'brainstorm' && <Lightbulb size={14} className="text-zinc-700 dark:text-zinc-300 group-hover:text-white dark:group-hover:text-black transition-colors" />}
+                {item.icon === 'sparkles' && <Sparkles size={14} className="text-zinc-700 dark:text-zinc-300 group-hover:text-white dark:group-hover:text-black transition-colors" />}
               </div>
               <span className="flex-1 min-w-0 text-sm font-semibold text-[#0D0D0D] dark:text-[#E8E8E8] group-hover:text-black dark:group-hover:text-white transition-colors truncate">
                 {item.title}

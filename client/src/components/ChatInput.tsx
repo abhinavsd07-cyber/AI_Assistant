@@ -280,12 +280,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
               onClick={toggleImageGen}
               className={`flex items-center gap-1 px-2 @md:px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isImageGen
-                  ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs'
-                  : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+                  ? 'bg-[#18181B] dark:bg-white text-white dark:text-[#0D0D0D] border border-[#18181B] dark:border-white shadow-2xs'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200/70 dark:hover:bg-gray-800 border border-transparent'
               }`}
               title="Generate AI Images with Cloudinary CDN (/image <prompt>)"
             >
-              <ImageIcon size={13} className={isImageGen ? 'text-emerald-600 dark:text-emerald-400' : ''} />
+              <ImageIcon size={13} />
               <span className="hidden @lg:inline">Image</span>
             </button>
 
@@ -295,12 +295,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
               onClick={() => setIsWebSearch(!isWebSearch)}
               className={`flex items-center gap-1 px-2 @md:px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isWebSearch
-                  ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700 shadow-2xs'
-                  : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+                  ? 'bg-[#18181B] dark:bg-white text-white dark:text-[#0D0D0D] border border-[#18181B] dark:border-white shadow-2xs'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200/70 dark:hover:bg-gray-800 border border-transparent'
               }`}
               title="Toggle Live Web Search (Real-time Internet Grounding)"
             >
-              <Globe size={13} className={isWebSearch ? 'text-blue-600 dark:text-blue-400' : ''} />
+              <Globe size={13} />
               <span className="hidden @lg:inline">Search</span>
             </button>
 
@@ -310,12 +310,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
               onClick={() => setIsReasoning(!isReasoning)}
               className={`flex items-center gap-1 px-2 @md:px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isReasoning
-                  ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700 shadow-2xs'
-                  : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+                  ? 'bg-[#18181B] dark:bg-white text-white dark:text-[#0D0D0D] border border-[#18181B] dark:border-white shadow-2xs'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200/70 dark:hover:bg-gray-800 border border-transparent'
               }`}
               title="Toggle Deep Reasoning (CoT)"
             >
-              <Lightbulb size={13} className={isReasoning ? 'text-purple-600 fill-purple-600 dark:text-purple-400' : ''} />
+              <Lightbulb size={13} />
               <span className="hidden @lg:inline">Thinking</span>
             </button>
 
@@ -326,27 +326,26 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                 isRecording
                   ? 'bg-red-500 text-white animate-pulse'
-                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200/70 dark:hover:bg-gray-800'
               }`}
               title={isRecording ? 'Stop voice recording' : 'Dictate voice into chat'}
             >
               <Mic size={17} />
             </button>
 
-            {/* ChatGPT-Style Blue Conversational Voice Mode Button */}
+            {/* Hands-Free Conversational Voice Mode Button */}
             {onOpenVoiceMode && !input.trim() && (
               <button
                 type="button"
                 onClick={onOpenVoiceMode}
-                className="w-8 h-8 rounded-full bg-[#1A73E8] hover:bg-[#1557B0] dark:bg-[#2563EB] dark:hover:bg-[#1D4ED8] text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
-                title="Start ChatGPT-Style Hands-Free Voice Mode"
+                className="w-8 h-8 rounded-full bg-[#ECECEE] hover:bg-[#E2E2E6] dark:bg-[#2A2A30] dark:hover:bg-[#34343C] text-[#18181B] dark:text-white border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0"
+                title="Start Hands-Free Voice Conversation"
               >
-                {/* 4 soundwave bars matching ChatGPT */}
-                <div className="flex items-center gap-[2.5px] h-3.5">
-                  <span className="w-[2px] h-2 bg-white rounded-full animate-pulse [animation-delay:0.1s]" />
-                  <span className="w-[2px] h-3.5 bg-white rounded-full animate-pulse [animation-delay:0.25s]" />
-                  <span className="w-[2px] h-2.5 bg-white rounded-full animate-pulse [animation-delay:0.4s]" />
-                  <span className="w-[2px] h-1.5 bg-white rounded-full animate-pulse [animation-delay:0.15s]" />
+                <div className="flex items-center gap-[2px] h-3.5">
+                  <span className="w-[1.8px] h-2 bg-current rounded-full" />
+                  <span className="w-[1.8px] h-3.5 bg-current rounded-full" />
+                  <span className="w-[1.8px] h-2.5 bg-current rounded-full" />
+                  <span className="w-[1.8px] h-1.5 bg-current rounded-full" />
                 </div>
               </button>
             )}

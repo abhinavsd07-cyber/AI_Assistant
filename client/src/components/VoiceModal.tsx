@@ -454,7 +454,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
               <img
                 src="/nebula-logo.png"
                 alt="Nebula AI"
-                className="w-full h-full object-contain brightness-125 drop-shadow-[0_0_8px_rgba(196,181,253,0.45)]"
+                className="w-full h-full object-contain brightness-125 drop-shadow-[0_0_6px_rgba(255,255,255,0.22)]"
               />
             </div>
             <div className="flex flex-col text-left min-w-0">
@@ -508,22 +508,22 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
           })}
         </div>
 
-        {/* Central Living Nebula Cosmic Orb */}
+        {/* Central Living Nebula Metallic Core */}
         <div className="relative flex items-center justify-center my-8 h-44 w-44">
-          {/* Outer atmospheric aurora glow */}
+          {/* Outer atmospheric halo */}
           <div
             className={`absolute inset-0 rounded-full blur-3xl transition-all duration-700 ${
               status === 'listening'
-                ? 'bg-indigo-500/45 scale-125 animate-pulse'
+                ? 'bg-sky-400/25 scale-125 animate-pulse'
                 : status === 'thinking'
-                  ? 'bg-amber-500/45 scale-130 animate-pulse'
+                  ? 'bg-amber-400/25 scale-130 animate-pulse'
                   : status === 'speaking'
-                    ? 'bg-fuchsia-500/55 scale-140 animate-pulse'
-                    : 'bg-purple-600/25 scale-100'
+                    ? 'bg-slate-200/30 scale-135 animate-pulse'
+                    : 'bg-slate-400/15 scale-100'
             }`}
           />
 
-          {/* Bouncing / Jumping Cosmic Container */}
+          {/* Bouncing / Jumping Metallic Container */}
           <button
             type="button"
             onClick={() => {
@@ -540,35 +540,35 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
                   ? 'Tap orb to start talking'
                   : 'Nebula Voice Orb'
             }
-            className={`relative w-36 h-36 rounded-full p-[3px] cursor-pointer focus:outline-none transition-shadow duration-500 ${
+            className={`relative w-36 h-36 rounded-full p-[2.5px] cursor-pointer focus:outline-none transition-shadow duration-500 ${
               status === 'listening'
-                ? 'nebula-orb-listening shadow-[0_0_45px_rgba(99,102,241,0.65)]'
+                ? 'nebula-orb-listening shadow-[0_0_40px_rgba(56,189,248,0.35)]'
                 : status === 'thinking'
-                  ? 'nebula-orb-thinking shadow-[0_0_50px_rgba(245,158,11,0.65)]'
+                  ? 'nebula-orb-thinking shadow-[0_0_42px_rgba(251,191,36,0.35)]'
                   : status === 'speaking'
-                    ? 'nebula-orb-speaking shadow-[0_0_55px_rgba(192,38,211,0.75)]'
-                    : 'nebula-orb-idle shadow-[0_0_28px_rgba(147,51,234,0.35)]'
+                    ? 'nebula-orb-speaking shadow-[0_0_48px_rgba(226,232,240,0.4)]'
+                    : 'nebula-orb-idle shadow-[0_0_24px_rgba(148,163,184,0.2)]'
             }`}
           >
-            {/* Spinning conic cosmic border ring */}
+            {/* Spinning metallic silver-slate border ring */}
             <div
               className={`absolute inset-0 rounded-full ${
                 status === 'thinking'
-                  ? 'bg-gradient-to-tr from-amber-400 via-fuchsia-500 to-cyan-400 nebula-logo-spin-thinking'
+                  ? 'bg-gradient-to-tr from-amber-300/80 via-slate-200/70 to-zinc-600/80 nebula-logo-spin-thinking'
                   : status === 'speaking'
-                    ? 'bg-gradient-to-tr from-purple-400 via-pink-500 to-indigo-400 nebula-logo-spin-speaking'
+                    ? 'bg-gradient-to-tr from-white/90 via-slate-300/75 to-zinc-500/80 nebula-logo-spin-speaking'
                     : status === 'listening'
-                      ? 'bg-gradient-to-tr from-blue-400 via-purple-500 to-cyan-400 nebula-logo-spin-listening'
-                      : 'bg-gradient-to-tr from-purple-500/70 via-indigo-500/70 to-fuchsia-500/70 nebula-logo-spin-idle'
+                      ? 'bg-gradient-to-tr from-sky-300/85 via-slate-200/75 to-zinc-600/80 nebula-logo-spin-listening'
+                      : 'bg-gradient-to-tr from-slate-300/45 via-zinc-500/35 to-slate-200/45 nebula-logo-spin-idle'
               }`}
             />
 
-            {/* Frosted Deep Cosmic Core with Floating Metallic Nebula Logo */}
-            <div className="relative w-full h-full rounded-full overflow-hidden bg-radial from-[#221E38] via-[#131420] to-[#0A0B10] flex items-center justify-center">
+            {/* Frosted Deep Obsidian Core with Floating Metallic Nebula Logo */}
+            <div className="relative w-full h-full rounded-full overflow-hidden bg-radial from-[#23252F] via-[#14151B] to-[#090A0E] flex items-center justify-center">
               <img
                 src="/nebula-logo.png"
                 alt="Nebula AI Emblem"
-                className={`w-[78%] h-[78%] object-contain select-none pointer-events-none brightness-115 drop-shadow-[0_0_16px_rgba(167,139,250,0.45)] ${
+                className={`w-[78%] h-[78%] object-contain select-none pointer-events-none brightness-115 drop-shadow-[0_0_14px_rgba(226,232,240,0.28)] ${
                   status === 'listening'
                     ? 'nebula-emblem-listening'
                     : status === 'thinking'
@@ -579,7 +579,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
                 }`}
               />
               {/* Subtle living inner glass sheen */}
-              <div className="absolute inset-0 rounded-full bg-radial from-white/15 via-transparent to-black/35 pointer-events-none" />
+              <div className="absolute inset-0 rounded-full bg-radial from-white/12 via-transparent to-black/40 pointer-events-none" />
             </div>
           </button>
         </div>
@@ -588,9 +588,9 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         <div className="w-full flex flex-col items-center text-center px-4 gap-2">
           <div className="px-3.5 py-1.5 rounded-full bg-white/10 text-xs font-semibold uppercase tracking-wider text-gray-300 flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full ${
-              status === 'listening' ? 'bg-blue-400 animate-ping' :
+              status === 'listening' ? 'bg-sky-400 animate-ping' :
               status === 'thinking' ? 'bg-amber-400 animate-spin' :
-              status === 'speaking' ? 'bg-purple-400 animate-pulse' :
+              status === 'speaking' ? 'bg-white animate-pulse' :
               'bg-gray-500'
             }`} />
             <span>

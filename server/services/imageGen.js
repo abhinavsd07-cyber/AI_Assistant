@@ -110,7 +110,7 @@ Output ONLY valid JSON:
  */
 async function searchHighResVisual(query) {
   try {
-    const q = `${query} high resolution`;
+    const q = `${query} high resolution -gettyimages -shutterstock -alamy -istockphoto -dreamstime -123rf`;
     const r1 = await fetch(`https://duckduckgo.com/?q=${encodeURIComponent(q)}`, {
       headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
     });
@@ -124,12 +124,36 @@ async function searchHighResVisual(query) {
     });
     const data = await r2.json();
     if (data.results && data.results.length > 0) {
-      for (const item of data.results.slice(0, 10)) {
+      const blockedDomains = [
+        "lookaside.fbsbx.com",
+        "ytimg.com",
+        "gettyimages",
+        "shutterstock",
+        "alamy",
+        "istockphoto",
+        "123rf",
+        "dreamstime",
+        "depositphotos",
+        "vecteezy",
+        "agefotostock",
+        "pond5",
+        "corbis",
+        "bigstockphoto",
+        "canstockphoto",
+        "megapixl",
+        "watermark"
+      ];
+      for (const item of data.results.slice(0, 25)) {
+        const imgLower = (item.image || "").toLowerCase();
+        const urlLower = (item.url || "").toLowerCase();
+        const titleLower = (item.title || "").toLowerCase();
+        const isBlocked = blockedDomains.some(
+          (d) => imgLower.includes(d) || urlLower.includes(d) || titleLower.includes(d)
+        );
         if (
-          item.image && 
-          item.image.startsWith("https://") && 
-          !item.image.includes("lookaside.fbsbx.com") &&
-          !item.image.includes("ytimg.com")
+          item.image &&
+          item.image.startsWith("https://") &&
+          !isBlocked
         ) {
           return { imageUrl: item.image, title: item.title };
         }
@@ -226,19 +250,19 @@ async function generateAndUploadImage(input, options = {}) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${targetWidth}" height="${targetHeight}" viewBox="0 0 1024 1024">
       <defs>
         <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#0f172a"/>
-          <stop offset="50%" stop-color="#311042"/>
-          <stop offset="100%" stop-color="#1e1b4b"/>
+          <stop offset="0%" stop-color="#09090b"/>
+          <stop offset="50%" stop-color="#18181b"/>
+          <stop offset="100%" stop-color="#0f172a"/>
         </linearGradient>
         <radialGradient id="orb" cx="50%" cy="45%" r="35%">
-          <stop offset="0%" stop-color="#a855f7" stop-opacity="0.85"/>
-          <stop offset="60%" stop-color="#6366f1" stop-opacity="0.35"/>
-          <stop offset="100%" stop-color="#0f172a" stop-opacity="0"/>
+          <stop offset="0%" stop-color="#e2e8f0" stop-opacity="0.35"/>
+          <stop offset="60%" stop-color="#64748b" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#09090b" stop-opacity="0"/>
         </radialGradient>
       </defs>
       <rect width="1024" height="1024" fill="url(#bg)"/>
       <circle cx="512" cy="460" r="340" fill="url(#orb)"/>
-      <circle cx="512" cy="460" r="140" fill="none" stroke="#c084fc" stroke-width="2" stroke-opacity="0.4"/>
+      <circle cx="512" cy="460" r="140" fill="none" stroke="#94a3b8" stroke-width="2" stroke-opacity="0.35"/>
       <text x="512" y="820" text-anchor="middle" fill="#f8fafc" font-family="sans-serif" font-size="36" font-weight="bold">${safeTitle}</text>
       <text x="512" y="868" text-anchor="middle" fill="#94a3b8" font-family="sans-serif" font-size="22">Nebula AI Visual Studio • ${targetWidth}x${targetHeight}</text>
     </svg>`;

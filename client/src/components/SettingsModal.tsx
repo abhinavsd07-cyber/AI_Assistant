@@ -285,7 +285,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 : 'text-gray-500 hover:text-black dark:hover:text-white'
             }`}
           >
-            <Brain size={13} className="text-purple-500" />
+            <Brain size={13} className="text-gray-700 dark:text-gray-300" />
             <span>AI Memory (MemGPT)</span>
           </button>
         </div>
@@ -324,7 +324,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         className="w-14 h-14 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-xs"
                       />
                     ) : (
-                      <div className="w-14 h-14 rounded-full bg-[#10A37F] text-white flex items-center justify-center font-bold text-base shadow-xs">
+                      <div className="w-14 h-14 rounded-full bg-[#18181B] dark:bg-[#2E2E34] text-white flex items-center justify-center font-bold text-base shadow-xs">
                         {(userName || user?.name || 'NU')
                           .split(' ')
                           .map((p) => p[0])
@@ -536,10 +536,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         ) : (
           /* MemGPT AI Memory Manager Tab */
           <div className="flex flex-col gap-3 text-xs max-h-[64vh] overflow-y-auto pr-1">
-            <div className="p-3 rounded-2xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200/70 dark:border-purple-800/50 text-gray-700 dark:text-gray-300 leading-relaxed">
+            <div className="p-3 rounded-2xl bg-[#F8F8FA] dark:bg-[#222226] border border-[#E5E5E5] dark:border-[#323238] text-gray-700 dark:text-gray-300 leading-relaxed">
               <div className="flex items-center justify-between mb-1">
-                <span className="font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
-                  <Sparkles size={13} />
+                <span className="font-bold text-[#0D0D0D] dark:text-white flex items-center gap-1.5">
+                  <Sparkles size={13} className="text-gray-600 dark:text-gray-300" />
                   Persistent Semantic Memory
                 </span>
                 {memories.length > 0 && (
@@ -595,7 +595,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   >
                     <div className="flex flex-col overflow-hidden">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-mono uppercase font-bold">
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-gray-100 dark:bg-[#2C2C32] text-gray-700 dark:text-gray-300 font-mono uppercase font-bold">
                           {m.category}
                         </span>
                         <span className="font-bold text-gray-800 dark:text-gray-200 truncate">{m.key}</span>

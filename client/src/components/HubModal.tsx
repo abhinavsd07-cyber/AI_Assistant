@@ -107,8 +107,8 @@ export const HubModal: React.FC<HubModalProps> = ({
       description: 'Generates complete HTML/Tailwind/React interfaces that automatically render inside the Split-Screen Canvas Studio.',
       persona: 'coder',
       prompt: 'Build a modern interactive Pomodoro Timer & Task Tracker dashboard in a single HTML file using Tailwind CSS and JavaScript.',
-      icon: <Code2 size={18} className="text-indigo-500" />,
-      gradient: 'from-indigo-500/10 to-purple-500/10 border-indigo-500/20',
+      icon: <Code2 size={18} className="text-zinc-700 dark:text-zinc-200" />,
+      gradient: 'from-white to-gray-50/70 dark:from-[#1E1E22] dark:to-[#19191D] border-gray-200 dark:border-[#2E2E34] hover:border-gray-400 dark:hover:border-gray-500',
     },
     {
       title: 'Python Data Science & WASM Analyst',
@@ -116,17 +116,17 @@ export const HubModal: React.FC<HubModalProps> = ({
       description: 'Writes runnable Python data analysis & statistics scripts that execute directly in your browser via WebAssembly.',
       persona: 'math_tutor',
       prompt: 'Write a Python script that simulates 12 months of startup revenue growth, calculates CAGR and standard deviation, and prints an ASCII bar chart.',
-      icon: <Terminal size={18} className="text-emerald-500" />,
-      gradient: 'from-emerald-500/10 to-teal-500/10 border-emerald-500/20',
+      icon: <Terminal size={18} className="text-zinc-700 dark:text-zinc-200" />,
+      gradient: 'from-white to-gray-50/70 dark:from-[#1E1E22] dark:to-[#19191D] border-gray-200 dark:border-[#2E2E34] hover:border-gray-400 dark:hover:border-gray-500',
     },
     {
       title: 'Zero-Shot AI Visual Studio',
       badge: 'Cloudinary CDN + NLP',
       description: 'Creates high-resolution cinematic artwork, realistic portraits, and concept designs with automatic prompt enhancement.',
       persona: 'general',
-      prompt: '/image Futuristic cybernetic astronaut standing on an alien glass mountain under a glowing purple nebula, 8k cinematic photorealistic',
-      icon: <Sparkles size={18} className="text-fuchsia-500" />,
-      gradient: 'from-fuchsia-500/10 to-pink-500/10 border-fuchsia-500/20',
+      prompt: '/image Futuristic cybernetic architectural pavilion at dusk with volumetric mist and moody glass reflections, 8k photorealistic',
+      icon: <Sparkles size={18} className="text-zinc-700 dark:text-zinc-200" />,
+      gradient: 'from-white to-gray-50/70 dark:from-[#1E1E22] dark:to-[#19191D] border-gray-200 dark:border-[#2E2E34] hover:border-gray-400 dark:hover:border-gray-500',
     },
     {
       title: 'Live Web & Deep Research Analyst',
@@ -134,8 +134,8 @@ export const HubModal: React.FC<HubModalProps> = ({
       description: 'Performs real-time web verification for current events, global tech breakthroughs, market trends, and cited research.',
       persona: 'general',
       prompt: 'What are the most important breakthroughs in AI Agents and WebAssembly in 2026? Summarize with key takeaways.',
-      icon: <Globe size={18} className="text-blue-500" />,
-      gradient: 'from-blue-500/10 to-cyan-500/10 border-blue-500/20',
+      icon: <Globe size={18} className="text-zinc-700 dark:text-zinc-200" />,
+      gradient: 'from-white to-gray-50/70 dark:from-[#1E1E22] dark:to-[#19191D] border-gray-200 dark:border-[#2E2E34] hover:border-gray-400 dark:hover:border-gray-500',
     },
     {
       title: 'System Architecture & Cloud DevOps Agent',
@@ -143,17 +143,17 @@ export const HubModal: React.FC<HubModalProps> = ({
       description: 'Designs scalable system architectures, Docker/Kubernetes pipelines, database schemas, and enterprise API blueprints.',
       persona: 'coder',
       prompt: 'Design a production-ready microservices architecture for a high-traffic SaaS platform with Redis caching, MongoDB sharding, and CI/CD.',
-      icon: <Languages size={18} className="text-amber-500" />,
-      gradient: 'from-amber-500/10 to-orange-500/10 border-amber-500/20',
+      icon: <Languages size={18} className="text-zinc-700 dark:text-zinc-200" />,
+      gradient: 'from-white to-gray-50/70 dark:from-[#1E1E22] dark:to-[#19191D] border-gray-200 dark:border-[#2E2E34] hover:border-gray-400 dark:hover:border-gray-500',
     },
     {
       title: 'FAANG Technical Interview Coach',
       badge: 'Career & DSA Prep',
       description: 'Conducts mock system design and coding interviews with actionable feedback and complexity analysis.',
       persona: 'coder',
-      prompt: 'Ask me a system design interview question about designing a scalable AI chat platform like ChatGPT and guide me step by step.',
-      icon: <Briefcase size={18} className="text-rose-500" />,
-      gradient: 'from-rose-500/10 to-orange-500/10 border-rose-500/20',
+      prompt: 'Ask me a system design interview question about designing a scalable AI chat platform and guide me step by step.',
+      icon: <Briefcase size={18} className="text-zinc-700 dark:text-zinc-200" />,
+      gradient: 'from-white to-gray-50/70 dark:from-[#1E1E22] dark:to-[#19191D] border-gray-200 dark:border-[#2E2E34] hover:border-gray-400 dark:hover:border-gray-500',
     },
   ];
 
@@ -165,7 +165,7 @@ export const HubModal: React.FC<HubModalProps> = ({
           <div className="flex items-center gap-2.5">
             {activeView === 'library' ? (
               <>
-                <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                <div className="w-8 h-8 rounded-lg bg-[#F4F4F5] dark:bg-[#242428] border border-gray-200 dark:border-[#323238] flex items-center justify-center text-gray-800 dark:text-gray-200">
                   <ImageIcon size={17} />
                 </div>
                 <div>
@@ -179,7 +179,7 @@ export const HubModal: React.FC<HubModalProps> = ({
               </>
             ) : (
               <>
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <div className="w-8 h-8 rounded-lg bg-[#F4F4F5] dark:bg-[#242428] border border-gray-200 dark:border-[#323238] flex items-center justify-center text-gray-800 dark:text-gray-200">
                   <Compass size={17} />
                 </div>
                 <div>
@@ -209,7 +209,7 @@ export const HubModal: React.FC<HubModalProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                    <Sparkles size={13} className="text-purple-500" />
+                    <Sparkles size={13} className="text-gray-600 dark:text-gray-300" />
                     Generated AI Visuals ({images.length})
                   </h4>
                 </div>
@@ -262,7 +262,7 @@ export const HubModal: React.FC<HubModalProps> = ({
                               download={`nebula_art_${idx + 1}.jpg`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="p-1.5 rounded-lg bg-purple-600 text-white hover:bg-purple-500 transition-colors"
+                              className="p-1.5 rounded-lg bg-[#0D0D0D] text-white hover:bg-black transition-colors"
                               title="Download Image"
                             >
                               <Download size={14} />
@@ -287,7 +287,7 @@ export const HubModal: React.FC<HubModalProps> = ({
               {codeSnippets.length > 0 && (
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mb-3">
-                    <Code2 size={13} className="text-indigo-500" />
+                    <Code2 size={13} className="text-gray-600 dark:text-gray-300" />
                     Saved Code Artifacts ({codeSnippets.length})
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -298,7 +298,7 @@ export const HubModal: React.FC<HubModalProps> = ({
                       >
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-200/80 dark:bg-[#2A2A30] text-gray-700 dark:text-gray-200">
                               {item.language}
                             </span>
                             <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">
@@ -314,7 +314,7 @@ export const HubModal: React.FC<HubModalProps> = ({
                             onClose();
                             onOpenCanvas(item.code, item.language, item.sessionTitle);
                           }}
-                          className="shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer"
+                          className="shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[#0D0D0D] dark:bg-white hover:opacity-90 text-white dark:text-[#0D0D0D] transition-opacity cursor-pointer"
                         >
                           Open in Canvas
                         </button>
@@ -345,7 +345,7 @@ export const HubModal: React.FC<HubModalProps> = ({
                         {agent.badge}
                       </span>
                     </div>
-                    <h4 className="font-bold text-sm text-[#0D0D0D] dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors flex items-center gap-1">
+                    <h4 className="font-bold text-sm text-[#0D0D0D] dark:text-white transition-colors flex items-center gap-1">
                       {agent.title}
                       <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                     </h4>
@@ -355,7 +355,7 @@ export const HubModal: React.FC<HubModalProps> = ({
                   </div>
                   <div className="pt-2 border-t border-gray-200/50 dark:border-gray-800/60 flex items-center justify-between text-[11px] font-medium text-gray-500 dark:text-gray-400">
                     <span>Click to launch agent</span>
-                    <Brain size={13} className="text-purple-500" />
+                    <Brain size={13} className="text-gray-500 dark:text-gray-400 group-hover:text-[#0D0D0D] dark:group-hover:text-white transition-colors" />
                   </div>
                 </button>
               ))}
