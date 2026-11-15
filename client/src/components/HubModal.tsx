@@ -226,7 +226,7 @@ export const HubModal: React.FC<HubModalProps> = ({
                     <button
                       onClick={() => {
                         onClose();
-                        onLaunchPrompt('/image Futuristic cyberpunk metropolis during a neon rainstorm at night, reflections on wet asphalt, 8k');
+                        onLaunchPrompt('/image Minimalist studio photograph of a luxury matte-black chronograph watch resting on warm travertine stone, soft key light, 8k');
                       }}
                       className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#0D0D0D] dark:bg-white text-white dark:text-[#0D0D0D] hover:opacity-90 transition-opacity cursor-pointer"
                     >

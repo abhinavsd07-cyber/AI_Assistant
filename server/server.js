@@ -585,7 +585,7 @@ app.post("/api/flux/workflow", chatLimiter, requireAuth, async (req, res) => {
   const workflowStart = Date.now();
   try {
     const {
-      prompt = "Futuristic cybernetic astronaut standing before a glowing cosmic nebula, 8k photorealistic",
+      prompt = "Minimalist glass and warm wood architectural pavilion overlooking a serene alpine mountain lake at sunrise",
       unetModel = "flux1-schnell-Q4_K_S.gguf",
       clipModel = "t5xxl_fp8 + clip_l",
       steps = 4,
@@ -595,10 +595,10 @@ app.post("/api/flux/workflow", chatLimiter, requireAuth, async (req, res) => {
       sampler = "euler",
     } = req.body;
 
-    const intentData = await classifyUserIntent(prompt);
+    const intentData = await classifyUserIntent(prompt, { studioMode: true });
     // Force image generation intent for explicit workflow execution
     intentData.isImage = true;
-    if (!intentData.cleanSubject) intentData.cleanSubject = prompt.slice(0, 60);
+    if (!intentData.cleanSubject) intentData.cleanSubject = prompt.slice(0, 80);
     if (!intentData.expandedPrompt) intentData.expandedPrompt = prompt;
 
     const result = await generateAndUploadImage(intentData, {
@@ -607,6 +607,7 @@ app.post("/api/flux/workflow", chatLimiter, requireAuth, async (req, res) => {
       model: unetModel,
       steps,
       sampler,
+      studioMode: true,
     });
     const totalLatencyMs = Date.now() - workflowStart;
 

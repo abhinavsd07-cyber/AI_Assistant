@@ -41,7 +41,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
   onSendToChat,
 }) => {
   const [prompt, setPrompt] = useState(
-    'Futuristic cybernetic astronaut standing before a glowing violet and deep-blue cosmic nebula, holographic neural interface, cinematic lighting, 8k photorealistic octane render'
+    'Minimalist glass and warm wood architectural pavilion overlooking a serene alpine mountain lake at sunrise'
   );
   const [unetModel, setUnetModel] = useState('FLUX.1-Schnell (Q4_K_S GGUF)');
   const clipModel = 'DualCLIP (T5-XXL FP8 + CLIP-L)';
@@ -55,20 +55,17 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
 
   const [isRunning, setIsRunning] = useState(false);
   const [activeStep, setActiveStep] = useState<number>(0);
-  const [currentImage, setCurrentImage] = useState<string>(
-    'https://res.cloudinary.com/drxsezyyl/image/upload/v1794420498/nebula_ai/generated/j4mnifyb1pcwi3nshita.jpg'
-  );
+  const [currentImage, setCurrentImage] = useState<string>('/flux-showcase.jpg');
   const [expandedPrompt, setExpandedPrompt] = useState<string>(
-    'A futuristic cybernetic astronaut standing before a glowing violet and deep-blue cosmic nebula, holographic neural interface, dramatic volumetric lighting, ultra-detailed 8k photorealistic render.'
+    'An editorial architectural photograph of a minimalist glass and warm travertine stone pavilion cantilevered above a tranquil misty mountain lake at golden sunrise, soft interior glow reflecting across still water.'
   );
   const [lastLatencyMs, setLastLatencyMs] = useState<number>(2840);
   const [jobQueue, setJobQueue] = useState<JobHistoryItem[]>([
     {
       id: 'job-init',
       filename: 'Nebula_FLUX_00001.png',
-      prompt: 'Cosmic Nebula Cybernetic Astronaut',
-      imageUrl:
-        'https://res.cloudinary.com/drxsezyyl/image/upload/v1794420498/nebula_ai/generated/j4mnifyb1pcwi3nshita.jpg',
+      prompt: 'Alpine Glass Architectural Pavilion',
+      imageUrl: '/flux-showcase.jpg',
       latencyMs: 2840,
       resolution: '1024×1024',
       timestamp: 'Ready',
@@ -139,31 +136,29 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
       };
     };
 
-    // Orthogonal elbow connector with rounded corners — terminates neatly into the arrowhead base
-    const ARROW_LEN = 9;
+    // Orthogonal elbow connector with rounded corners — finishes seamlessly into a sleek open chevron
+    const TIP_OFFSET = 2;
     const hCurve = (p1: { x: number; y: number } | null, p2: { x: number; y: number } | null) => {
       if (!p1 || !p2) return '';
-      const tipX = p2.x - 1;
-      const endX = tipX - ARROW_LEN + 2;
-      const midX = (p1.x + endX) / 2;
+      const tipX = p2.x - TIP_OFFSET;
+      const midX = (p1.x + tipX) / 2;
       const dy = p2.y - p1.y;
-      if (Math.abs(dy) < 2) return `M ${p1.x} ${p1.y} H ${endX}`;
+      if (Math.abs(dy) < 2) return `M ${p1.x} ${p1.y} H ${tipX}`;
       const dir = dy > 0 ? 1 : -1;
-      const r = Math.max(0, Math.min(8, Math.abs(dy) / 2, (endX - p1.x) / 2 - 2));
+      const r = Math.max(0, Math.min(8, Math.abs(dy) / 2, (tipX - p1.x) / 2 - 2));
       return [
         `M ${p1.x} ${p1.y}`,
         `H ${midX - r}`,
         `Q ${midX} ${p1.y} ${midX} ${p1.y + dir * r}`,
         `V ${p2.y - dir * r}`,
         `Q ${midX} ${p2.y} ${midX + r} ${p2.y}`,
-        `H ${endX}`,
+        `H ${tipX}`,
       ].join(' ');
     };
 
     const vLine = (p1: { x: number; y: number } | null, p2: { x: number; y: number } | null) => {
       if (!p1 || !p2) return '';
-      const tipY = p2.y - 1;
-      return `M ${p1.x} ${p1.y} V ${tipY - ARROW_LEN + 2}`;
+      return `M ${p1.x} ${p1.y} V ${p2.y - TIP_OFFSET}`;
     };
 
     const models = edgeAnchor(modelOutRef.current, 'right');
@@ -190,8 +185,8 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           d: w.d,
           x1: w.p1!.x,
           y1: w.p1!.y,
-          x2: w.dir === 'right' ? w.p2!.x - 1 : w.p2!.x,
-          y2: w.dir === 'down' ? w.p2!.y - 1 : w.p2!.y,
+          x2: w.dir === 'right' ? w.p2!.x - TIP_OFFSET : w.p2!.x,
+          y2: w.dir === 'down' ? w.p2!.y - TIP_OFFSET : w.p2!.y,
           targetStep: w.targetStep,
           dir: w.dir,
         }))
@@ -280,30 +275,30 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
 
   const presetPrompts = [
     {
-      label: '🌌 Cosmic Cyborg',
-      text: 'Futuristic cybernetic astronaut standing before a glowing violet and deep-blue cosmic nebula, holographic neural interface, cinematic lighting, 8k photorealistic octane render',
+      label: 'Glass Pavilion',
+      text: 'Minimalist glass and warm wood architectural pavilion overlooking a serene alpine mountain lake at sunrise',
     },
     {
-      label: '🏎️ Cyberpunk Hypercar',
-      text: 'Futuristic matte-black cyberpunk hypercar drifting through neon-lit rain at night, glowing cyan rim lights, reflections on wet asphalt, 8k unreal engine 5 render',
+      label: 'Product Studio',
+      text: 'Minimalist luxury wireless headphones in brushed aluminum and walnut resting on cream travertine stone, soft studio lighting',
     },
     {
-      label: '🤖 Quantum AI Core',
-      text: 'Bioluminescent quantum supercomputer core floating inside a sleek glass architectural chamber, golden neural light streams, volumetric fog, 8k concept art',
+      label: 'Botanical Loft',
+      text: 'Sunlit Scandinavian glass courtyard living room with indoor olive trees and oak furniture, warm morning sunlight',
     },
     {
-      label: '🏰 Sky Citadel',
-      text: 'Majestic futuristic solarpunk crystal citadel floating above golden clouds at sunrise, waterfalls cascading into the sky, cinematic 8k masterpiece',
+      label: 'Ceramic & Brass',
+      text: 'Handcrafted matte white ceramic vase and minimalist brass lamp on a warm oak console, soft window light',
     },
   ];
 
   const styleEnhancers = [
-    { label: '+ 8K Photorealistic', tag: ', ultra-detailed 8k photorealistic, ray-traced lighting' },
-    { label: '+ Unreal Engine 5', tag: ', Unreal Engine 5 render, volumetric fog, global illumination' },
-    { label: '+ Cyberpunk Neon', tag: ', cyberpunk neon magenta and cyan glow, rainy reflections' },
-    { label: '+ Cinematic Lens', tag: ', shot on 85mm f/1.4 lens, shallow depth of field, cinematic color grading' },
-    { label: '+ Isometric 3D', tag: ', cute isometric 3D diorama, Blender Cycles render, soft clay textures' },
-    { label: '+ Anime Studio', tag: ', Makoto Shinkai anime movie style, vibrant sky, intricate details' },
+    { label: '+ Editorial Photo', tag: ', architectural magazine editorial photography' },
+    { label: '+ Studio Softbox', tag: ', soft diffused studio key light' },
+    { label: '+ 85mm f/1.4 Lens', tag: ', 85mm prime lens shallow depth of field' },
+    { label: '+ Golden Hour Light', tag: ', warm golden morning sunlight shadows' },
+    { label: '+ Minimal Framing', tag: ', clean minimalist symmetrical composition' },
+    { label: '+ Warm Film Look', tag: ', warm natural analog film tones' },
   ];
 
   const pipelineStages = [
@@ -454,22 +449,22 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           ref={gridContainerRef}
           className="relative grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6 xl:gap-x-9 xl:gap-y-6 max-w-[1680px] mx-auto w-full items-start"
         >
-          {/* High-Contrast Step-Flow Connectors (Rendered Above Card Borders for Crisp Arrow Visibility) */}
+          {/* Refined Step-Flow Connectors (Sleek Open Chevrons, Non-Clunky Stroke) */}
           <svg className="hidden xl:block absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible">
             {wires.map((w) => {
               const isActive = isRunning && activeStep === w.targetStep;
-              const strokeColor = isActive ? '#4F46E5' : '#475569';
-              const arrow =
+              const strokeColor = isActive ? '#6366F1' : '#64748B';
+              const chevronPath =
                 w.dir === 'down'
-                  ? `${w.x2},${w.y2} ${w.x2 - 5},${w.y2 - 9} ${w.x2 + 5},${w.y2 - 9}`
-                  : `${w.x2},${w.y2} ${w.x2 - 9},${w.y2 - 5} ${w.x2 - 9},${w.y2 + 5}`;
+                  ? `M ${w.x2 - 4} ${w.y2 - 5} L ${w.x2} ${w.y2} L ${w.x2 + 4} ${w.y2 - 5}`
+                  : `M ${w.x2 - 5} ${w.y2 - 4} L ${w.x2} ${w.y2} L ${w.x2 - 5} ${w.y2 + 4}`;
               return (
                 <g key={w.id} className="transition-all duration-300">
                   <path
                     d={w.d}
                     fill="none"
                     stroke="#F3F5F9"
-                    strokeWidth={5.5}
+                    strokeWidth={3.5}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
@@ -477,20 +472,27 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                     d={w.d}
                     fill="none"
                     stroke={strokeColor}
-                    strokeWidth={isActive ? 2.75 : 2.25}
-                    strokeDasharray={isActive ? '6 4' : undefined}
+                    strokeWidth={isActive ? 2 : 1.5}
+                    strokeDasharray={isActive ? '5 4' : undefined}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                   <circle
                     cx={w.x1}
                     cy={w.y1}
-                    r={4}
+                    r={2.75}
                     fill={strokeColor}
                     stroke="#FFFFFF"
-                    strokeWidth={1.75}
+                    strokeWidth={1.25}
                   />
-                  <polygon points={arrow} fill={strokeColor} strokeLinejoin="round" />
+                  <path
+                    d={chevronPath}
+                    fill="none"
+                    stroke={strokeColor}
+                    strokeWidth={isActive ? 2 : 1.6}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </g>
               );
             })}
@@ -918,12 +920,8 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                     <button
                       onClick={() => {
                         const md =
-                          `### ⚡ FLUX.1 Node Graph Studio Output\n` +
-                          `* **Model**: \`${unetModel}\` + \`${clipModel}\`\n` +
-                          `* **Resolution**: \`${width}×${height}\` (${steps} steps, ${sampler})\n` +
-                          `* **Execution Time**: \`${(lastLatencyMs / 1000).toFixed(2)}s\` *(Nebula Cloud GPU + Cloudinary CDN)*\n\n` +
-                          `![${prompt.slice(0, 40)}](${currentImage})\n\n` +
-                          `🔗 [Open Cloudinary CDN Image](${currentImage})`;
+                          `Here is your **Nebula FLUX.1 Studio** visual (${width}×${height}):\n\n` +
+                          `![${prompt.slice(0, 48)}](${currentImage})`;
                         onSendToChat(md, currentImage);
                         onClose();
                       }}
