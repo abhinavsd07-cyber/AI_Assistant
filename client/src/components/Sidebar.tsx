@@ -28,7 +28,6 @@ import {
 } from 'lucide-react';
 import type { ChatSession } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { NebulaLogo } from './NebulaLogo';
 
 interface ProjectFolder {
   id: string;
@@ -542,9 +541,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }}
               className="flex items-center gap-2 px-1 cursor-pointer"
             >
-              <NebulaLogo
-                className="w-6 h-6 text-[#0F172A] dark:text-white shrink-0"
-                title="Nebula AI"
+              <img
+                src="/cosmic_orb.jpg"
+                alt="Nebula AI"
+                className="w-6 h-6 rounded-full object-cover border border-purple-400/30 shadow-2xs shrink-0"
               />
               <span className="font-bold text-sm text-[#0D0D0D] dark:text-white tracking-tight">
                 Nebula AI
