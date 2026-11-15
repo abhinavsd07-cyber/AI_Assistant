@@ -604,8 +604,10 @@ app.post("/api/flux/workflow", chatLimiter, requireAuth, async (req, res) => {
     const result = await generateAndUploadImage(intentData, {
       width,
       height,
+      unetModel,
       model: unetModel,
       steps,
+      cfg,
       sampler,
       studioMode: true,
     });
@@ -616,6 +618,11 @@ app.post("/api/flux/workflow", chatLimiter, requireAuth, async (req, res) => {
       cdnUrl: result.cdnUrl,
       cleanSubject: result.cleanSubject,
       expandedPrompt: result.expandedPrompt,
+      didAutoCorrect: result.didAutoCorrect,
+      detectedIssues: result.detectedIssues,
+      reasoningSummary: result.reasoningSummary,
+      generationSource: result.generationSource,
+      qualityCheck: result.qualityCheck,
       executionTimeMs: totalLatencyMs,
       workflowMeta: {
         unetModel,

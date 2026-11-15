@@ -73,6 +73,19 @@ const BLOCKED_DOMAINS = [
   "zedge",
   "tenor",
   "giphy",
+  "westend61",
+  "superstock",
+  "masterfile",
+  "dissolve",
+  "panthermedia",
+  "eyeem",
+  "bridgemanimages",
+  "sciencephoto",
+  "pngtree",
+  "cleanpng",
+  "rawpixel",
+  "envato",
+  "stockphoto",
 ];
 
 /**
@@ -89,12 +102,45 @@ function toCleanPhotoQuery(rawText = "") {
 }
 
 /**
- * ML Zero-Shot Semantic Intent Classifier & Prompt Grounding Normalizer
- * Understands typos, Manglish, and Malayalam without injecting unrequested sci-fi/cosmic elements.
+ * Extracts and parses the first JSON object found in an LLM response.
+ */
+function parseJsonObject(rawText = "") {
+  const match = String(rawText).match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[0]);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Removes diffusion hype words that destabilize small/fast image models.
+ */
+function normalizeVisualPrompt(rawText = "") {
+  return String(rawText)
+    .replace(/\b(8k|4k|uhd|hdr|hyperrealistic|masterpiece|octane render|unreal engine\s*\d*)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * ML Logical Intent Reasoner, Auto-Mistake Detector & Prompt Conditioning Engine
+ * Fixes spelling mistakes, Manglish/Malayalam, abbreviations, and physical/spatial contradictions
+ * without injecting unrequested sci-fi or cosmic imagery.
  */
 async function classifyUserIntent(userText, options = {}) {
   if (!userText || typeof userText !== "string") {
-    return { isImage: false, cleanSubject: "", cleanPrompt: "", isRealEntity: false, expandedPrompt: "" };
+    return {
+      isImage: false,
+      cleanSubject: "",
+      cleanPrompt: "",
+      isRealEntity: false,
+      expandedPrompt: "",
+      didAutoCorrect: false,
+      detectedIssues: [],
+      reasoningSummary: "",
+    };
   }
 
   const trimmed = userText.trim();
@@ -103,52 +149,59 @@ async function classifyUserIntent(userText, options = {}) {
   const studioMode = Boolean(options.studioMode);
   const wordCount = rawClean.split(/\s+/).filter(Boolean).length;
 
+  const fallbackResult = {
+    isImage: explicit || studioMode || isImagePrompt(trimmed),
+    cleanSubject: rawClean,
+    cleanPrompt: rawClean,
+    isRealEntity: false,
+    expandedPrompt: rawClean,
+    didAutoCorrect: false,
+    detectedIssues: [],
+    reasoningSummary: "",
+  };
+
   const ai = getAi();
-  if (!ai) {
-    return {
-      isImage: explicit || studioMode || isImagePrompt(trimmed),
-      cleanSubject: rawClean,
-      cleanPrompt: rawClean,
-      isRealEntity: false,
-      expandedPrompt: rawClean,
-    };
-  }
+  if (!ai) return fallbackResult;
 
   try {
-    const systemPrompt = studioMode
-      ? `You are a Visual Prompt Conditioner for Nebula FLUX.1 Studio.
-Translate or normalize the user's input cleanly into a crisp, concrete visual prompt (fixing typos, Manglish, or Malayalam if present):
-1. isImage: always true.
-2. cleanSubject: Short core subject name (max 8 words).
-3. isRealEntity: true ONLY if the entire input is just a named real celebrity/person (4 words or fewer, with no architectural, product, lighting, or scene instructions). False for all architecture, interiors, landscapes, products, and creative scenes.
-4. expandedPrompt: Rewrite into a clear, literal, concise visual description (10 to 20 words max) naming exact visible objects, materials, lighting, and setting. Strip vague hype buzzwords ("8k", "masterpiece", "micro-contrast", "true-to-life"). NEVER inject sci-fi, cosmic, neon, glowing, or surreal fantasy elements unless explicitly asked.
+    const modeRules = studioMode
+      ? `1. isImage: always true.
+2. cleanSubject: Short core subject label (max 8 words).
+3. isRealEntity: true ONLY if the entire input is just a named real celebrity/person (4 words or fewer, with no architectural, product, lighting, or scene instructions). False for all architecture, interiors, landscapes, products, and creative scenes.`
+      : `1. isImage: true if the user wants to see, draw, generate, or create an image/photo/picture/visual. False if asking for conversation, facts, coding, or explanations.
+2. cleanSubject: Corrected, normalized subject/entity (fixing spelling mistakes and Manglish/phonetic typos).
+3. isRealEntity: true if asking for a photo/portrait of a real living celebrity, politician, famous landmark, or real car model WITHOUT bespoke creative scene instructions. False otherwise.`;
 
-Output ONLY valid JSON:
-{"isImage": boolean, "cleanSubject": string, "isRealEntity": boolean, "expandedPrompt": string}`
-      : `You are an expert NLP & ML Intent Classification Engine for Nebula AI.
-Analyze the user's input, even if it contains heavy typos, phonetic spelling, Manglish, Malayalam, or broken English.
-Determine:
-1. isImage: true if the user wants to see, draw, generate, or create an image/photo/picture/visual. If the user only wants conversation, information, coding, or facts, set false.
-2. cleanSubject: the corrected, normalized entity/subject (fix all spelling errors and phonetic typos, e.g. "mhnlal" -> "Mohanlal", "cr" -> "car", "orupadam mammootty" -> "Mammootty").
-3. isRealEntity: true if it is a real living celebrity, actor, Indian personality, politician, famous monument, place, or real car model WITHOUT artistic scene rewrites. False otherwise.
-4. expandedPrompt: A crisp, clear, faithful visual description (10 to 20 words max) preserving the user's exact subject, materials, and natural lighting. Strip vague hype buzzwords ("8k", "breathtaking", "colorful"). NEVER inject unrequested sci-fi, neon, cosmic, glowing, or surreal elements.
+    const systemPrompt = `You are a Logical Visual Reasoning & Prompt Auto-Correction Engine for Nebula AI.
+Your job is to think logically about what the user truly wants to see and fix mistakes automatically before image generation:
+- Translate Malayalam/Manglish or broken grammar cleanly into clear English.
+- Fix all typos and shorthand abbreviations accurately (e.g., "drinkng cofe" -> "drinking coffee", "lptop" -> "laptop", "ofice" -> "office", "mdy" -> "moody lighting", "bicyle" -> "bicycle", "mhnlal" -> "Mohanlal"). Preserve EVERY intentional mood/style word once expanded!
+- Resolve logical/physical contradictions naturally unless explicitly surreal (e.g., "drinking coffee on laptop" -> seated at a wooden desk holding a coffee mug beside an open laptop, never pouring coffee onto the laptop; "car driving on ocean road" -> sleek car driving along an oceanfront coastal highway or underwater glass tunnel; vague one-word input -> give clear foreground subject, natural setting, and coherent lighting).
+- Keep anatomy and composition realistic (clear focal subject, natural posture/hands, clean foreground/background separation).
+- Strip diffusion jargon ("8k", "4k", "uhd", "masterpiece", "octane render"). NEVER inject cosmic, neon, sci-fi, cyberpunk, glowing, or fantasy elements unless the user explicitly asks for them.
 
-Output ONLY valid JSON:
-{"isImage": boolean, "cleanSubject": string, "isRealEntity": boolean, "expandedPrompt": string}`;
+${modeRules}
+4. didAutoCorrect: boolean — true if you fixed typos, expanded abbreviations/shorthand, translated Malayalam/Manglish, or logically resolved an unclear/contradictory scene.
+5. detectedIssues: array of 0 to 3 ultra-short phrases describing what mistake/unclear logic was corrected (empty [] if input was already clear and error-free).
+6. reasoningSummary: 1 crisp sentence explaining the coherent visual scene inferred from the user's intent.
+7. expandedPrompt: Crisp, unambiguous visual description (12 to 24 words) ready for FLUX rendering: concrete visible subjects, logical action, materials, lighting, and setting.
+
+Output ONLY valid JSON matching this schema:
+{"isImage": boolean, "cleanSubject": string, "isRealEntity": boolean, "didAutoCorrect": boolean, "detectedIssues": string[], "reasoningSummary": string, "expandedPrompt": string}`;
 
     const res = await ai.models.generateContent({
       model: "gemini-3.5-flash-lite",
       contents: `${systemPrompt}\n\nUser input: "${trimmed}"`,
     });
 
-    const cleanJson = res.text.trim().replace(/^```json|```$/g, "").trim();
-    const parsed = JSON.parse(cleanJson);
+    const parsed = parseJsonObject(res.text);
+    if (!parsed) return fallbackResult;
 
-    const subject = parsed.cleanSubject || rawClean;
-    const groundedExpanded = (parsed.expandedPrompt || rawClean)
-      .replace(/\b(8k|4k|uhd|hdr|hyperrealistic|octane render|unreal engine)\b/gi, "")
-      .replace(/\s+/g, " ")
-      .trim();
+    const subject = (parsed.cleanSubject || rawClean).trim();
+    const groundedExpanded = normalizeVisualPrompt(parsed.expandedPrompt || rawClean) || rawClean;
+    const issuesList = Array.isArray(parsed.detectedIssues)
+      ? parsed.detectedIssues.filter((x) => typeof x === "string" && x.trim()).slice(0, 3)
+      : [];
 
     return {
       isImage: explicit || studioMode || Boolean(parsed.isImage),
@@ -156,17 +209,189 @@ Output ONLY valid JSON:
       cleanPrompt: subject,
       isRealEntity: studioMode && wordCount >= 5 ? false : Boolean(parsed.isRealEntity),
       expandedPrompt: groundedExpanded,
+      didAutoCorrect: Boolean(parsed.didAutoCorrect || issuesList.length > 0),
+      detectedIssues: issuesList,
+      reasoningSummary: typeof parsed.reasoningSummary === "string" ? parsed.reasoningSummary.trim() : "",
     };
   } catch (err) {
     console.warn("⚠️ ML Intent Classification fallback:", err.message);
+    return fallbackResult;
+  }
+}
+
+/**
+ * Uses Gemini Vision multimodal inspection to verify a rendered image matches the intended prompt
+ * and catches corrupted error banners, ghost limbs, or off-subject hallucinations.
+ */
+async function inspectGeneratedImage(imgBuffer, mimeType, targetPrompt, cleanSubject) {
+  const ai = getAi();
+  if (!ai || !imgBuffer) {
     return {
-      isImage: explicit || studioMode || isImagePrompt(trimmed),
-      cleanSubject: rawClean,
-      cleanPrompt: rawClean,
-      isRealEntity: false,
-      expandedPrompt: rawClean,
+      checked: false,
+      isErrorOrCorrupted: false,
+      matchesPrompt: true,
+      qualityScore: null,
+      issues: "",
+      refinedPrompt: "",
     };
   }
+
+  try {
+    const resp = await ai.models.generateContent({
+      model: "gemini-3.5-flash-lite",
+      contents: [
+        {
+          inlineData: {
+            mimeType: mimeType || "image/jpeg",
+            data: imgBuffer.toString("base64"),
+          },
+        },
+        `Inspect this generated image strictly against the intended user subject ("${cleanSubject}") and scene ("${targetPrompt}").
+Return ONLY valid JSON:
+{
+  "isErrorOrCorrupted": boolean,
+  "matchesPrompt": boolean,
+  "qualityScore": integer 1 to 10,
+  "issues": "short summary of distortion, error text, watermark banner, or mismatch, or 'none'",
+  "refinedPrompt": "if qualityScore < 6 or matchesPrompt is false, write a simpler clearer 12-18 word visual prompt that avoids this failure; otherwise empty string"
+}`,
+      ],
+    });
+
+    const parsed = parseJsonObject(resp.text);
+    if (!parsed) {
+      return {
+        checked: false,
+        isErrorOrCorrupted: false,
+        matchesPrompt: true,
+        qualityScore: null,
+        issues: "",
+        refinedPrompt: "",
+      };
+    }
+
+    return {
+      checked: true,
+      isErrorOrCorrupted: Boolean(parsed.isErrorOrCorrupted),
+      matchesPrompt: parsed.matchesPrompt !== false,
+      qualityScore: typeof parsed.qualityScore === "number" ? parsed.qualityScore : 7,
+      issues: typeof parsed.issues === "string" ? parsed.issues.trim() : "",
+      refinedPrompt: typeof parsed.refinedPrompt === "string" ? normalizeVisualPrompt(parsed.refinedPrompt) : "",
+    };
+  } catch (err) {
+    console.warn("⚠️ Visual quality check skipped:", err.message);
+    return {
+      checked: false,
+      isErrorOrCorrupted: false,
+      matchesPrompt: true,
+      qualityScore: null,
+      issues: "",
+      refinedPrompt: "",
+    };
+  }
+}
+
+/**
+ * Generates raw image bytes via the best configured official diffusion backend:
+ * 1) Hugging Face Inference Router (if HF_TOKEN set)
+ * 2) Pollinations authenticated gateway gen.pollinations.ai (if POLLINATIONS_API_KEY set)
+ * 3) Pollinations legacy public endpoint image.pollinations.ai
+ */
+async function renderImageBuffer(prompt, options = {}) {
+  const width = Number(options.width) || 1024;
+  const height = Number(options.height) || 1024;
+  const steps = Math.min(Math.max(Number(options.steps) || 4, 1), 28);
+  const cfg = Math.min(Math.max(Number(options.cfg) || 3.5, 1), 10);
+  const unetModel = String(options.unetModel || options.model || "");
+  const seed = Number.isInteger(options.seed) ? options.seed : Math.floor(Math.random() * 1000000);
+
+  if (process.env.HF_TOKEN) {
+    const hfModel = /dev/i.test(unetModel)
+      ? "black-forest-labs/FLUX.1-dev"
+      : "black-forest-labs/FLUX.1-schnell";
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 28000);
+    try {
+      const res = await fetch(`https://router.huggingface.co/hf-inference/models/${hfModel}`, {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${process.env.HF_TOKEN}`,
+          "Content-Type": "application/json",
+          Accept: "image/jpeg",
+        },
+        body: JSON.stringify({
+          inputs: prompt,
+          parameters: {
+            width,
+            height,
+            num_inference_steps: /dev/i.test(unetModel) ? Math.max(steps, 18) : Math.min(steps, 8),
+            guidance_scale: cfg,
+          },
+        }),
+      });
+      clearTimeout(timer);
+
+      if (res.ok) {
+        const ct = res.headers.get("content-type") || "image/jpeg";
+        if (ct.includes("image")) {
+          const buf = Buffer.from(await res.arrayBuffer());
+          if (buf.length > 5000) {
+            return { buffer: buf, mimeType: ct.split(";")[0], source: "huggingface-flux", rateLimited: false };
+          }
+        }
+      } else if (res.status === 429) {
+        console.warn("⚠️ Hugging Face rate limit reached, falling back cleanly.");
+      }
+    } catch (hfErr) {
+      clearTimeout(timer);
+      console.warn("⚠️ Hugging Face FLUX warning:", hfErr.message);
+    }
+  }
+
+  const encodedPrompt = encodeURIComponent(prompt);
+  const hasPollinationsKey = Boolean(process.env.POLLINATIONS_API_KEY);
+  const pollUrl = hasPollinationsKey
+    ? `https://gen.pollinations.ai/image/${encodedPrompt}?width=${width}&height=${height}&model=flux&nologo=true&enhance=false&seed=${seed}`
+    : `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&model=flux&nologo=true&enhance=false&seed=${seed}`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 24000);
+  try {
+    const headers = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      Accept: "image/*",
+    };
+    if (hasPollinationsKey) {
+      headers.Authorization = `Bearer ${process.env.POLLINATIONS_API_KEY}`;
+    }
+
+    const res = await fetch(pollUrl, { signal: controller.signal, headers });
+    clearTimeout(timeoutId);
+
+    if (res.status === 402 || res.status === 429) {
+      return { buffer: null, mimeType: "", source: "pollinations-flux", rateLimited: true };
+    }
+    if (res.ok) {
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("image")) {
+        const arrBuf = await res.arrayBuffer();
+        if (arrBuf && arrBuf.byteLength > 5000) {
+          return {
+            buffer: Buffer.from(arrBuf),
+            mimeType: ct.split(";")[0],
+            source: "pollinations-flux",
+            rateLimited: false,
+          };
+        }
+      }
+    }
+  } catch (pollErr) {
+    clearTimeout(timeoutId);
+    console.warn("⚠️ Pollinations engine warning:", pollErr.message);
+  }
+
+  return { buffer: null, mimeType: "", source: "pollinations-flux", rateLimited: false };
 }
 
 /**
@@ -174,7 +399,7 @@ Output ONLY valid JSON:
  */
 async function searchHighResCandidates(query) {
   try {
-    const q = `${query} high resolution -gettyimages -shutterstock -alamy -istockphoto -dreamstime -123rf -freepik -pinterest`;
+    const q = `${query} high resolution -gettyimages -shutterstock -alamy -istockphoto -dreamstime -123rf -freepik -pinterest -westend61 -vecteezy -pngtree`;
     const r1 = await fetch(`https://duckduckgo.com/?q=${encodeURIComponent(q)}`, {
       headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
     });
@@ -221,16 +446,57 @@ async function searchHighResVisual(query) {
   return list.length > 0 ? { imageUrl: list[0].imageUrl, title: list[0].title } : null;
 }
 
-async function uploadFirstCandidate(candidates, folder = "nebula_ai/generated") {
-  for (const cand of (candidates || []).slice(0, 4)) {
-    const uploaded = await uploadToCloudinary(cand.imageUrl, folder);
-    if (uploaded) return uploaded;
+async function uploadFirstCandidate(candidates, folder = "nebula_ai/generated", targetPrompt = "", cleanSubject = "") {
+  for (const cand of (candidates || []).slice(0, 5)) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 6500);
+      const r = await fetch(cand.imageUrl, {
+        signal: controller.signal,
+        headers: { "User-Agent": "Mozilla/5.0", Accept: "image/*" },
+      });
+      clearTimeout(timer);
+      if (!r.ok) continue;
+      const ct = (r.headers.get("content-type") || "").split(";")[0];
+      if (!ct.includes("image")) continue;
+      const buf = Buffer.from(await r.arrayBuffer());
+      if (buf.length < 8000 || buf.length > 10 * 1024 * 1024) continue;
+
+      let check = null;
+      if (targetPrompt) {
+        check = await inspectGeneratedImage(buf, ct, targetPrompt, cleanSubject || targetPrompt);
+        const watermarkFlag = /watermark|stock\s*logo|shutterstock|alamy|getty|westend/i.test(check.issues || "");
+        if (check.isErrorOrCorrupted || watermarkFlag || (!check.matchesPrompt && (check.qualityScore || 0) <= 4)) {
+          continue;
+        }
+      }
+
+      const dataUri = `data:${ct};base64,${buf.toString("base64")}`;
+      const uploaded = await uploadToCloudinary(dataUri, folder);
+      if (uploaded) return { cdnUrl: uploaded, check };
+    } catch {
+      continue;
+    }
   }
   return null;
 }
 
+function toQualityCheckSummary(check, retried = false) {
+  if (!check || !check.checked) {
+    return { checked: false, matchesPrompt: true, score: null, issues: "", retried };
+  }
+  return {
+    checked: true,
+    matchesPrompt: check.matchesPrompt,
+    score: check.qualityScore,
+    issues: check.issues === "none" ? "" : check.issues || "",
+    retried,
+  };
+}
+
 /**
- * Executes visual generation / retrieval and uploads permanently to Cloudinary CDN (drxsezyyl)
+ * Executes visual generation, inspects output with Gemini Vision, retries once if distorted/off-prompt,
+ * and uploads permanently to Cloudinary CDN.
  */
 async function generateAndUploadImage(input, options = {}) {
   const studioMode = Boolean(options.studioMode);
@@ -242,67 +508,107 @@ async function generateAndUploadImage(input, options = {}) {
   }
 
   const cleanSubject = intentData.cleanSubject || intentData.cleanPrompt || "artwork";
-  const expandedPrompt = intentData.expandedPrompt || cleanSubject;
+  let expandedPrompt = intentData.expandedPrompt || cleanSubject;
   const isRealEntity = Boolean(intentData.isRealEntity);
+  const didAutoCorrect = Boolean(intentData.didAutoCorrect);
+  const detectedIssues = Array.isArray(intentData.detectedIssues) ? intentData.detectedIssues : [];
+  const reasoningSummary = intentData.reasoningSummary || "";
   const targetWidth = Number(options.width) || 1024;
   const targetHeight = Number(options.height) || 1024;
 
   let cdnUrl = null;
+  let generationSource = "offline-svg-card";
+  let qualityCheck = toQualityCheckSummary(null, false);
 
   // Strategy 1: Authentic portraits / real celebrities when requested directly
   if (isRealEntity) {
     try {
       const entityCandidates = await searchHighResCandidates(`${cleanSubject} portrait photo`);
-      cdnUrl = await uploadFirstCandidate(entityCandidates, "nebula_ai/generated");
+      const picked = await uploadFirstCandidate(entityCandidates, "nebula_ai/generated", expandedPrompt, cleanSubject);
+      if (picked?.cdnUrl) {
+        cdnUrl = picked.cdnUrl;
+        generationSource = "real-entity-photo";
+        qualityCheck = toQualityCheckSummary(picked.check, false);
+      }
     } catch (entityErr) {
       console.warn("⚠️ Real entity upload warning:", entityErr.message);
     }
   }
 
-  // Strategy 2: Generative Visual Pipeline (enhance=false preserves exact prompt without cosmic drift)
+  // Strategy 2: Generative AI Visual Pipeline + Gemini Vision Self-Check & Auto-Retry
   if (!cdnUrl) {
-    const encodedPrompt = encodeURIComponent(expandedPrompt);
-    const seed = Math.floor(Math.random() * 1000000);
-    const pollUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${targetWidth}&height=${targetHeight}&model=flux&nologo=true&enhance=false&seed=${seed}`;
+    const attempt1 = await renderImageBuffer(expandedPrompt, options);
+    let chosenRender = attempt1;
+    let chosenCheck = null;
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 24000);
-      const headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        Accept: "image/*",
-      };
-      if (process.env.POLLINATIONS_API_KEY) {
-        headers.Authorization = `Bearer ${process.env.POLLINATIONS_API_KEY}`;
-      }
+    if (attempt1.buffer) {
+      chosenCheck = await inspectGeneratedImage(
+        attempt1.buffer,
+        attempt1.mimeType,
+        expandedPrompt,
+        cleanSubject
+      );
 
-      const res = await fetch(pollUrl, {
-        signal: controller.signal,
-        headers,
-      });
-      clearTimeout(timeoutId);
+      const needsRetry =
+        chosenCheck.isErrorOrCorrupted ||
+        !chosenCheck.matchesPrompt ||
+        (typeof chosenCheck.qualityScore === "number" && chosenCheck.qualityScore < 6);
 
-      if (res.ok) {
-        const ct = res.headers.get("content-type") || "";
-        if (ct.includes("image")) {
-          const arrBuf = await res.arrayBuffer();
-          if (arrBuf && arrBuf.byteLength > 5000) {
-            const dataUri = `data:image/jpeg;base64,${Buffer.from(arrBuf).toString("base64")}`;
-            cdnUrl = await uploadToCloudinary(dataUri, "nebula_ai/generated");
+      const hasPaidOrCustomProvider = Boolean(process.env.HF_TOKEN || process.env.POLLINATIONS_API_KEY);
+      if (needsRetry && (hasPaidOrCustomProvider || !attempt1.rateLimited)) {
+        const retryPrompt = chosenCheck.refinedPrompt || `${cleanSubject}, clear natural photography`;
+        const attempt2 = await renderImageBuffer(retryPrompt, {
+          ...options,
+          seed: Math.floor(Math.random() * 1000000),
+        });
+
+        if (attempt2.buffer) {
+          const check2 = await inspectGeneratedImage(
+            attempt2.buffer,
+            attempt2.mimeType,
+            retryPrompt,
+            cleanSubject
+          );
+          const score1 = chosenCheck.isErrorOrCorrupted ? 0 : chosenCheck.qualityScore || 5;
+          const score2 = check2.isErrorOrCorrupted ? 0 : check2.qualityScore || 5;
+          if (!check2.isErrorOrCorrupted && (score2 >= score1 || !chosenCheck.matchesPrompt)) {
+            chosenRender = attempt2;
+            chosenCheck = check2;
+            expandedPrompt = retryPrompt;
           }
+          qualityCheck.retried = true;
         }
       }
-    } catch (pollErr) {
-      console.warn("⚠️ Pollinations engine warning:", pollErr.message);
+
+      const rejected =
+        chosenCheck.isErrorOrCorrupted ||
+        (!chosenCheck.matchesPrompt &&
+          typeof chosenCheck.qualityScore === "number" &&
+          chosenCheck.qualityScore <= 4);
+
+      if (!rejected && chosenRender.buffer) {
+        const b64Mime = chosenRender.mimeType || "image/jpeg";
+        const dataUri = `data:${b64Mime};base64,${chosenRender.buffer.toString("base64")}`;
+        cdnUrl = await uploadToCloudinary(dataUri, "nebula_ai/generated");
+        if (cdnUrl) {
+          generationSource = chosenRender.source;
+          qualityCheck = toQualityCheckSummary(chosenCheck, qualityCheck.retried);
+        }
+      }
     }
   }
 
-  // Strategy 3: Grounded high-resolution photography fallback if generator rate-limits (HTTP 402) or times out
+  // Strategy 3: Grounded high-resolution photography fallback if generator fails verification or rate-limits
   if (!cdnUrl) {
     try {
       const photoQuery = isRealEntity ? cleanSubject : toCleanPhotoQuery(cleanSubject);
       const fallbackCandidates = await searchHighResCandidates(photoQuery);
-      cdnUrl = await uploadFirstCandidate(fallbackCandidates, "nebula_ai/generated");
+      const picked = await uploadFirstCandidate(fallbackCandidates, "nebula_ai/generated", expandedPrompt, cleanSubject);
+      if (picked?.cdnUrl) {
+        cdnUrl = picked.cdnUrl;
+        generationSource = "curated-fallback-photo";
+        qualityCheck = toQualityCheckSummary(picked.check, false);
+      }
     } catch (fallbackErr) {
       console.warn("⚠️ Visual fallback upload warning:", fallbackErr.message);
     }
@@ -334,6 +640,7 @@ async function generateAndUploadImage(input, options = {}) {
     </svg>`;
     const svgDataUri = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
     cdnUrl = (await uploadToCloudinary(svgDataUri, "nebula_ai/generated")) || svgDataUri;
+    generationSource = "offline-svg-card";
   }
 
   return {
@@ -342,6 +649,11 @@ async function generateAndUploadImage(input, options = {}) {
     cleanPrompt: cleanSubject,
     expandedPrompt,
     isRealEntity,
+    didAutoCorrect,
+    detectedIssues,
+    reasoningSummary,
+    generationSource,
+    qualityCheck,
   };
 }
 

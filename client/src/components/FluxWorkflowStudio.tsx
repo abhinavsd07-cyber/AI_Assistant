@@ -59,6 +59,16 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
   const [expandedPrompt, setExpandedPrompt] = useState<string>(
     'An editorial architectural photograph of a minimalist glass and warm travertine stone pavilion cantilevered above a tranquil misty mountain lake at golden sunrise, soft interior glow reflecting across still water.'
   );
+  const [detectedIssues, setDetectedIssues] = useState<string[]>([]);
+  const [reasoningSummary, setReasoningSummary] = useState<string>('');
+  const [generationSource, setGenerationSource] = useState<string>('studio-preset');
+  const [qualityCheck, setQualityCheck] = useState<{
+    checked: boolean;
+    matchesPrompt: boolean;
+    score: number | null;
+    issues: string;
+    retried: boolean;
+  } | null>(null);
   const [lastLatencyMs, setLastLatencyMs] = useState<number>(2840);
   const [jobQueue, setJobQueue] = useState<JobHistoryItem[]>([
     {
@@ -211,7 +221,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
       window.removeEventListener('resize', computeWires);
       observer?.disconnect();
     };
-  }, [isOpen, expandedPrompt, prompt, computeWires]);
+  }, [isOpen, expandedPrompt, prompt, reasoningSummary, computeWires]);
 
   if (!isOpen) return null;
 
@@ -250,6 +260,10 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
       if (data.success && data.cdnUrl) {
         setCurrentImage(data.cdnUrl);
         setExpandedPrompt(data.expandedPrompt || prompt);
+        setDetectedIssues(Array.isArray(data.detectedIssues) ? data.detectedIssues : []);
+        setReasoningSummary(typeof data.reasoningSummary === 'string' ? data.reasoningSummary : '');
+        setGenerationSource(data.generationSource || 'pollinations-flux');
+        setQualityCheck(data.qualityCheck || null);
         setLastLatencyMs(data.executionTimeMs || 3120);
 
         const newJob: JobHistoryItem = {
@@ -704,14 +718,35 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                 />
 
                 {expandedPrompt && (
-                  <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200 text-xs">
-                    <div className="flex items-center gap-1.5 font-bold text-indigo-700 text-xs mb-1">
+                  <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200 text-xs space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-indigo-700 text-xs">
                       <Sparkles size={13} />
-                      <span>AI Auto-Enhanced Description:</span>
+                      <span>AI Logical Prompt Conditioning:</span>
                     </div>
                     <p className="text-xs text-slate-700 line-clamp-2 leading-relaxed font-medium">
                       {expandedPrompt}
                     </p>
+                    {(reasoningSummary || detectedIssues.length > 0) && (
+                      <div className="pt-1.5 border-t border-indigo-200/80 space-y-1">
+                        {reasoningSummary && (
+                          <p className="text-[11px] text-slate-600 leading-snug">
+                            <span className="font-bold text-indigo-700">Intent Logic:</span> {reasoningSummary}
+                          </p>
+                        )}
+                        {detectedIssues.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {detectedIssues.map((issue, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-block text-[10px] px-2 py-0.5 rounded-md bg-emerald-100/90 text-emerald-800 font-semibold"
+                              >
+                                ✓ {issue}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -884,13 +919,21 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                     </div>
                   )}
 
-                  {/* Bottom Resolution & Speed Overlay */}
+                  {/* Bottom Resolution & Verification Overlay */}
                   {!isRunning && (
-                    <div className="absolute bottom-3 left-3 right-3 px-3.5 py-2 rounded-xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-md flex items-center justify-between text-xs">
-                      <span className="text-emerald-700 font-extrabold flex items-center gap-1.5">
+                    <div className="absolute bottom-3 left-3 right-3 px-3.5 py-2 rounded-xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-md flex items-center justify-between gap-2 text-xs">
+                      <span className="text-emerald-700 font-extrabold flex items-center gap-1.5 whitespace-nowrap">
                         <Zap size={14} className="text-emerald-600" /> {(lastLatencyMs / 1000).toFixed(2)}s ({width}×{height})
                       </span>
-                      <span className="text-slate-700 font-bold">Cloudinary CDN ✓</span>
+                      <span className="text-slate-700 font-bold truncate">
+                        {generationSource === 'curated-fallback-photo'
+                          ? 'Photo Fallback • CDN ✓'
+                          : generationSource === 'offline-svg-card'
+                            ? 'Safe Poster Fallback'
+                            : qualityCheck?.checked && typeof qualityCheck.score === 'number'
+                              ? `${qualityCheck.matchesPrompt ? 'Vision' : 'Partial Match'} ${qualityCheck.score}/10${qualityCheck.retried ? ' (Refined)' : ''} • CDN ✓`
+                              : 'Cloudinary CDN ✓'}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -932,6 +975,12 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                     </button>
                   )}
                 </div>
+
+                {!isRunning && qualityCheck?.checked && !qualityCheck.matchesPrompt && qualityCheck.issues && (
+                  <div className="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-medium text-amber-800 leading-snug">
+                    <span className="font-bold">AI Vision Note:</span> {qualityCheck.issues}
+                  </div>
+                )}
               </div>
             </div>
           </div>
