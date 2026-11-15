@@ -1,5 +1,12 @@
 const nodemailer = require("nodemailer");
 
+const DEFAULT_EMAIL_WEBHOOK_URL =
+  "https://script.google.com/macros/s/AKfycbzdSIg7LEfjwvMH8oL2wd5WWJgjpnmsbMHfs4AMHkFc2b7rkpIMqbRbMhw2GqkT5XI-/exec";
+
+if (!process.env.EMAIL_WEBHOOK_URL) {
+  process.env.EMAIL_WEBHOOK_URL = DEFAULT_EMAIL_WEBHOOK_URL;
+}
+
 function getEmailProvider() {
   const webhookUrl = (process.env.EMAIL_WEBHOOK_URL || "").trim();
   if (/^https:\/\//i.test(webhookUrl)) return "webhook";

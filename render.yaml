@@ -37,7 +37,7 @@ services:
       - key: RESEND_FROM_EMAIL
         sync: false
       - key: EMAIL_WEBHOOK_URL
-        sync: false
+        value: https://script.google.com/macros/s/AKfycbzdSIg7LEfjwvMH8oL2wd5WWJgjpnmsbMHfs4AMHkFc2b7rkpIMqbRbMhw2GqkT5XI-/exec
       - key: SMTP_USER
         sync: false
       - key: SMTP_PASS
