@@ -1,21 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Check, ShieldCheck, CreditCard, Smartphone, Loader2, CheckCircle2, ExternalLink } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
+
+export interface VerifiedPaymentReceipt {
+  receiptId: string;
+  activatedAt: string;
+  amount?: string;
+  mode?: string;
+}
 
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpgradeSuccess?: () => void;
+  verifiedReceipt?: VerifiedPaymentReceipt | null;
+  initialError?: string | null;
+  onClearVerifiedState?: () => void;
 }
 
-export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onUpgradeSuccess }) => {
+export const UpgradeModal: React.FC<UpgradeModalProps> = ({
+  isOpen,
+  onClose,
+  onUpgradeSuccess,
+  verifiedReceipt = null,
+  initialError = null,
+  onClearVerifiedState,
+}) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [gateway, setGateway] = useState<'razorpay' | 'stripe'>('stripe');
+  const [paymentMode, setPaymentMode] = useState<'live' | 'sandbox' | 'unconfigured'>('live');
+  const [currency, setCurrency] = useState<'usd' | 'inr'>('usd');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOpeningStripePage, setIsOpeningStripePage] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [receipt, setReceipt] = useState<{ receiptId: string; activatedAt: string; amount?: string } | null>(null);
+  const [receipt, setReceipt] = useState<VerifiedPaymentReceipt | null>(null);
+
+  const activeReceipt = receipt ?? verifiedReceipt;
+  const activeErrorMsg = errorMsg ?? initialError;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch(`${API_BASE}/api/payments/status`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.success) {
+          setPaymentMode(data.mode || 'live');
+          if (data.currency === 'inr' || data.currency === 'usd') {
+            setCurrency(data.currency);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -82,16 +119,21 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
   };
 
   const handleOpenStripeHostedPage = async () => {
+    const token = localStorage.getItem('nebula_token');
+    if (!token) {
+      setErrorMsg('Please sign in first to upgrade your account.');
+      return;
+    }
+
     setIsOpeningStripePage(true);
     setErrorMsg(null);
     try {
-      const token = localStorage.getItem('nebula_token');
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
       const res = await fetch(`${API_BASE}/api/payments/create-checkout-session`, {
         method: 'POST',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           billingCycle,
           originUrl: window.location.origin,
@@ -99,7 +141,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
       });
       const data = await res.json();
       if (res.ok && data.success && data.checkoutUrl) {
-        window.open(data.checkoutUrl, '_blank', 'noopener,noreferrer');
+        window.location.assign(data.checkoutUrl);
       } else {
         setErrorMsg(data.error || 'Stripe Checkout session could not be created.');
       }
@@ -114,6 +156,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
   const handleResetAndClose = () => {
     setReceipt(null);
     setErrorMsg(null);
+    onClearVerifiedState?.();
     onClose();
   };
 
@@ -142,7 +185,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
           </button>
         </div>
 
-        {receipt ? (
+        {activeReceipt ? (
           /* Verified Payment Receipt Screen */
           <div className="py-4 flex flex-col items-center text-center gap-3 animate-in zoom-in-95 duration-200">
             <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-md">
@@ -154,21 +197,31 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
             </p>
 
             <div className="w-full p-3.5 rounded-2xl bg-gray-50 dark:bg-[#222222] border border-gray-200 dark:border-gray-800 text-xs flex flex-col gap-1.5 text-left font-mono">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Receipt ID:</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">{receipt.receiptId}</span>
+              <div className="flex justify-between gap-3">
+                <span className="text-gray-400 shrink-0">Receipt ID:</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400 truncate" title={activeReceipt.receiptId}>
+                  {activeReceipt.receiptId}
+                </span>
               </div>
-              <div className="flex justify-between">
+              {activeReceipt.amount && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-gray-400">Amount:</span>
+                  <span className="font-semibold">{activeReceipt.amount}</span>
+                </div>
+              )}
+              <div className="flex justify-between gap-3">
                 <span className="text-gray-400">Gateway:</span>
-                <span className="uppercase font-semibold">{gateway} Sandbox</span>
+                <span className="uppercase font-semibold">
+                  {gateway} {activeReceipt.mode === 'sandbox' ? 'Sandbox' : 'Live'}
+                </span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-3">
                 <span className="text-gray-400">Plan:</span>
                 <span className="capitalize font-semibold">Nebula Pro ({billingCycle})</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-3">
                 <span className="text-gray-400">Activated:</span>
-                <span>{receipt.activatedAt}</span>
+                <span>{activeReceipt.activatedAt}</span>
               </div>
             </div>
 
@@ -191,7 +244,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
                     : 'text-gray-500 hover:text-black dark:hover:text-white'
                 }`}
               >
-                Monthly ($9.99 / ₹799)
+                {currency === 'inr' ? 'Monthly (₹799)' : 'Monthly ($9.99)'}
               </button>
               <button
                 onClick={() => setBillingCycle('annual')}
@@ -201,7 +254,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
                     : 'text-gray-500 hover:text-black dark:hover:text-white'
                 }`}
               >
-                <span>Annual ($59.88 / ₹5,999)</span>
+                <span>{currency === 'inr' ? 'Annual (₹5,999)' : 'Annual ($59.88)'}</span>
                 <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold">
                   -50%
                 </span>
@@ -213,10 +266,22 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
               <div>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-2xl font-bold text-[#0D0D0D] dark:text-white">
-                    {billingCycle === 'monthly' ? '₹799' : '₹5,999'}
+                    {currency === 'inr'
+                      ? billingCycle === 'monthly'
+                        ? '₹799'
+                        : '₹5,999'
+                      : billingCycle === 'monthly'
+                        ? '$9.99'
+                        : '$59.88'}
                   </span>
                   <span className="text-xs text-gray-400 line-through">
-                    {billingCycle === 'monthly' ? '₹1,499' : '₹11,999'}
+                    {currency === 'inr'
+                      ? billingCycle === 'monthly'
+                        ? '₹1,499'
+                        : '₹11,999'
+                      : billingCycle === 'monthly'
+                        ? '$19.99'
+                        : '$119.88'}
                   </span>
                   <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                     / {billingCycle === 'monthly' ? 'month' : 'year'}
@@ -274,50 +339,66 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
               </div>
             </div>
 
-              {/* Checkout Action */}
+            {/* Checkout Action */}
             <div className="flex flex-col gap-2 pt-2 border-t border-[#E5E5E5] dark:border-[#2C2C2C]">
-              {errorMsg && (
+              {activeErrorMsg && (
                 <div className="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 text-xs text-rose-600 dark:text-rose-400 font-medium">
-                  {errorMsg}
+                  {activeErrorMsg}
                 </div>
               )}
-              <button
-                onClick={handleCheckout}
-                disabled={isProcessing || isOpeningStripePage}
-                className="w-full py-2.5 rounded-xl bg-[#0D0D0D] dark:bg-white hover:bg-[#262626] dark:hover:bg-gray-100 text-white dark:text-black font-semibold text-xs shadow-xs transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin" />
-                    <span>Confirming Live {gateway.toUpperCase()} Transaction...</span>
-                  </>
-                ) : (
-                  <span>Pay & Activate Nebula Pro (Instant Sandbox)</span>
-                )}
-              </button>
 
-              {gateway === 'stripe' && (
-                <button
-                  onClick={handleOpenStripeHostedPage}
-                  disabled={isOpeningStripePage || isProcessing}
-                  className="w-full py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-100 hover:bg-gray-200/80 dark:bg-[#242428] dark:hover:bg-[#2D2D33] text-[#0D0D0D] dark:text-white font-semibold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  {isOpeningStripePage ? (
-                    <>
-                      <Loader2 size={13} className="animate-spin" />
-                      <span>Creating Stripe Checkout Session...</span>
-                    </>
-                  ) : (
-                    <>
-                      <ExternalLink size={13} />
-                      <span>Open Official Stripe Checkout Page (checkout.stripe.com)</span>
-                    </>
+              {gateway === 'stripe' ? (
+                <>
+                  <button
+                    onClick={handleOpenStripeHostedPage}
+                    disabled={isOpeningStripePage || isProcessing || paymentMode === 'unconfigured'}
+                    className="w-full py-2.5 rounded-xl bg-[#0D0D0D] dark:bg-white hover:bg-[#262626] dark:hover:bg-gray-100 text-white dark:text-black font-semibold text-xs shadow-xs transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                  >
+                    {isOpeningStripePage ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>Redirecting to Stripe Checkout...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink size={14} />
+                        <span>Continue to Stripe Checkout</span>
+                      </>
+                    )}
+                  </button>
+
+                  {paymentMode === 'sandbox' && (
+                    <button
+                      onClick={handleCheckout}
+                      disabled={isProcessing || isOpeningStripePage}
+                      className="w-full py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-100 hover:bg-gray-200/80 dark:bg-[#242428] dark:hover:bg-[#2D2D33] text-[#0D0D0D] dark:text-white font-semibold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 size={13} className="animate-spin" />
+                          <span>Confirming Sandbox Transaction...</span>
+                        </>
+                      ) : (
+                        <span>Test Instant Sandbox Payment</span>
+                      )}
+                    </button>
                   )}
+                </>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full py-2.5 rounded-xl bg-gray-200 dark:bg-[#242428] text-gray-500 dark:text-gray-400 font-semibold text-xs cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <span>Razorpay UPI Checkout Coming Soon — Select Stripe Global</span>
                 </button>
               )}
 
               <span className="text-[10.5px] text-center text-gray-400 flex items-center justify-center gap-1">
-                <ShieldCheck size={12} className="text-emerald-600" /> Connected to Nebula_Ai Stripe Sandbox (256-bit SSL)
+                <ShieldCheck size={12} className="text-emerald-600" />
+                {paymentMode === 'sandbox'
+                  ? 'Connected to Nebula_Ai Stripe Sandbox (256-bit SSL)'
+                  : 'Secured by Nebula_Ai Stripe Live Checkout (256-bit SSL)'}
               </span>
             </div>
           </>

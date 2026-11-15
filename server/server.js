@@ -22,7 +22,14 @@ const { isImagePrompt, classifyUserIntent, generateAndUploadImage } = require(".
 const { checkOllamaStatus, streamOllamaChat, OLLAMA_HOST } = require("./services/ollama");
 const { getUserMemories, extractAndSaveMemories } = require("./services/memory");
 const { securityHeaders, createRateLimiter } = require("./middleware/security");
-const { createConfirmedStripePayment, createStripeCheckoutSession } = require("./services/stripe");
+const {
+  isLiveStripeKey,
+  isSandboxStripeKey,
+  createConfirmedStripePayment,
+  createStripeCheckoutSession,
+  retrieveStripeCheckoutSession,
+  verifyStripeWebhookSignature,
+} = require("./services/stripe");
 
 const app = express();
 
@@ -49,6 +56,35 @@ app.use(
     allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"],
   })
 );
+
+// Stripe Webhook endpoint MUST receive unparsed raw body before express.json()
+app.post("/api/payments/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  try {
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      return res.status(503).json({ success: false, error: "STRIPE_WEBHOOK_SECRET is not configured." });
+    }
+    const sig = req.headers["stripe-signature"];
+    if (!verifyStripeWebhookSignature(req.body, sig, webhookSecret)) {
+      return res.status(400).json({ success: false, error: "Invalid Stripe webhook signature." });
+    }
+
+    const event = JSON.parse(req.body.toString("utf8"));
+    if (event?.type === "checkout.session.completed") {
+      const session = event.data?.object || {};
+      const userId = session.client_reference_id || session.metadata?.userId;
+      if (session.payment_status === "paid" && userId && isMongoConnected) {
+        await User.findByIdAndUpdate(userId, {
+          $set: { plan: "pro" },
+        }).catch(() => {});
+      }
+    }
+
+    return res.json({ received: true });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
 
 // Support large payloads for image and document analysis
 app.use(express.json({ limit: "25mb" }));
@@ -510,7 +546,22 @@ app.delete("/api/memories", requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/payments/upgrade - Live Stripe Sandbox / Razorpay Checkout Processing
+// GET /api/payments/status - Reports configured payment gateway mode (live vs sandbox)
+app.get("/api/payments/status", (req, res) => {
+  const key = process.env.STRIPE_SECRET_KEY || "";
+  const live = isLiveStripeKey(key);
+  const sandbox = isSandboxStripeKey(key);
+  res.json({
+    success: true,
+    mode: live ? "live" : sandbox ? "sandbox" : "unconfigured",
+    stripeConfigured: live || sandbox,
+    checkoutEnabled: live || sandbox,
+    razorpayEnabled: false,
+    currency: (process.env.STRIPE_CURRENCY || "usd").toLowerCase() === "inr" ? "inr" : "usd",
+  });
+});
+
+// POST /api/payments/upgrade - Sandbox-only test checkout (disabled in Live mode)
 app.post("/api/payments/upgrade", requireAuth, async (req, res) => {
   try {
     const {
@@ -520,29 +571,34 @@ app.post("/api/payments/upgrade", requireAuth, async (req, res) => {
       gateway = "stripe",
     } = req.body;
 
-    let receiptId = `rcpt_nebula_${Date.now()}_${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-    let stripePayment = null;
-
-    if (process.env.STRIPE_SECRET_KEY) {
-      stripePayment = await createConfirmedStripePayment({
-        billingCycle,
-        customerEmail: req.user?.email || "user@nebula.ai",
-        customerName: req.user?.name || "Nebula User",
+    const secretKey = process.env.STRIPE_SECRET_KEY || "";
+    if (!isSandboxStripeKey(secretKey)) {
+      return res.status(400).json({
+        success: false,
+        error: "Direct sandbox activation is disabled in Live mode. Please complete payment via Official Stripe Checkout.",
       });
-      if (!stripePayment || stripePayment.status !== "succeeded") {
-        return res.status(402).json({
-          success: false,
-          error: "Stripe payment confirmation could not be verified.",
-        });
-      }
-      if (stripePayment.paymentIntentId) {
-        receiptId = stripePayment.paymentIntentId;
-      }
     }
+
+    const stripePayment = await createConfirmedStripePayment({
+      billingCycle,
+      customerEmail: req.user?.email || "user@nebula.ai",
+      customerName: req.user?.name || "Nebula User",
+    });
+
+    if (!stripePayment || stripePayment.status !== "succeeded") {
+      return res.status(402).json({
+        success: false,
+        error: "Stripe payment confirmation could not be verified.",
+      });
+    }
+
+    const receiptId =
+      stripePayment.paymentIntentId ||
+      `rcpt_nebula_${Date.now()}_${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 
     if (isMongoConnected && req.user) {
       await User.findByIdAndUpdate(req.user._id, {
-        $set: { plan: "pro", role: "pro", "preferences.plan": plan },
+        $set: { plan: "pro" },
       }).catch(() => {});
     }
 
@@ -564,19 +620,78 @@ app.post("/api/payments/upgrade", requireAuth, async (req, res) => {
 // POST /api/payments/create-checkout-session - Official Hosted Stripe Checkout Page
 app.post("/api/payments/create-checkout-session", requireAuth, async (req, res) => {
   try {
-    const { billingCycle = "monthly", originUrl = "http://localhost:5173" } = req.body;
+    const { billingCycle = "monthly", originUrl } = req.body || {};
+    const requestOrigin =
+      typeof originUrl === "string" && /^https?:\/\//i.test(originUrl)
+        ? originUrl
+        : req.headers.origin && /^https?:\/\//i.test(req.headers.origin)
+          ? req.headers.origin
+          : `${req.protocol}://${req.get("host")}`;
+
     const session = await createStripeCheckoutSession({
       billingCycle,
-      originUrl,
+      originUrl: requestOrigin,
       customerEmail: req.user?.email,
+      userId: String(req.user._id),
     });
+
     res.json({
       success: true,
       sessionId: session.sessionId,
       checkoutUrl: session.checkoutUrl,
+      mode: session.mode,
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/payments/verify-checkout-session - Server-side verification after Stripe redirect
+app.post("/api/payments/verify-checkout-session", requireAuth, async (req, res) => {
+  try {
+    const { sessionId } = req.body || {};
+    if (!sessionId || typeof sessionId !== "string") {
+      return res.status(400).json({ success: false, error: "Checkout sessionId is required." });
+    }
+
+    const session = await retrieveStripeCheckoutSession(sessionId);
+    if (session.paymentStatus !== "paid" || session.status !== "complete") {
+      return res.status(402).json({
+        success: false,
+        error: "Stripe Checkout payment has not completed yet.",
+      });
+    }
+
+    const ownerId = session.clientReferenceId || session.metadata?.userId;
+    if (ownerId && ownerId !== String(req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        error: "This checkout session does not belong to the signed-in account.",
+      });
+    }
+
+    let updatedUser = req.user;
+    if (isMongoConnected && req.user) {
+      updatedUser =
+        (await User.findByIdAndUpdate(
+          req.user._id,
+          { $set: { plan: "pro" } },
+          { returnDocument: "after" }
+        ).catch(() => null)) || req.user;
+    }
+
+    return res.json({
+      success: true,
+      plan: "pro",
+      receiptId: session.id,
+      amountFormatted: session.amountFormatted,
+      activatedAt: new Date().toISOString(),
+      mode: isLiveStripeKey(process.env.STRIPE_SECRET_KEY) ? "live" : "sandbox",
+      user: typeof updatedUser?.toPublicJSON === "function" ? updatedUser.toPublicJSON() : undefined,
+      message: "Nebula Pro subscription verified and activated!",
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 

@@ -14,6 +14,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: (credential?: string, profile?: Partial<UserProfile>, accessToken?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   updateProfile: (data: { name?: string; avatar?: string; preferences?: Record<string, any> }) => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -190,6 +191,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const refreshUser = useCallback(async () => {
+    const storedToken = localStorage.getItem('nebula_token');
+    if (!storedToken) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${storedToken}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          setUser(data.user);
+          localStorage.setItem('nebula_user', JSON.stringify(data.user));
+        }
+      }
+    } catch {
+      // ignore transient network failures
+    }
+  }, []);
+
   const updateProfile = async (data: { name?: string; avatar?: string; preferences?: Record<string, any> }) => {
     if (!token) return { success: false, error: 'Not authenticated' };
 
@@ -230,6 +252,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         loginWithGoogle,
         logout,
+        refreshUser,
         updateProfile,
       }}
     >

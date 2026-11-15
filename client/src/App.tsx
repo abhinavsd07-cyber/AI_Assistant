@@ -6,6 +6,7 @@ import { ChatThread } from './components/ChatThread';
 import { ChatInput, type FileAttachment } from './components/ChatInput';
 import { AuthPage } from './pages/AuthPage';
 import { useAuth } from './context/AuthContext';
+import type { VerifiedPaymentReceipt } from './components/UpgradeModal';
 import type { Message, ChatSession, PersonaType } from './types';
 
 const SettingsModal = React.lazy(() =>
@@ -30,7 +31,7 @@ const FluxWorkflowStudio = React.lazy(() =>
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
 export const App: React.FC = () => {
-  const { user, token, isAuthenticated, isLoading: isAuthLoading, currentView } = useAuth();
+  const { user, token, isAuthenticated, isLoading: isAuthLoading, currentView, refreshUser } = useAuth();
 
   // Dark / Light Theme state
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -84,8 +85,31 @@ export const App: React.FC = () => {
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isPro, setIsPro] = useState<boolean>(false);
+  const [verifiedReceipt, setVerifiedReceipt] = useState<VerifiedPaymentReceipt | null>(null);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
-  // Strictly isolate user state, sessions, and Pro subscription per authenticated user ID
+  const userId = user?.id;
+
+  // Isolate chat sessions and reset state when authenticated user ID changes
+  useEffect(() => {
+    if (isAuthenticated && userId) {
+      try {
+        const saved = localStorage.getItem(`nebula_sessions_${userId}`);
+        setSessions(saved ? JSON.parse(saved) : []);
+      } catch {
+        setSessions([]);
+      }
+    } else {
+      setUserName('');
+      setUserEmail('');
+      setIsPro(false);
+      setSessions([]);
+      setMessages([]);
+      setCurrentSessionId(null);
+    }
+  }, [isAuthenticated, userId]);
+
+  // Synchronize profile display and Pro tier without resetting open conversations
   useEffect(() => {
     if (isAuthenticated && user) {
       setUserName(user.name);
@@ -96,23 +120,63 @@ export const App: React.FC = () => {
         (user as any)?.role === 'pro' ||
         localStorage.getItem(userProKey) === 'true';
       setIsPro(proStatus);
-
-      try {
-        const saved = localStorage.getItem(`nebula_sessions_${user.id}`);
-        setSessions(saved ? JSON.parse(saved) : []);
-      } catch {
-        setSessions([]);
-      }
-    } else {
-      // Clear all state immediately on logout or unauthenticated state
-      setUserName('');
-      setUserEmail('');
-      setIsPro(false);
-      setSessions([]);
-      setMessages([]);
-      setCurrentSessionId(null);
     }
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user]);
+
+  // Verify Stripe Checkout Session when redirected back from checkout.stripe.com
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+    const params = new URLSearchParams(window.location.search);
+    const isStripeSuccess = params.get('stripe_success') === 'true';
+    const isStripeCanceled = params.get('stripe_canceled') === 'true';
+    const sessionId = params.get('session_id');
+
+    if (!isStripeSuccess && !isStripeCanceled) return;
+
+    window.history.replaceState({}, '', window.location.pathname || '/');
+
+    if (isStripeCanceled) {
+      setUpgradeError('Stripe Checkout was canceled. No payment was charged.');
+      setIsUpgradeOpen(true);
+      return;
+    }
+
+    if (isStripeSuccess && sessionId) {
+      fetch(`${API_BASE}/api/payments/verify-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ sessionId }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.success) {
+            setIsPro(true);
+            if (user?.id) {
+              localStorage.setItem(`nebula_is_pro_${user.id}`, 'true');
+            }
+            setVerifiedReceipt({
+              receiptId: data.receiptId || sessionId,
+              activatedAt: new Date(data.activatedAt || Date.now()).toLocaleString(),
+              amount: data.amountFormatted,
+              mode: data.mode || 'live',
+            });
+            setUpgradeError(null);
+            setIsUpgradeOpen(true);
+            refreshUser();
+          } else {
+            setUpgradeError(data?.error || 'Could not verify Stripe payment session.');
+            setIsUpgradeOpen(true);
+          }
+        })
+        .catch(() => {
+          setUpgradeError('Unable to reach server to verify Stripe payment.');
+          setIsUpgradeOpen(true);
+        });
+    }
+  }, [isAuthenticated, token, user?.id, refreshUser]);
 
   // Interactive Canvas Studio & Route state
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
@@ -817,6 +881,12 @@ export const App: React.FC = () => {
           isOpen={isUpgradeOpen}
           onClose={closeOverlayToCurrentChat}
           onUpgradeSuccess={() => setIsPro(true)}
+          verifiedReceipt={verifiedReceipt}
+          initialError={upgradeError}
+          onClearVerifiedState={() => {
+            setVerifiedReceipt(null);
+            setUpgradeError(null);
+          }}
         />
 
         <HubModal
