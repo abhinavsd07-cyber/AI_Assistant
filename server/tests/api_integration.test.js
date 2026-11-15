@@ -201,8 +201,11 @@ describe("Nebula AI Full-Stack HTTP & Security Integration Suite", () => {
       ["/api/auth/register", { name: "Test", email: "not-an-email", password: "password123" }],
       ["/api/auth/login", { email: "bad@", password: "password123" }],
       ["/api/auth/forgot-password", { email: "missing-domain@localhost" }],
+      ["/api/auth/verify-otp", { email: "bad", otp: "123456" }],
+      ["/api/auth/verify-otp", { email: "user@example.com", otp: "12AB" }],
       ["/api/auth/reset-password", { email: "bad", code: "ABCD1234", newPassword: "password123" }],
       ["/api/auth/reset-password", { email: "user@example.com", code: "", newPassword: "password123" }],
+      ["/api/auth/reset-password", { email: "user@example.com", resetSessionToken: "invalid-jwt", newPassword: "password123" }],
       ["/api/auth/reset-password", { email: "user@example.com", code: "ABCD1234", newPassword: "123" }],
     ]) {
       const badRes = await fetch(`${baseUrl}${endpoint}`, {

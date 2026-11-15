@@ -1,26 +1,40 @@
-import React, { useState } from 'react';
-import { Mail, KeyRound, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, Eye, EyeOff, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
 import { AuthLayout, AuthRouteLink } from '../components/AuthLayout';
 import { PasswordStrengthMeter } from '../components/AuthSharedFields';
 import { useAuth } from '../context/useAuth';
-import { EMAIL_REGEX, buildPathWithQuery, readQueryParam } from '../utils/authHelpers';
+import {
+  buildPathWithQuery,
+  getVerifiedResetSession,
+  clearVerifiedResetSession,
+  clearPendingOtpSession,
+} from '../utils/authHelpers';
 
 export const ResetPasswordPage: React.FC = () => {
   const { confirmPasswordReset, navigateTo } = useAuth();
 
-  const [email, setEmail] = useState(() => readQueryParam('email'));
-  const [code, setCode] = useState(() => readQueryParam('code').toUpperCase());
+  const verifiedSession = getVerifiedResetSession();
+  const verifiedEmail = verifiedSession?.email || '';
+  const resetSessionToken = verifiedSession?.resetSessionToken || '';
+
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(() =>
-    readQueryParam('sent') === '1'
-      ? 'If an account exists for that email, an 8-character reset code has been sent.'
-      : null
-  );
+
+  // Strict route guard: setting a new password is ONLY allowed after OTP verification
+  useEffect(() => {
+    if (!verifiedEmail || !resetSessionToken) {
+      window.history.replaceState({ view: 'forgot-password' }, '', '/forgot-password');
+      navigateTo('forgot-password', '/forgot-password');
+    }
+  }, [verifiedEmail, resetSessionToken, navigateTo]);
+
+  if (!verifiedEmail || !resetSessionToken) {
+    return null;
+  }
 
   const passwordsMismatch = confirmPassword.length > 0 && newPassword !== confirmPassword;
 
@@ -28,19 +42,7 @@ export const ResetPasswordPage: React.FC = () => {
     e.preventDefault();
     if (isSubmitting) return;
     setErrorMessage(null);
-    setSuccessMessage(null);
 
-    const normalizedEmail = email.trim();
-    const normalizedCode = code.trim().toUpperCase();
-
-    if (!EMAIL_REGEX.test(normalizedEmail)) {
-      setErrorMessage('Please enter a valid email address.');
-      return;
-    }
-    if (!normalizedCode) {
-      setErrorMessage('Please enter the 8-character reset code from your email.');
-      return;
-    }
     if (newPassword.length < 6 || newPassword.length > 128) {
       setErrorMessage('New password must be between 6 and 128 characters long.');
       return;
@@ -51,30 +53,31 @@ export const ResetPasswordPage: React.FC = () => {
     }
 
     setIsSubmitting(true);
-    const res = await confirmPasswordReset(normalizedEmail, normalizedCode, newPassword);
+    const res = await confirmPasswordReset(verifiedEmail, resetSessionToken, newPassword);
     setIsSubmitting(false);
 
     if (!res.success) {
-      setErrorMessage(res.error || 'Invalid or expired reset code.');
+      setErrorMessage(res.error || 'Could not update password. Please verify your OTP again.');
       return;
     }
 
+    clearVerifiedResetSession();
+    clearPendingOtpSession();
+
     navigateTo(
       'login',
-      buildPathWithQuery('/login', { email: normalizedEmail, reset: 'success' })
+      buildPathWithQuery('/login', { email: verifiedEmail, reset: 'success' })
     );
   };
 
-  const resendHref = buildPathWithQuery('/forgot-password', { email });
-  const backToLoginHref = buildPathWithQuery('/login', { email });
+  const backToLoginHref = buildPathWithQuery('/login', { email: verifiedEmail });
 
   return (
     <AuthLayout
       title="Set a new password"
-      subtitle="Enter the 8-character reset code from your email and choose a new password."
+      subtitle="Step 3 of 3 — Your 6-digit OTP is verified. Enter and confirm your new password below."
       headerAction={{ label: 'Sign In', view: 'login', href: '/login' }}
       errorMessage={errorMessage}
-      successMessage={successMessage}
       footer={
         <span>
           Remembered your password?{' '}
@@ -88,53 +91,22 @@ export const ResetPasswordPage: React.FC = () => {
         </span>
       }
     >
+      <div className="flex items-center justify-between text-[10px] font-semibold text-gray-400 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5 mb-3">
+        <span className="text-emerald-600">✓ 1. OTP Sent</span>
+        <span>→</span>
+        <span className="text-emerald-600">✓ 2. OTP Verified</span>
+        <span>→</span>
+        <span className="text-[#0D0D0D]">3. New Password</span>
+      </div>
+
+      <div className="flex items-center gap-2 bg-emerald-50/70 border border-emerald-200 rounded-xl px-3 py-2 mb-3 text-[11px] text-emerald-800">
+        <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+        <span className="truncate">
+          OTP verified for <strong>{verifiedEmail}</strong>
+        </span>
+      </div>
+
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-2.5 text-xs">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="reset-email" className="text-[11px] font-semibold text-gray-700">
-            Account Email Address
-          </label>
-          <div className="relative flex items-center">
-            <Mail size={13} className="absolute left-3.5 text-gray-400" />
-            <input
-              id="reset-email"
-              type="email"
-              autoComplete="email"
-              placeholder="name@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-9.5 pl-9.5 pr-3 rounded-xl bg-[#FBFBFB] hover:bg-white focus:bg-white border border-[#E5E5E5] text-[#0D0D0D] placeholder-gray-400 text-xs focus:outline-none focus:border-black focus:ring-1 focus:ring-black/10 transition-all"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <label htmlFor="reset-code" className="text-[11px] font-semibold text-gray-700">
-              8-Character Reset Code
-            </label>
-            <AuthRouteLink
-              to="forgot-password"
-              href={resendHref}
-              className="text-[10.5px] text-gray-500 hover:text-black hover:underline transition-colors no-underline"
-            >
-              Resend code
-            </AuthRouteLink>
-          </div>
-          <div className="relative flex items-center">
-            <KeyRound size={13} className="absolute left-3.5 text-gray-400" />
-            <input
-              id="reset-code"
-              type="text"
-              autoComplete="one-time-code"
-              placeholder="E.g. A1B2C3D4"
-              maxLength={12}
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              className="w-full h-9.5 pl-9.5 pr-3 rounded-xl bg-[#FBFBFB] hover:bg-white focus:bg-white border border-[#E5E5E5] text-[#0D0D0D] placeholder-gray-400 text-xs font-mono tracking-wider uppercase focus:outline-none focus:border-black focus:ring-1 focus:ring-black/10 transition-all"
-            />
-          </div>
-        </div>
-
         <div className="flex flex-col gap-1">
           <label htmlFor="reset-new-password" className="text-[11px] font-semibold text-gray-700">
             New Password
@@ -206,11 +178,11 @@ export const ResetPasswordPage: React.FC = () => {
           {isSubmitting ? (
             <>
               <Loader2 size={14} className="animate-spin text-white" />
-              <span>Updating password...</span>
+              <span>Saving new password...</span>
             </>
           ) : (
             <>
-              <span>Update Password</span>
+              <span>Set New Password & Sign In</span>
               <ArrowRight size={13} className="text-white" />
             </>
           )}

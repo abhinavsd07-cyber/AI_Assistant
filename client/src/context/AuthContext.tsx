@@ -20,6 +20,8 @@ function getDefaultPathForView(view: ViewType): string {
       return '/signup';
     case 'forgot-password':
       return '/forgot-password';
+    case 'verify-otp':
+      return '/verify-otp';
     case 'reset-password':
       return '/reset-password';
     case 'chat':
@@ -34,6 +36,7 @@ function getViewFromLocation(): ViewType {
   if (path === '/login' || hash.includes('login')) return 'login';
   if (path === '/signup' || hash.includes('signup')) return 'signup';
   if (path === '/forgot-password' || hash.includes('forgot-password')) return 'forgot-password';
+  if (path === '/verify-otp' || hash.includes('verify-otp')) return 'verify-otp';
   if (path === '/reset-password' || hash.includes('reset-password')) return 'reset-password';
   return 'chat';
 }
@@ -223,7 +226,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const requestPasswordReset = async (
     email: string
-  ): Promise<{ success: boolean; error?: string; message?: string; code?: string }> => {
+  ): Promise<{
+    success: boolean;
+    error?: string;
+    message?: string;
+    code?: string;
+    deliveredTo?: string;
+    sandboxRedirected?: boolean;
+  }> => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
         method: 'POST',
@@ -235,12 +245,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return {
           success: false,
           code: data.code,
-          error: data.error || 'Could not send reset code.',
+          error: data.error || 'Could not send 6-digit OTP.',
         };
       }
       return {
         success: true,
-        message: data.message || 'Check your inbox for the reset code.',
+        deliveredTo: data.deliveredTo,
+        sandboxRedirected: Boolean(data.sandboxRedirected),
+        message: data.message || 'Check your inbox for the 6-digit OTP.',
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err?.message || 'Unable to reach authentication server.',
+      };
+    }
+  };
+
+  const verifyPasswordResetOtp = async (
+    email: string,
+    otp: string
+  ): Promise<{
+    success: boolean;
+    error?: string;
+    message?: string;
+    resetSessionToken?: string;
+  }> => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          otp: otp.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.resetSessionToken) {
+        return {
+          success: false,
+          error: data.error || 'Invalid or expired 6-digit OTP.',
+        };
+      }
+      return {
+        success: true,
+        resetSessionToken: data.resetSessionToken,
+        message: data.message || 'OTP verified! Please set your new password.',
       };
     } catch (err: any) {
       return {
@@ -252,7 +302,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const confirmPasswordReset = async (
     email: string,
-    code: string,
+    resetSessionToken: string,
     newPassword: string
   ): Promise<{ success: boolean; error?: string; message?: string }> => {
     try {
@@ -261,7 +311,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email.trim(),
-          code: code.trim().toUpperCase(),
+          resetSessionToken: resetSessionToken.trim(),
           newPassword,
         }),
       });
@@ -412,6 +462,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         loginWithGoogle,
         requestPasswordReset,
+        verifyPasswordResetOtp,
         confirmPasswordReset,
         logout,
         refreshUser,

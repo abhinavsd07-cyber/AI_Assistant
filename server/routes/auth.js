@@ -1,12 +1,13 @@
 const express = require("express");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/User");
 const ChatSession = require("../models/ChatSession");
 const Memory = require("../models/Memory");
 const UsageLog = require("../models/UsageLog");
-const { requireAuth, generateToken } = require("../middleware/auth");
+const { requireAuth, generateToken, JWT_SECRET } = require("../middleware/auth");
 const { isEmailDeliveryConfigured, sendPasswordResetEmail } = require("../services/email");
 
 const router = express.Router();
@@ -411,7 +412,7 @@ router.put("/password", requireAuth, async (req, res) => {
 });
 
 // ==========================================
-// 7. FORGOT & RESET PASSWORD (Email Token)
+// 7. FORGOT PASSWORD, VERIFY 6-DIGIT OTP & RESET PASSWORD
 // ==========================================
 router.post("/forgot-password", async (req, res) => {
   try {
@@ -430,27 +431,90 @@ router.post("/forgot-password", async (req, res) => {
     }
 
     const user = await User.findOne({ email });
-    if (user) {
-      const rawCode = crypto.randomBytes(4).toString("hex").toUpperCase();
-      user.resetTokenHash = crypto.createHash("sha256").update(rawCode).digest("hex");
-      user.resetTokenExpires = new Date(Date.now() + 15 * 60 * 1000);
-      await user.save();
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        code: "ACCOUNT_NOT_FOUND",
+        error: "No account found with this email address. Please check the email or create a new account.",
+      });
+    }
 
-      try {
-        await sendPasswordResetEmail({ to: email, code: rawCode });
-      } catch (mailErr) {
-        console.warn("Forgot-password email dispatch notice:", mailErr.message);
-        return res.status(mailErr.statusCode || 502).json({
-          success: false,
-          code: mailErr.code,
-          error: mailErr.message,
-        });
-      }
+    const rawOtp = String(crypto.randomInt(100000, 1000000));
+    user.resetTokenHash = crypto.createHash("sha256").update(rawOtp).digest("hex");
+    user.resetTokenExpires = new Date(Date.now() + 15 * 60 * 1000);
+    await user.save();
+
+    let delivery;
+    try {
+      delivery = await sendPasswordResetEmail({ to: email, code: rawOtp });
+    } catch (mailErr) {
+      console.warn("Forgot-password OTP dispatch notice:", mailErr.message);
+      return res.status(mailErr.statusCode || 502).json({
+        success: false,
+        code: mailErr.code,
+        error: mailErr.message,
+      });
     }
 
     return res.json({
       success: true,
-      message: "If an account exists for that email, a 15-minute reset code has been sent.",
+      email,
+      deliveredTo: delivery?.deliveredTo || email,
+      sandboxRedirected: Boolean(delivery?.sandboxRedirected),
+      message: delivery?.sandboxRedirected
+        ? `6-digit OTP sent! (Routed via Resend Sandbox to ${delivery.deliveredTo} for ${email})`
+        : `A 6-digit verification OTP has been sent to ${email}.`,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post("/verify-otp", async (req, res) => {
+  try {
+    if (!isValidEmail(req.body?.email)) {
+      return res.status(400).json({ success: false, error: "Please enter a valid email address." });
+    }
+    const email = req.body.email.toLowerCase().trim();
+    const otp = String(req.body?.otp || req.body?.code || "").trim();
+
+    if (!/^\d{6}$/.test(otp)) {
+      return res.status(400).json({
+        success: false,
+        error: "Please enter a valid 6-digit numeric OTP.",
+      });
+    }
+
+    const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
+    const user = await User.findOne({
+      email,
+      resetTokenHash: otpHash,
+      resetTokenExpires: { $gt: new Date() },
+    }).select("+resetTokenHash +resetTokenExpires");
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid or expired 6-digit OTP. Please check your email and try again.",
+      });
+    }
+
+    const resetSessionToken = jwt.sign(
+      {
+        sub: user._id.toString(),
+        email: user.email,
+        purpose: "password_reset_verified",
+        otpHash: user.resetTokenHash,
+      },
+      JWT_SECRET,
+      { expiresIn: "10m" }
+    );
+
+    return res.json({
+      success: true,
+      email: user.email,
+      resetSessionToken,
+      message: "OTP verified successfully! You can now set your new password.",
     });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
@@ -463,13 +527,15 @@ router.post("/reset-password", async (req, res) => {
       return res.status(400).json({ success: false, error: "Please enter a valid email address." });
     }
     const email = req.body.email.toLowerCase().trim();
+    const resetSessionToken =
+      typeof req.body?.resetSessionToken === "string" ? req.body.resetSessionToken.trim() : "";
     const code = typeof req.body?.code === "string" ? req.body.code.trim().toUpperCase() : "";
     const newPassword = req.body?.newPassword;
 
-    if (!code) {
+    if (!resetSessionToken && !code) {
       return res.status(400).json({
         success: false,
-        error: "Reset code is required.",
+        error: "OTP verification is required before setting a new password.",
       });
     }
 
@@ -480,17 +546,50 @@ router.post("/reset-password", async (req, res) => {
       });
     }
 
-    const codeHash = crypto.createHash("sha256").update(code).digest("hex");
-    const user = await User.findOne({
-      email,
-      resetTokenHash: codeHash,
-      resetTokenExpires: { $gt: new Date() },
-    }).select("+password +resetTokenHash +resetTokenExpires");
+    let user = null;
+
+    if (resetSessionToken) {
+      let decoded;
+      try {
+        decoded = jwt.verify(resetSessionToken, JWT_SECRET);
+      } catch {
+        return res.status(400).json({
+          success: false,
+          error: "Your OTP verification session has expired. Please request and verify a new OTP.",
+        });
+      }
+
+      if (
+        !decoded ||
+        decoded.purpose !== "password_reset_verified" ||
+        decoded.email !== email ||
+        typeof decoded.otpHash !== "string"
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid OTP verification token. Please verify your OTP again.",
+        });
+      }
+
+      user = await User.findOne({
+        _id: decoded.sub,
+        email,
+        resetTokenHash: decoded.otpHash,
+        resetTokenExpires: { $gt: new Date() },
+      }).select("+password +resetTokenHash +resetTokenExpires");
+    } else {
+      const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+      user = await User.findOne({
+        email,
+        resetTokenHash: codeHash,
+        resetTokenExpires: { $gt: new Date() },
+      }).select("+password +resetTokenHash +resetTokenExpires");
+    }
 
     if (!user) {
       return res.status(400).json({
         success: false,
-        error: "Invalid or expired reset code.",
+        error: "Invalid or expired OTP verification session. Please request a new OTP.",
       });
     }
 

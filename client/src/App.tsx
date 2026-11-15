@@ -7,6 +7,7 @@ import { ChatInput, type FileAttachment } from './components/ChatInput';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { VerifyOtpPage } from './pages/VerifyOtpPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { useAuth } from './context/useAuth';
 import type { VerifiedPaymentReceipt } from './components/UpgradeModal';
@@ -765,11 +766,18 @@ export const App: React.FC = () => {
     currentView === 'login' ||
     currentView === 'signup' ||
     currentView === 'forgot-password' ||
+    currentView === 'verify-otp' ||
     currentView === 'reset-password';
 
-  if ((!isAuthenticated && (!isPublicShareRoute || isAuthView)) || currentView === 'forgot-password' || currentView === 'reset-password') {
+  if (
+    (!isAuthenticated && (!isPublicShareRoute || isAuthView)) ||
+    currentView === 'forgot-password' ||
+    currentView === 'verify-otp' ||
+    currentView === 'reset-password'
+  ) {
     if (currentView === 'signup') return <SignupPage />;
     if (currentView === 'forgot-password') return <ForgotPasswordPage />;
+    if (currentView === 'verify-otp') return <VerifyOtpPage />;
     if (currentView === 'reset-password') return <ResetPasswordPage />;
     return <LoginPage />;
   }

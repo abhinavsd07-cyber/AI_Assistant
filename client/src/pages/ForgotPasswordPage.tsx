@@ -2,7 +2,13 @@ import React, { useState } from 'react';
 import { Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { AuthLayout, AuthRouteLink } from '../components/AuthLayout';
 import { useAuth } from '../context/useAuth';
-import { EMAIL_REGEX, buildPathWithQuery, readQueryParam } from '../utils/authHelpers';
+import {
+  EMAIL_REGEX,
+  buildPathWithQuery,
+  readQueryParam,
+  savePendingOtpSession,
+  clearVerifiedResetSession,
+} from '../utils/authHelpers';
 
 export const ForgotPasswordPage: React.FC = () => {
   const { requestPasswordReset, navigateTo } = useAuth();
@@ -16,34 +22,41 @@ export const ForgotPasswordPage: React.FC = () => {
     if (isSubmitting) return;
     setErrorMessage(null);
 
-    const normalizedEmail = email.trim();
+    const normalizedEmail = email.trim().toLowerCase();
     if (!EMAIL_REGEX.test(normalizedEmail)) {
-      setErrorMessage('Please enter a valid account email address.');
+      setErrorMessage('Please enter a valid registered email address.');
       return;
     }
 
     setIsSubmitting(true);
+    clearVerifiedResetSession();
     const res = await requestPasswordReset(normalizedEmail);
     setIsSubmitting(false);
 
     if (!res.success) {
-      setErrorMessage(res.error || 'Could not send reset code.');
+      setErrorMessage(res.error || 'Could not send 6-digit OTP.');
       return;
     }
 
+    savePendingOtpSession({
+      email: normalizedEmail,
+      deliveredTo: res.deliveredTo,
+      sandboxRedirected: res.sandboxRedirected,
+      message: res.message,
+    });
+
     navigateTo(
-      'reset-password',
-      buildPathWithQuery('/reset-password', { email: normalizedEmail, sent: '1' })
+      'verify-otp',
+      buildPathWithQuery('/verify-otp', { email: normalizedEmail })
     );
   };
 
-  const resetHref = buildPathWithQuery('/reset-password', { email });
   const backToLoginHref = buildPathWithQuery('/login', { email });
 
   return (
     <AuthLayout
       title="Forgot your password?"
-      subtitle="Enter your account email address and we'll send an 8-character reset code."
+      subtitle="Step 1 of 3 — Enter your registered account email to receive a 6-digit verification OTP."
       headerAction={{ label: 'Sign In', view: 'login', href: '/login' }}
       errorMessage={errorMessage}
       footer={
@@ -59,20 +72,19 @@ export const ForgotPasswordPage: React.FC = () => {
         </span>
       }
     >
+      <div className="flex items-center justify-between text-[10px] font-semibold text-gray-400 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5 mb-3">
+        <span className="text-[#0D0D0D]">1. Request OTP</span>
+        <span>→</span>
+        <span>2. Verify OTP</span>
+        <span>→</span>
+        <span>3. New Password</span>
+      </div>
+
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3 text-xs">
         <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <label htmlFor="forgot-email" className="text-[11px] font-semibold text-gray-700">
-              Account Email Address
-            </label>
-            <AuthRouteLink
-              to="reset-password"
-              href={resetHref}
-              className="text-[10.5px] text-gray-500 hover:text-black hover:underline transition-colors no-underline"
-            >
-              Already have a code?
-            </AuthRouteLink>
-          </div>
+          <label htmlFor="forgot-email" className="text-[11px] font-semibold text-gray-700">
+            Account Email Address
+          </label>
           <div className="relative flex items-center">
             <Mail size={13} className="absolute left-3.5 text-gray-400" />
             <input
@@ -95,11 +107,11 @@ export const ForgotPasswordPage: React.FC = () => {
           {isSubmitting ? (
             <>
               <Loader2 size={14} className="animate-spin text-white" />
-              <span>Sending code...</span>
+              <span>Sending 6-Digit OTP...</span>
             </>
           ) : (
             <>
-              <span>Send Reset Code</span>
+              <span>Send 6-Digit OTP</span>
               <ArrowRight size={13} className="text-white" />
             </>
           )}

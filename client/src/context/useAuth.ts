@@ -1,7 +1,13 @@
 import { createContext, useContext } from 'react';
 import type { UserProfile } from '../types';
 
-export type ViewType = 'chat' | 'login' | 'signup' | 'forgot-password' | 'reset-password';
+export type ViewType =
+  | 'chat'
+  | 'login'
+  | 'signup'
+  | 'forgot-password'
+  | 'verify-otp'
+  | 'reset-password';
 
 const AUTH_KEYS = [
   'nebula_token',
@@ -100,10 +106,26 @@ export interface AuthContextType {
   ) => Promise<{ success: boolean; error?: string }>;
   requestPasswordReset: (
     email: string
-  ) => Promise<{ success: boolean; error?: string; message?: string; code?: string }>;
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+    message?: string;
+    code?: string;
+    deliveredTo?: string;
+    sandboxRedirected?: boolean;
+  }>;
+  verifyPasswordResetOtp: (
+    email: string,
+    otp: string
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+    message?: string;
+    resetSessionToken?: string;
+  }>;
   confirmPasswordReset: (
     email: string,
-    code: string,
+    resetSessionToken: string,
     newPassword: string
   ) => Promise<{ success: boolean; error?: string; message?: string }>;
   logout: () => void;

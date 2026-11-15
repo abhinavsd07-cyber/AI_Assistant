@@ -49,3 +49,106 @@ export function readQueryParam(key: string): string {
     return '';
   }
 }
+
+const PENDING_OTP_STORAGE_KEY = 'nebula_otp_pending';
+const VERIFIED_RESET_STORAGE_KEY = 'nebula_reset_verified';
+
+export interface PendingOtpSession {
+  email: string;
+  deliveredTo?: string;
+  sandboxRedirected?: boolean;
+  message?: string;
+  requestedAt: number;
+}
+
+export interface VerifiedResetSession {
+  email: string;
+  resetSessionToken: string;
+  verifiedAt: number;
+}
+
+export function savePendingOtpSession(data: {
+  email: string;
+  deliveredTo?: string;
+  sandboxRedirected?: boolean;
+  message?: string;
+}): void {
+  try {
+    const payload: PendingOtpSession = {
+      email: data.email.trim().toLowerCase(),
+      deliveredTo: data.deliveredTo,
+      sandboxRedirected: Boolean(data.sandboxRedirected),
+      message: data.message,
+      requestedAt: Date.now(),
+    };
+    sessionStorage.setItem(PENDING_OTP_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+export function getPendingOtpSession(): PendingOtpSession | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_OTP_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PendingOtpSession;
+    if (!parsed?.email || Date.now() - (parsed.requestedAt || 0) > 15 * 60 * 1000) {
+      sessionStorage.removeItem(PENDING_OTP_STORAGE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingOtpSession(): void {
+  try {
+    sessionStorage.removeItem(PENDING_OTP_STORAGE_KEY);
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+export function saveVerifiedResetSession(data: {
+  email: string;
+  resetSessionToken: string;
+}): void {
+  try {
+    const payload: VerifiedResetSession = {
+      email: data.email.trim().toLowerCase(),
+      resetSessionToken: data.resetSessionToken.trim(),
+      verifiedAt: Date.now(),
+    };
+    sessionStorage.setItem(VERIFIED_RESET_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+export function getVerifiedResetSession(): VerifiedResetSession | null {
+  try {
+    const raw = sessionStorage.getItem(VERIFIED_RESET_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as VerifiedResetSession;
+    if (
+      !parsed?.email ||
+      !parsed?.resetSessionToken ||
+      Date.now() - (parsed.verifiedAt || 0) > 10 * 60 * 1000
+    ) {
+      sessionStorage.removeItem(VERIFIED_RESET_STORAGE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function clearVerifiedResetSession(): void {
+  try {
+    sessionStorage.removeItem(VERIFIED_RESET_STORAGE_KEY);
+  } catch {
+    // Ignore storage errors
+  }
+}
