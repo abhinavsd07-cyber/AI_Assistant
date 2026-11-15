@@ -7,7 +7,7 @@ WORKDIR /app/client
 COPY client/package*.json ./
 RUN npm install --no-audit --no-fund
 
-# Copy frontend source and build production bundle (v4.15 Unified Monochrome UI & Clean Visual Pipeline)
+# Copy frontend source and build production bundle (v4.16 Restore FLUX Studio Classic Node Colors)
 COPY client/ ./
 ENV VITE_GOOGLE_CLIENT_ID=966040753081-ni3e6p4sen6pau4mb6eeeglmmfdjbe8g.apps.googleusercontent.com
 RUN npm run build
