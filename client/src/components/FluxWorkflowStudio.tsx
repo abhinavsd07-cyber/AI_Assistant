@@ -69,6 +69,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
     issues: string;
     retried: boolean;
   } | null>(null);
+  const [workflowError, setWorkflowError] = useState<string | null>(null);
   const [lastLatencyMs, setLastLatencyMs] = useState<number>(2840);
   const [jobQueue, setJobQueue] = useState<JobHistoryItem[]>([
     {
@@ -228,6 +229,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
   const handleRunWorkflow = async () => {
     if (isRunning || !prompt.trim()) return;
     setIsRunning(true);
+    setWorkflowError(null);
     setActiveStep(1);
 
     const stepTimer1 = setTimeout(() => setActiveStep(2), 500);
@@ -257,7 +259,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
       clearTimeout(stepTimer2);
       setActiveStep(4);
 
-      if (data.success && data.cdnUrl) {
+      if (res.ok && data.success && data.cdnUrl) {
         setCurrentImage(data.cdnUrl);
         setExpandedPrompt(data.expandedPrompt || prompt);
         setDetectedIssues(Array.isArray(data.detectedIssues) ? data.detectedIssues : []);
@@ -276,8 +278,13 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
         setJobQueue((prev) => [newJob, ...prev]);
+      } else {
+        setWorkflowError(data.error || `Workflow execution failed (${res.status}).`);
       }
-    } catch (err) {
+    } catch (err: any) {
+      clearTimeout(stepTimer1);
+      clearTimeout(stepTimer2);
+      setWorkflowError(err?.message || 'Unable to execute workflow.');
       console.error('Workflow error:', err);
     } finally {
       setTimeout(() => {
@@ -975,6 +982,12 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                     </button>
                   )}
                 </div>
+
+                {workflowError && (
+                  <div className="px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-[11px] font-medium text-rose-700 leading-snug">
+                    <span className="font-bold">Workflow Error:</span> {workflowError}
+                  </div>
+                )}
 
                 {!isRunning && qualityCheck?.checked && !qualityCheck.matchesPrompt && qualityCheck.issues && (
                   <div className="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-medium text-amber-800 leading-snug">

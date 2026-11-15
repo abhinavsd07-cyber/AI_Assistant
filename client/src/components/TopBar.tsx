@@ -98,31 +98,45 @@ export const TopBar: React.FC<TopBarProps> = ({
 
         {/* Model Selector Dropdown (Clean Typography — No Redundant Logo) */}
         <div className="relative">
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-[#ECECEC]/70 dark:hover:bg-[#252525] text-sm font-semibold text-[#0D0D0D] dark:text-[#ECECEC] transition-colors cursor-pointer"
-          >
-            <span className="text-[15px] font-bold tracking-tight text-[#0D0D0D] dark:text-white">
-              {selectedModel === 'gemini-3.5-flash'
+          {(() => {
+            const activeModel = models.find((m) => m.id === selectedModel);
+            const primaryLabel =
+              selectedModel === 'gemini-3.5-flash'
                 ? 'Gemini 3.5'
                 : selectedModel === 'gemini-3.8-flash'
                 ? 'Gemini 3.8'
-                : 'Nebula'}
-            </span>
-            <span className="text-[14px] font-semibold text-gray-500 dark:text-gray-400">
-              {selectedModel === 'gemini-3.5-flash'
+                : selectedModel.startsWith('ollama:')
+                ? 'Ollama'
+                : 'Nebula';
+            const secondaryLabel =
+              selectedModel === 'gemini-3.5-flash'
                 ? 'Flash'
                 : selectedModel === 'gemini-3.8-flash'
                 ? 'Reasoning'
-                : '4.0e'}
-            </span>
-            {isPro && (
-              <span className="px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[9px] font-extrabold uppercase tracking-wider shadow-xs">
-                PRO
-              </span>
-            )}
-            <ChevronDown size={14} className={`text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-          </button>
+                : selectedModel.startsWith('ollama:')
+                ? selectedModel.replace(/^ollama:/i, '')
+                : activeModel?.name || '4.0e';
+
+            return (
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-[#ECECEC]/70 dark:hover:bg-[#252525] text-sm font-semibold text-[#0D0D0D] dark:text-[#ECECEC] transition-colors cursor-pointer"
+              >
+                <span className="text-[15px] font-bold tracking-tight text-[#0D0D0D] dark:text-white">
+                  {primaryLabel}
+                </span>
+                <span className="text-[14px] font-semibold text-gray-500 dark:text-gray-400 truncate max-w-[140px]">
+                  {secondaryLabel}
+                </span>
+                {isPro && (
+                  <span className="px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[9px] font-extrabold uppercase tracking-wider shadow-xs">
+                    PRO
+                  </span>
+                )}
+                <ChevronDown size={14} className={`text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+            );
+          })()}
 
           {isDropdownOpen && (
             <>

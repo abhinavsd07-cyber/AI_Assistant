@@ -220,9 +220,12 @@ router.post("/google", async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    let user = await User.findOne({
-      $or: [{ email: normalizedEmail }, { googleId }],
-    });
+    const lookupConditions = [{ email: normalizedEmail }];
+    if (googleId) {
+      lookupConditions.push({ googleId });
+    }
+
+    let user = await User.findOne({ $or: lookupConditions });
 
     if (user) {
       // Update googleId and Google profile picture (unless user uploaded a custom avatar)

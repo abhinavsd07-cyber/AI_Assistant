@@ -40,7 +40,8 @@ function cosineSimilarity(vecA, vecB) {
 async function extractTextFromAttachment(attachment) {
   if (!attachment || !attachment.data) return "";
 
-  const buffer = Buffer.from(attachment.data, "base64");
+  const cleanBase64 = String(attachment.data).replace(/^data:[^;]+;base64,/, "");
+  const buffer = Buffer.from(cleanBase64, "base64");
   const mime = attachment.mimeType || "";
 
   if (mime === "application/pdf" || attachment.name?.toLowerCase().endsWith(".pdf")) {

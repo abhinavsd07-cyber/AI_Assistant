@@ -79,26 +79,29 @@ If no permanent facts exist, output []`;
       contents: prompt,
     });
 
-    const clean = res.text.trim().replace(/^```json|```$/g, "").trim();
-    const extracted = JSON.parse(clean);
+    const rawText = res.text?.trim() || "[]";
+    const stripped = rawText.replace(/^```(?:json)?\s*|\s*```$/gi, "").trim();
+    const arrayMatch = stripped.match(/\[[\s\S]*\]/);
+    const extracted = JSON.parse(arrayMatch ? arrayMatch[0] : stripped);
 
     if (Array.isArray(extracted) && extracted.length > 0) {
       for (const item of extracted) {
         if (item.key && item.value) {
+          const normalizedKey = String(item.key).toLowerCase().trim();
+          const matchClauses = [];
+          if (userId) matchClauses.push({ userId, key: normalizedKey });
+          if (userEmail) matchClauses.push({ userEmail, key: normalizedKey });
+          if (matchClauses.length === 0) continue;
+
           await Memory.findOneAndUpdate(
-            {
-              $or: [
-                ...(userId ? [{ userId, key: item.key.toLowerCase().trim() }] : []),
-                { userEmail: userEmail || "guest@nebula.local", key: item.key.toLowerCase().trim() },
-              ],
-            },
+            { $or: matchClauses },
             {
               $set: {
                 userId: userId || null,
                 userEmail: userEmail || "guest@nebula.local",
                 category: item.category || "fact",
-                key: item.key.toLowerCase().trim(),
-                value: item.value.trim(),
+                key: normalizedKey,
+                value: String(item.value).trim(),
                 confidence: 0.95,
               },
             },

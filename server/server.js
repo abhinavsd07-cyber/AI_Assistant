@@ -581,7 +581,7 @@ app.post("/api/payments/create-checkout-session", requireAuth, async (req, res) 
 });
 
 // FLUX.1 Visual Node-Graph Workflow Execution Endpoint (ComfyUI-style Hybrid Pipeline)
-app.post("/api/flux/workflow", chatLimiter, requireAuth, async (req, res) => {
+app.post("/api/flux/workflow", requireAuth, chatLimiter, async (req, res) => {
   const workflowStart = Date.now();
   try {
     const {
@@ -613,6 +613,23 @@ app.post("/api/flux/workflow", chatLimiter, requireAuth, async (req, res) => {
     });
     const totalLatencyMs = Date.now() - workflowStart;
 
+    if (isMongoConnected && req.user) {
+      Promise.all([
+        User.findByIdAndUpdate(req.user._id, {
+          $inc: { "usage.totalRequests": 1 },
+          $set: { "usage.lastActive": new Date() },
+        }),
+        UsageLog.create({
+          userId: req.user._id,
+          model: unetModel,
+          promptLength: String(prompt || "").length,
+          latencyMs: totalLatencyMs,
+          hasImage: true,
+          status: "success",
+        }),
+      ]).catch(() => {});
+    }
+
     return res.json({
       success: true,
       cdnUrl: result.cdnUrl,
@@ -643,7 +660,7 @@ app.post("/api/flux/workflow", chatLimiter, requireAuth, async (req, res) => {
 });
 
 // Main Chat endpoint with Contextual History, Documents, Live Web Search Grounding & Sub-Second Latency
-app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
+app.post("/api/chat", requireAuth, chatLimiter, async (req, res) => {
   const startTime = Date.now();
   try {
     const { 
@@ -699,12 +716,12 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
         res.write(`data: ${JSON.stringify({ done: true, model: "nebula-visual-cloudinary" })}\n\n`);
         res.end();
 
-        // Save session in background
+        // Save session & usage in background
         if (isMongoConnected && sessionId) {
           const userMsg = {
             id: `msg-${Date.now()}`,
             sender: "user",
-            text: trimmedMsg,
+            text: trimmedMsg || `[Generated visual: ${cleanPrompt}]`,
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           };
           const assistantMsg = {
@@ -718,7 +735,7 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
             { sessionId, userId: req.user._id },
             {
               $setOnInsert: {
-                title: cleanPrompt.slice(0, 32),
+                title: cleanPrompt.slice(0, 32) || "Generated Visual",
                 userId: req.user._id,
                 userEmail: req.user.email,
               },
@@ -727,6 +744,25 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
             },
             { upsert: true, returnDocument: "after" }
           );
+        }
+
+        if (isMongoConnected && req.user) {
+          Promise.all([
+            User.findByIdAndUpdate(req.user._id, {
+              $inc: { "usage.totalRequests": 1 },
+              $set: { "usage.lastActive": new Date() },
+            }),
+            UsageLog.create({
+              userId: req.user._id,
+              sessionId: sessionId || null,
+              model: "nebula-visual-cloudinary",
+              promptLength: trimmedMsg.length,
+              replyLength: replyMarkdown.length,
+              latencyMs: Date.now() - startTime,
+              hasImage: true,
+              status: "success",
+            }),
+          ]).catch(() => {});
         }
         return;
       } catch (err) {
@@ -782,9 +818,6 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
     });
 
     const isOllamaRequested = typeof requestedModel === "string" && requestedModel.startsWith("ollama:");
-    const ollamaRolePrefix = isOllamaRequested
-      ? "You are currently running in Ollama (Meta Llama 3.3 70B Open-Weights Hybrid Engine) inside Nebula AI. "
-      : "";
     const personaInstruction = PERSONA_PROMPTS[persona] || PERSONA_PROMPTS.general;
 
     const intentResolutionDirective =
@@ -811,8 +844,9 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
         "3. Keep your response warm, punchy, and conversational (max 2-3 spoken sentences) with zero markdown symbols, asterisks, or URLs."
       : "";
 
+    const currentYear = new Date().getFullYear();
     const systemInstruction =
-      `${memoryContext}${ollamaRolePrefix}${personaInstruction}${intentResolutionDirective}${reasoningDirective}${voiceDirective} The current year is 2026. ` +
+      `${memoryContext}${personaInstruction}${intentResolutionDirective}${reasoningDirective}${voiceDirective} The current year is ${currentYear}. ` +
       "Always rely on live search results for current leaders, elections, and recent events. " +
       "Be concise, direct, step-by-step, and provide practical examples. Be honest when uncertain. " +
       "IMPORTANT: Do not hallucinate or output markdown image links like ![...](https://res.cloudinary.com/...) yourself.";
@@ -821,6 +855,9 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
     if (isOllamaRequested) {
       const ollamaStatus = await checkOllamaStatus();
       if (ollamaStatus.isRunning) {
+        const ollamaSystemInstruction =
+          `You are currently running in Ollama (${requestedModel.replace(/^ollama:/i, "")} Open-Weights Engine) inside Nebula AI. ` +
+          systemInstruction;
         res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
         res.setHeader("Cache-Control", "no-cache, no-transform");
         res.setHeader("Connection", "keep-alive");
@@ -830,7 +867,7 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
         try {
           await streamOllamaChat({
             modelName: requestedModel,
-            systemInstruction,
+            systemInstruction: ollamaSystemInstruction,
             history,
             message: trimmedMsg,
             res,
@@ -844,7 +881,7 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
           console.warn("⚠️ Ollama local stream issue, seamlessly using Hybrid Cloud:", ollamaErr.message);
         }
       }
-      // If local daemon is not installed on PC, seamlessly continue via Hybrid Cloud Llama-3 Engine without any error banner
+      // If local daemon is not installed on PC, seamlessly continue via Hybrid Cloud Engine without any error banner
     }
 
     // Build multi-turn context
@@ -875,9 +912,13 @@ app.post("/api/chat", chatLimiter, requireAuth, async (req, res) => {
       try {
         const snippets = await fetchLiveWebResults(trimmedMsg);
         if (snippets.length > 0) {
+          const currentDateLabel = new Date().toLocaleDateString("en-US", {
+            month: "long",
+            year: "numeric",
+          });
           searchGrounding =
-            `[REAL-TIME LIVE WEB SEARCH GROUNDING (Current Date: October 2026)]:\n` +
-            snippets.map((s, idx) => `• ${s}`).join("\n") +
+            `[REAL-TIME LIVE WEB SEARCH GROUNDING (Current Date: ${currentDateLabel})]:\n` +
+            snippets.map((s) => `• ${s}`).join("\n") +
             `\nUse the above verified live search information as the authoritative factual truth.\n\n`;
         }
       } catch (searchErr) {

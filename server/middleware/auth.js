@@ -1,10 +1,16 @@
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const os = require("os");
 const User = require("../models/User");
 
+if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+  console.warn("⚠️ JWT_SECRET is not set in production; falling back to host-derived runtime secret.");
+}
+
+// Deterministic host-scoped fallback keeps dev/single-node sessions valid across restarts
 const JWT_SECRET =
   process.env.JWT_SECRET ||
-  crypto.createHash("sha256").update(`${__dirname}:${process.pid}:nebula_runtime_secret`).digest("hex");
+  crypto.createHash("sha256").update(`${__dirname}:${os.hostname()}:nebula_runtime_secret`).digest("hex");
 
 // Middleware that strictly requires authentication
 const requireAuth = async (req, res, next) => {

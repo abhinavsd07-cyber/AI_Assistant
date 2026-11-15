@@ -14,6 +14,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
   const [gateway, setGateway] = useState<'razorpay' | 'stripe'>('stripe');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOpeningStripePage, setIsOpeningStripePage] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<{ receiptId: string; activatedAt: string; amount?: string } | null>(null);
 
   if (!isOpen) return null;
@@ -44,6 +45,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
 
   const handleCheckout = async () => {
     setIsProcessing(true);
+    setErrorMsg(null);
     try {
       const token = localStorage.getItem('nebula_token');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -68,8 +70,11 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
           amount: data.stripePayment?.amountFormatted || (billingCycle === 'monthly' ? '$9.99 USD' : '$59.88 USD'),
         });
         onUpgradeSuccess?.();
+      } else {
+        setErrorMsg(data.error || 'Payment could not be completed. Please try again.');
       }
-    } catch (err) {
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Unable to reach payment gateway.');
       console.error('Payment upgrade failed:', err);
     } finally {
       setIsProcessing(false);
@@ -78,6 +83,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
 
   const handleOpenStripeHostedPage = async () => {
     setIsOpeningStripePage(true);
+    setErrorMsg(null);
     try {
       const token = localStorage.getItem('nebula_token');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -92,10 +98,13 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
         }),
       });
       const data = await res.json();
-      if (data.success && data.checkoutUrl) {
+      if (res.ok && data.success && data.checkoutUrl) {
         window.open(data.checkoutUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        setErrorMsg(data.error || 'Stripe Checkout session could not be created.');
       }
-    } catch (err) {
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Unable to connect to Stripe Checkout.');
       console.error('Failed to open Stripe Checkout:', err);
     } finally {
       setIsOpeningStripePage(false);
@@ -104,6 +113,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
 
   const handleResetAndClose = () => {
     setReceipt(null);
+    setErrorMsg(null);
     onClose();
   };
 
@@ -191,9 +201,9 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
                     : 'text-gray-500 hover:text-black dark:hover:text-white'
                 }`}
               >
-                <span>Annual ($79 / ₹5,999)</span>
+                <span>Annual ($59.88 / ₹5,999)</span>
                 <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold">
-                  -33%
+                  -50%
                 </span>
               </button>
             </div>
@@ -266,6 +276,11 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
 
               {/* Checkout Action */}
             <div className="flex flex-col gap-2 pt-2 border-t border-[#E5E5E5] dark:border-[#2C2C2C]">
+              {errorMsg && (
+                <div className="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 text-xs text-rose-600 dark:text-rose-400 font-medium">
+                  {errorMsg}
+                </div>
+              )}
               <button
                 onClick={handleCheckout}
                 disabled={isProcessing || isOpeningStripePage}

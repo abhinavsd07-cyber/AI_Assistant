@@ -440,6 +440,7 @@ export const App: React.FC = () => {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullText = '';
+        let finalImageUrl: string | undefined;
         let hasStarted = false;
         let buffer = '';
 
@@ -466,18 +467,22 @@ export const App: React.FC = () => {
                 throw new Error(parsed.error);
               }
 
-              if (parsed.fullText) {
-                fullText = parsed.fullText;
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantId ? { ...m, text: fullText, imageUrl: parsed.imageUrl } : m
-                  )
-                );
-              } else if (parsed.chunk) {
+              if (parsed.imageUrl) {
+                finalImageUrl = parsed.imageUrl;
+              }
+
+              const nextText =
+                typeof parsed.fullText === 'string'
+                  ? parsed.fullText
+                  : parsed.chunk
+                    ? fullText + parsed.chunk
+                    : null;
+
+              if (nextText !== null) {
+                fullText = nextText;
                 if (!hasStarted) {
                   hasStarted = true;
                   setIsLoading(false);
-                  fullText = parsed.chunk;
                   setMessages([
                     ...newMessages,
                     {
@@ -485,13 +490,15 @@ export const App: React.FC = () => {
                       sender: 'assistant',
                       text: fullText,
                       timestamp: assistantTimestamp,
+                      imageUrl: finalImageUrl,
                     },
                   ]);
                 } else {
-                  fullText += parsed.chunk;
                   setMessages((prev) =>
                     prev.map((m) =>
-                      m.id === assistantId ? { ...m, text: fullText } : m
+                      m.id === assistantId
+                        ? { ...m, text: fullText, imageUrl: finalImageUrl ?? m.imageUrl }
+                        : m
                     )
                   );
                 }
@@ -505,6 +512,7 @@ export const App: React.FC = () => {
           sender: 'assistant',
           text: fullText || 'No response generated.',
           timestamp: assistantTimestamp,
+          imageUrl: finalImageUrl,
         };
 
         const updatedHistory = [...newMessages, finalAssistantMsg];
@@ -834,7 +842,33 @@ export const App: React.FC = () => {
               imageUrl,
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             };
-            setMessages((prev) => [...prev, newMsg]);
+            const targetSessionId =
+              currentSessionId ||
+              `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+            const updatedMessages = [...messages, newMsg];
+            setMessages(updatedMessages);
+            if (!currentSessionId) {
+              setCurrentSessionId(targetSessionId);
+            }
+            setSessions((prev) => {
+              const exists = prev.find((s) => s.id === targetSessionId);
+              if (exists) {
+                return prev.map((s) =>
+                  s.id === targetSessionId
+                    ? { ...s, messages: updatedMessages, updatedAt: new Date().toISOString() }
+                    : s
+                );
+              }
+              return [
+                {
+                  id: targetSessionId,
+                  title: 'Nebula FLUX Visual',
+                  messages: updatedMessages,
+                  updatedAt: new Date().toISOString(),
+                },
+                ...prev,
+              ];
+            });
           }}
         />
       </Suspense>

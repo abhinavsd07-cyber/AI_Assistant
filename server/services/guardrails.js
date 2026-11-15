@@ -8,7 +8,6 @@
 const PII_PATTERNS = {
   creditCard: /\b(?:\d{4}[ -]?){3}\d{4}\b/g,
   indianPhone: /(?:\+?91[ -]?)?[6789]\d{9}\b/g,
-  genericPhone: /\b\+?\d{1,3}[ -]?(?:\(\d{1,4}\)[ -]?)?\d{3,4}[ -]?\d{3,4}\b/g,
   apiKey: /\b(?:sk-[a-zA-Z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[a-zA-Z0-9]{36})\b/g,
 };
 
@@ -31,17 +30,18 @@ function redactPII(text) {
   let sanitized = text;
   let redactedCount = 0;
 
-  if (PII_PATTERNS.creditCard.test(sanitized)) {
-    sanitized = sanitized.replace(PII_PATTERNS.creditCard, "[REDACTED_CREDIT_CARD]");
-    redactedCount++;
-  }
-  if (PII_PATTERNS.indianPhone.test(sanitized)) {
-    sanitized = sanitized.replace(PII_PATTERNS.indianPhone, "[REDACTED_PHONE]");
-    redactedCount++;
-  }
-  if (PII_PATTERNS.apiKey.test(sanitized)) {
-    sanitized = sanitized.replace(PII_PATTERNS.apiKey, "[REDACTED_API_KEY]");
-    redactedCount++;
+  const rules = [
+    { pattern: PII_PATTERNS.creditCard, label: "[REDACTED_CREDIT_CARD]" },
+    { pattern: PII_PATTERNS.indianPhone, label: "[REDACTED_PHONE]" },
+    { pattern: PII_PATTERNS.apiKey, label: "[REDACTED_API_KEY]" },
+  ];
+
+  for (const { pattern, label } of rules) {
+    const next = sanitized.replace(pattern, label);
+    if (next !== sanitized) {
+      sanitized = next;
+      redactedCount++;
+    }
   }
 
   return { sanitized, redactedCount };
