@@ -32,6 +32,7 @@ describe("Nebula AI Full-Stack HTTP & Security Integration Suite", () => {
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     SMTP_USER: process.env.SMTP_USER,
     SMTP_PASS: process.env.SMTP_PASS,
+    EMAIL_WEBHOOK_URL: process.env.EMAIL_WEBHOOK_URL,
   };
 
   before(async () => {
@@ -220,6 +221,7 @@ describe("Nebula AI Full-Stack HTTP & Security Integration Suite", () => {
     delete process.env.RESEND_API_KEY;
     delete process.env.SMTP_USER;
     delete process.env.SMTP_PASS;
+    delete process.env.EMAIL_WEBHOOK_URL;
     assert.equal(isEmailDeliveryConfigured(), false);
     assert.equal(getEmailProvider(), null);
 
@@ -239,6 +241,9 @@ describe("Nebula AI Full-Stack HTTP & Security Integration Suite", () => {
     process.env.SMTP_USER = "sender@gmail.com";
     process.env.SMTP_PASS = "app_password_123";
     assert.equal(getEmailProvider(), "smtp");
+
+    process.env.EMAIL_WEBHOOK_URL = "https://script.google.com/macros/s/test/exec";
+    assert.equal(getEmailProvider(), "webhook");
   });
 
   it("Validates Stripe key classifiers, session ID format, Razorpay HMAC, subscription builder, and Pro rate limits", async () => {
