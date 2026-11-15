@@ -18,7 +18,7 @@ function isEmailDeliveryConfigured() {
   return getEmailProvider() !== null;
 }
 
-function buildOtpEmailHtml({ to, code, sandboxRedirected = false }) {
+function buildOtpEmailHtml({ to, code }) {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 460px; margin: 0 auto; padding: 24px; color: #0D0D0D; border: 1px solid #E4E4E7; border-radius: 16px;">
       <h2 style="margin: 0 0 8px; font-size: 20px; font-weight: 700;">Nebula AI Password Reset OTP</h2>
@@ -28,11 +28,6 @@ function buildOtpEmailHtml({ to, code, sandboxRedirected = false }) {
       <div style="background: #F4F4F5; border: 1px solid #E4E4E7; border-radius: 12px; padding: 18px; text-align: center; font-family: monospace; font-size: 28px; font-weight: 700; letter-spacing: 8px; color: #0D0D0D;">
         ${code}
       </div>
-      ${
-        sandboxRedirected
-          ? `<p style="margin: 14px 0 0; color: #52525B; font-size: 12px; background: #FEF3C7; padding: 8px 10px; border-radius: 8px;">Routed via Resend Sandbox for account <strong>${to}</strong>.</p>`
-          : ""
-      }
       <p style="margin: 16px 0 0; color: #71717A; font-size: 12px;">If you did not request a password reset, you can safely ignore this email.</p>
     </div>
   `.trim();
@@ -55,7 +50,7 @@ async function sendPasswordResetEmail({ to, code }) {
 
   const subject = `Nebula AI 6-Digit Verification OTP: ${code}`;
   const text = `Your Nebula AI 6-digit password reset OTP for ${to} is: ${code}\n\nThis OTP expires in 15 minutes. Enter and verify this OTP to set a new password.`;
-  const html = buildOtpEmailHtml({ to, code, sandboxRedirected: false });
+  const html = buildOtpEmailHtml({ to, code });
 
   if (provider === "webhook") {
     const webhookUrl = (process.env.EMAIL_WEBHOOK_URL || "").trim();
@@ -142,43 +137,9 @@ async function sendPasswordResetEmail({ to, code }) {
     const isOnboardingRestriction =
       emailRes.status === 403 && /testing emails|verify a domain/i.test(rawMsg);
 
-    if (isOnboardingRestriction) {
-      const ownerMatch = rawMsg.match(/own email address \(([^)]+)\)/i);
-      const sandboxOwnerEmail = (
-        ownerMatch?.[1] ||
-        process.env.RESEND_SANDBOX_FALLBACK_EMAIL ||
-        ""
-      ).trim();
-
-      if (sandboxOwnerEmail && sandboxOwnerEmail.toLowerCase() !== to.toLowerCase()) {
-        const fallbackRes = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: fromEmail,
-            to: [sandboxOwnerEmail],
-            subject: `Nebula AI 6-Digit OTP for ${to}: ${code}`,
-            text,
-            html: buildOtpEmailHtml({ to, code, sandboxRedirected: true }),
-          }),
-        });
-
-        if (fallbackRes.ok) {
-          return {
-            provider: "resend-sandbox",
-            deliveredTo: sandboxOwnerEmail,
-            sandboxRedirected: true,
-          };
-        }
-      }
-    }
-
     const err = new Error(
       isOnboardingRestriction
-        ? "Resend test mode (onboarding@resend.dev) only delivers to your own Resend account email. Set EMAIL_WEBHOOK_URL or verify a domain in Resend."
+        ? `Resend's free sandbox (onboarding@resend.dev) blocks sending OTP emails to ${to} unless you verify a custom domain. To send OTPs directly to ${to} (and any user's own email) for free without a domain, set EMAIL_WEBHOOK_URL (on Render) or SMTP_USER & SMTP_PASS (on localhost).`
         : rawMsg || "Unable to dispatch password reset OTP email right now. Please try again later."
     );
     err.statusCode = isOnboardingRestriction ? 403 : 502;

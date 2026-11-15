@@ -444,9 +444,8 @@ router.post("/forgot-password", async (req, res) => {
     user.resetTokenExpires = new Date(Date.now() + 15 * 60 * 1000);
     await user.save();
 
-    let delivery;
     try {
-      delivery = await sendPasswordResetEmail({ to: email, code: rawOtp });
+      await sendPasswordResetEmail({ to: email, code: rawOtp });
     } catch (mailErr) {
       console.warn("Forgot-password OTP dispatch notice:", mailErr.message);
       return res.status(mailErr.statusCode || 502).json({
@@ -459,11 +458,9 @@ router.post("/forgot-password", async (req, res) => {
     return res.json({
       success: true,
       email,
-      deliveredTo: delivery?.deliveredTo || email,
-      sandboxRedirected: Boolean(delivery?.sandboxRedirected),
-      message: delivery?.sandboxRedirected
-        ? `6-digit OTP sent! (Routed via Resend Sandbox to ${delivery.deliveredTo} for ${email})`
-        : `A 6-digit verification OTP has been sent to ${email}.`,
+      deliveredTo: email,
+      sandboxRedirected: false,
+      message: `A 6-digit verification OTP has been sent to ${email}.`,
     });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
