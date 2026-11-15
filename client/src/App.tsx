@@ -758,8 +758,19 @@ export const App: React.FC = () => {
     );
   }
 
-  if ((!isAuthenticated && !isPublicShareRoute) || currentView === 'login' || currentView === 'signup') {
-    return <AuthPage initialMode={currentView === 'signup' ? 'signup' : 'login'} />;
+  if (
+    (!isAuthenticated && !isPublicShareRoute) ||
+    currentView === 'login' ||
+    currentView === 'signup' ||
+    currentView === 'forgot-password'
+  ) {
+    const authInitialMode =
+      currentView === 'signup'
+        ? 'signup'
+        : currentView === 'forgot-password'
+          ? 'forgot-password'
+          : 'login';
+    return <AuthPage initialMode={authInitialMode} />;
   }
 
   return (

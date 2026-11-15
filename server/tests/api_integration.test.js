@@ -2,9 +2,11 @@ const { describe, it, before, after, afterEach } = require("node:test");
 const assert = require("node:assert/strict");
 const crypto = require("crypto");
 const http = require("http");
+const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 
 const { app, isOriginAllowed, isProUser, buildSubscriptionFields } = require("../server");
+const { generateToken, JWT_SECRET } = require("../middleware/auth");
 const { createRateLimiter } = require("../middleware/security");
 const {
   isLiveStripeKey,
@@ -183,13 +185,34 @@ describe("Nebula AI Full-Stack HTTP & Security Integration Suite", () => {
     }
   });
 
-  it("Validates auth inputs and fails honestly when forgot-password email delivery is unconfigured", async () => {
+  it("Validates auth inputs, email formats, JWT session lifetimes, and forgot-password unconfigured fallback", async () => {
     const shortPassRes = await fetch(`${baseUrl}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: "Test", email: "test@example.com", password: "123" }),
     });
     assert.equal(shortPassRes.status, 400);
+
+    for (const [endpoint, body] of [
+      ["/api/auth/register", { name: "Test", email: "not-an-email", password: "password123" }],
+      ["/api/auth/login", { email: "bad@", password: "password123" }],
+      ["/api/auth/forgot-password", { email: "missing-domain@localhost" }],
+      ["/api/auth/reset-password", { email: "bad", code: "ABCD1234", newPassword: "password123" }],
+      ["/api/auth/reset-password", { email: "user@example.com", code: "", newPassword: "password123" }],
+      ["/api/auth/reset-password", { email: "user@example.com", code: "ABCD1234", newPassword: "123" }],
+    ]) {
+      const badRes = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      assert.equal(badRes.status, 400, `${endpoint} should reject invalid payload`);
+    }
+
+    const shortSession = jwt.verify(generateToken("user-1", "24h"), JWT_SECRET);
+    const longSession = jwt.verify(generateToken("user-1"), JWT_SECRET);
+    assert.equal(shortSession.exp - shortSession.iat, 24 * 60 * 60);
+    assert.equal(longSession.exp - longSession.iat, 30 * 24 * 60 * 60);
 
     delete process.env.RESEND_API_KEY;
     const forgotRes = await fetch(`${baseUrl}/api/auth/forgot-password`, {

@@ -16,6 +16,7 @@ import {
   ArrowRight,
   Image as ImageIcon,
 } from 'lucide-react';
+import { getStoredToken } from '../context/useAuth';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
@@ -236,7 +237,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
     const stepTimer2 = setTimeout(() => setActiveStep(3), 1100);
 
     try {
-      const token = localStorage.getItem('nebula_token');
+      const token = getStoredToken();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 

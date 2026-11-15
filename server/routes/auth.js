@@ -16,33 +16,43 @@ const GOOGLE_CLIENT_ID =
   "966040753081-ni3e6p4sen6pau4mb6eeeglmmfdjbe8g.apps.googleusercontent.com";
 const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const isValidEmail = (value) => typeof value === "string" && EMAIL_REGEX.test(value.trim());
+
 // ==========================================
 // 1. REGISTER (Email + Password)
 // ==========================================
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password } = req.body || {};
 
-    if (!name || !name.trim()) {
-      return res.status(400).json({ success: false, error: "Name is required." });
+    if (!name || typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ success: false, error: "Full name is required." });
     }
 
-    if (!email || !email.trim()) {
-      return res.status(400).json({ success: false, error: "Valid email address is required." });
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ success: false, error: "Please enter a valid email address." });
     }
 
-    if (!password || password.length < 6) {
+    if (typeof password !== "string" || password.length < 6 || password.length > 128) {
       return res.status(400).json({
         success: false,
-        error: "Password must be at least 6 characters long.",
+        error: "Password must be between 6 and 128 characters long.",
       });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    const existingUser = await User.findOne({ email: normalizedEmail }).select("+password");
     if (existingUser) {
+      if (!existingUser.password && existingUser.provider === "google") {
+        return res.status(409).json({
+          success: false,
+          error:
+            "An account with this email already exists via Google. Click 'Continue with Google' to sign in, or use 'Forgot password?' to set a password.",
+        });
+      }
       return res.status(409).json({
         success: false,
         error: "An account with this email address already exists. Please sign in instead.",
@@ -91,13 +101,13 @@ router.post("/register", async (req, res) => {
 // ==========================================
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, rememberMe = true } = req.body || {};
 
-    if (!email || !email.trim()) {
-      return res.status(400).json({ success: false, error: "Email address is required." });
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ success: false, error: "Please enter a valid email address." });
     }
 
-    if (!password) {
+    if (typeof password !== "string" || !password) {
       return res.status(400).json({ success: false, error: "Password is required." });
     }
 
@@ -117,7 +127,8 @@ router.post("/login", async (req, res) => {
     if (!user.password) {
       return res.status(400).json({
         success: false,
-        error: "This account was registered with Google. Please use 'Continue with Google' to sign in.",
+        error:
+          "This account uses Google Sign-In. Click 'Continue with Google' or use 'Forgot password?' to set a password.",
       });
     }
 
@@ -133,7 +144,7 @@ router.post("/login", async (req, res) => {
     user.usage.lastActive = new Date();
     await user.save();
 
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, rememberMe === false ? "24h" : "30d");
 
     return res.json({
       success: true,
@@ -156,9 +167,10 @@ router.post("/login", async (req, res) => {
 // ==========================================
 router.post("/google", async (req, res) => {
   try {
-    const { credential, accessToken } = req.body;
+    const { credential, accessToken, rememberMe = true } = req.body || {};
 
     let email = null;
+    let emailVerified = false;
     let name = null;
     let picture = null;
     let googleId = null;
@@ -177,6 +189,7 @@ router.post("/google", async (req, res) => {
         });
         const payload = ticket.getPayload();
         email = payload.email;
+        emailVerified = payload.email_verified !== false;
         name = payload.name;
         picture = payload.picture;
         googleId = payload.sub;
@@ -199,6 +212,7 @@ router.post("/google", async (req, res) => {
         }
         const userInfo = await userInfoRes.json();
         email = userInfo.email;
+        emailVerified = userInfo.email_verified !== false;
         name = userInfo.name;
         picture = userInfo.picture;
         googleId = userInfo.sub;
@@ -215,7 +229,7 @@ router.post("/google", async (req, res) => {
       });
     }
 
-    if (!email) {
+    if (!email || !emailVerified) {
       return res.status(400).json({
         success: false,
         error: "Google authentication failed: Email address could not be verified.",
@@ -229,7 +243,7 @@ router.post("/google", async (req, res) => {
       lookupConditions.push({ googleId });
     }
 
-    let user = await User.findOne({ $or: lookupConditions });
+    let user = await User.findOne({ $or: lookupConditions }).select("+password");
 
     if (user) {
       // Update googleId and Google profile picture (unless user uploaded a custom avatar)
@@ -244,6 +258,7 @@ router.post("/google", async (req, res) => {
         user.avatar = picture;
       }
       user.emailVerified = true;
+      user.hasPassword = Boolean(user.hasPassword || user.password);
       user.usage.lastActive = new Date();
       await user.save();
     } else {
@@ -261,7 +276,7 @@ router.post("/google", async (req, res) => {
       await user.save();
     }
 
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, rememberMe === false ? "24h" : "30d");
 
     return res.json({
       success: true,
@@ -351,10 +366,10 @@ router.put("/password", requireAuth, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body || {};
 
-    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+    if (typeof newPassword !== "string" || newPassword.length < 6 || newPassword.length > 128) {
       return res.status(400).json({
         success: false,
-        error: "New password must be at least 6 characters long.",
+        error: "New password must be between 6 and 128 characters long.",
       });
     }
 
@@ -399,10 +414,10 @@ router.put("/password", requireAuth, async (req, res) => {
 // ==========================================
 router.post("/forgot-password", async (req, res) => {
   try {
-    const email = typeof req.body?.email === "string" ? req.body.email.toLowerCase().trim() : "";
-    if (!email) {
-      return res.status(400).json({ success: false, error: "Email address is required." });
+    if (!isValidEmail(req.body?.email)) {
+      return res.status(400).json({ success: false, error: "Please enter a valid email address." });
     }
+    const email = req.body.email.toLowerCase().trim();
 
     const resendApiKey = (process.env.RESEND_API_KEY || "").trim();
     if (!resendApiKey) {
@@ -437,9 +452,13 @@ router.post("/forgot-password", async (req, res) => {
       });
 
       if (!emailRes.ok) {
+        const errPayload = await emailRes.json().catch(() => null);
+        console.warn("Resend forgot-password notice:", emailRes.status, errPayload?.message || "");
         return res.status(502).json({
           success: false,
-          error: "Unable to dispatch password reset email right now. Please try again later.",
+          error:
+            errPayload?.message ||
+            "Unable to dispatch password reset email right now. Please try again later.",
         });
       }
     }
@@ -455,14 +474,24 @@ router.post("/forgot-password", async (req, res) => {
 
 router.post("/reset-password", async (req, res) => {
   try {
-    const email = typeof req.body?.email === "string" ? req.body.email.toLowerCase().trim() : "";
+    if (!isValidEmail(req.body?.email)) {
+      return res.status(400).json({ success: false, error: "Please enter a valid email address." });
+    }
+    const email = req.body.email.toLowerCase().trim();
     const code = typeof req.body?.code === "string" ? req.body.code.trim().toUpperCase() : "";
     const newPassword = req.body?.newPassword;
 
-    if (!email || !code || !newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+    if (!code) {
       return res.status(400).json({
         success: false,
-        error: "Email, reset code, and a new password (min 6 characters) are required.",
+        error: "Reset code is required.",
+      });
+    }
+
+    if (typeof newPassword !== "string" || newPassword.length < 6 || newPassword.length > 128) {
+      return res.status(400).json({
+        success: false,
+        error: "New password must be between 6 and 128 characters long.",
       });
     }
 
@@ -483,6 +512,7 @@ router.post("/reset-password", async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
     user.hasPassword = true;
+    user.emailVerified = true;
     user.resetTokenHash = undefined;
     user.resetTokenExpires = undefined;
     await user.save();

@@ -72,9 +72,9 @@ const optionalAuth = async (req, res, next) => {
   next();
 };
 
-const generateToken = (userId) => {
+const generateToken = (userId, expiresIn = "30d") => {
   return jwt.sign({ id: userId }, JWT_SECRET, {
-    expiresIn: "30d",
+    expiresIn,
   });
 };
 

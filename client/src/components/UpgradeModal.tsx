@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Check, ShieldCheck, CreditCard, Smartphone, Loader2, CheckCircle2, ExternalLink } from 'lucide-react';
+import { getStoredToken, getStoredUser } from '../context/useAuth';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
@@ -72,16 +73,9 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
 
   const saveUserProFlag = () => {
     localStorage.setItem('nebula_is_pro', 'true');
-    try {
-      const savedUser = localStorage.getItem('nebula_user');
-      if (savedUser) {
-        const parsed = JSON.parse(savedUser);
-        if (parsed?.id) {
-          localStorage.setItem(`nebula_is_pro_${parsed.id}`, 'true');
-        }
-      }
-    } catch {
-      // ignore
+    const savedUser = getStoredUser();
+    if (savedUser?.id) {
+      localStorage.setItem(`nebula_is_pro_${savedUser.id}`, 'true');
     }
   };
 
@@ -89,7 +83,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
     setIsProcessing(true);
     setErrorMsg(null);
     try {
-      const token = localStorage.getItem('nebula_token');
+      const token = getStoredToken();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -124,7 +118,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
   };
 
   const handleOpenStripeHostedPage = async () => {
-    const token = localStorage.getItem('nebula_token');
+    const token = getStoredToken();
     if (!token) {
       setErrorMsg('Please sign in first to upgrade your account.');
       return;

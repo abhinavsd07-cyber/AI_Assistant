@@ -1,23 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { AuthContext, type ViewType } from './useAuth';
+import {
+  AuthContext,
+  type ViewType,
+  getStoredToken,
+  getStoredUser,
+  persistAuthSession,
+  updateStoredUser,
+  clearAuthStorage,
+} from './useAuth';
 import type { UserProfile, AuthResponse } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(() => {
-    try {
-      const saved = localStorage.getItem('nebula_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('nebula_token') || null;
-  });
-
+  const [user, setUser] = useState<UserProfile | null>(getStoredUser);
+  const [token, setToken] = useState<string | null>(getStoredToken);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const getViewFromLocation = (): ViewType => {
@@ -25,6 +22,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const hash = window.location.hash.toLowerCase();
     if (path === '/login' || hash.includes('login')) return 'login';
     if (path === '/signup' || hash.includes('signup')) return 'signup';
+    if (path === '/forgot-password' || hash.includes('forgot-password')) return 'forgot-password';
     return 'chat';
   };
 
@@ -40,7 +38,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const navigateTo = useCallback((view: ViewType) => {
     setCurrentView(view);
-    const targetPath = view === 'login' ? '/login' : view === 'signup' ? '/signup' : '/';
+    const targetPath =
+      view === 'login'
+        ? '/login'
+        : view === 'signup'
+          ? '/signup'
+          : view === 'forgot-password'
+            ? '/forgot-password'
+            : '/';
     if (window.location.pathname !== targetPath || window.location.hash) {
       window.history.pushState({ view }, '', targetPath);
     }
@@ -49,12 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('nebula_token');
-    localStorage.removeItem('nebula_user');
-    localStorage.removeItem('nebula_user_name');
-    localStorage.removeItem('nebula_user_email');
-    localStorage.removeItem('nebula_is_pro');
-    localStorage.removeItem('nebula_sessions');
+    clearAuthStorage();
     setCurrentView('login');
     if (window.location.pathname !== '/login') {
       window.history.pushState({ view: 'login' }, '', '/login');
@@ -63,11 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const verifySession = async () => {
-      const storedToken = localStorage.getItem('nebula_token');
+      const storedToken = getStoredToken();
       if (!storedToken) {
         setToken(null);
         setUser(null);
-        localStorage.removeItem('nebula_user');
+        clearAuthStorage();
         setIsLoading(false);
         return;
       }
@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (data.success && data.user) {
             setUser(data.user);
             setToken(storedToken);
-            localStorage.setItem('nebula_user', JSON.stringify(data.user));
+            updateStoredUser(data.user);
           } else {
             logout();
           }
@@ -101,22 +101,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     verifySession();
   }, [logout]);
 
-  const handleAuthSuccess = (newToken: string, newUser: UserProfile) => {
+  const handleAuthSuccess = (newToken: string, newUser: UserProfile, rememberMe = true) => {
     setToken(newToken);
     setUser(newUser);
-    localStorage.setItem('nebula_token', newToken);
-    localStorage.setItem('nebula_user', JSON.stringify(newUser));
-    localStorage.setItem('nebula_user_name', newUser.name);
-    localStorage.setItem('nebula_user_email', newUser.email);
+    persistAuthSession(newToken, newUser, rememberMe);
     navigateTo('chat');
   };
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (
+    email: string,
+    password: string,
+    rememberMe = true
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password, rememberMe }),
       });
 
       const data: AuthResponse = await res.json();
@@ -124,19 +125,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: data.error || 'Invalid credentials' };
       }
 
-      handleAuthSuccess(data.token, data.user);
+      handleAuthSuccess(data.token, data.user, rememberMe);
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message || 'Connection to authentication service failed' };
     }
   };
 
-  const register = async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    rememberMe = true
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
       });
 
       const data: AuthResponse = await res.json();
@@ -144,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: data.error || 'Failed to create account' };
       }
 
-      handleAuthSuccess(data.token, data.user);
+      handleAuthSuccess(data.token, data.user, rememberMe);
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message || 'Connection to authentication service failed' };
@@ -154,13 +160,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithGoogle = async (
     credential?: string,
     profile?: Partial<UserProfile>,
-    accessToken?: string
+    accessToken?: string,
+    rememberMe = true
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential, profile, accessToken }),
+        body: JSON.stringify({ credential, profile, accessToken, rememberMe }),
       });
 
       const data: AuthResponse = await res.json();
@@ -168,15 +175,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: data.error || 'Google sign-in could not be completed' };
       }
 
-      handleAuthSuccess(data.token, data.user);
+      handleAuthSuccess(data.token, data.user, rememberMe);
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message || 'Failed to connect to authentication server' };
     }
   };
 
+  const requestPasswordReset = async (
+    email: string
+  ): Promise<{ success: boolean; error?: string; message?: string; code?: string }> => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return {
+          success: false,
+          code: data.code,
+          error: data.error || 'Could not send reset code.',
+        };
+      }
+      return {
+        success: true,
+        message: data.message || 'Check your inbox for the reset code.',
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err?.message || 'Unable to reach authentication server.',
+      };
+    }
+  };
+
+  const confirmPasswordReset = async (
+    email: string,
+    code: string,
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string; message?: string }> => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          code: code.trim().toUpperCase(),
+          newPassword,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'Could not reset password.' };
+      }
+      return {
+        success: true,
+        message: data.message || 'Password updated! You can now sign in with your new password.',
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err?.message || 'Unable to reach authentication server.',
+      };
+    }
+  };
+
   const refreshUser = useCallback(async () => {
-    const storedToken = localStorage.getItem('nebula_token');
+    const storedToken = getStoredToken();
     if (!storedToken) return;
     try {
       const res = await fetch(`${API_BASE}/api/auth/me`, {
@@ -188,7 +255,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const data = await res.json();
         if (data.success && data.user) {
           setUser(data.user);
-          localStorage.setItem('nebula_user', JSON.stringify(data.user));
+          updateStoredUser(data.user);
         }
       }
     } catch {
@@ -215,8 +282,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       setUser(resData.user);
-      localStorage.setItem('nebula_user', JSON.stringify(resData.user));
-      if (resData.user.name) localStorage.setItem('nebula_user_name', resData.user.name);
+      updateStoredUser(resData.user);
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message || 'Failed to update profile' };
@@ -240,7 +306,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       if (resData.user) {
         setUser(resData.user);
-        localStorage.setItem('nebula_user', JSON.stringify(resData.user));
+        updateStoredUser(resData.user);
       }
       return { success: true, message: resData.message || 'Password updated successfully.' };
     } catch (err: any) {
@@ -264,7 +330,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       if (resData.user) {
         setUser(resData.user);
-        localStorage.setItem('nebula_user', JSON.stringify(resData.user));
+        updateStoredUser(resData.user);
         localStorage.removeItem(`nebula_is_pro_${resData.user.id}`);
       }
       localStorage.removeItem('nebula_is_pro');
@@ -306,6 +372,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         loginWithGoogle,
+        requestPasswordReset,
+        confirmPasswordReset,
         logout,
         refreshUser,
         updateProfile,
