@@ -30,6 +30,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [gateway, setGateway] = useState<'razorpay' | 'stripe'>('stripe');
   const [paymentMode, setPaymentMode] = useState<'live' | 'sandbox' | 'unconfigured'>('live');
+  const [razorpayEnabled, setRazorpayEnabled] = useState(false);
   const [currency, setCurrency] = useState<'usd' | 'inr'>('usd');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOpeningStripePage, setIsOpeningStripePage] = useState(false);
@@ -46,6 +47,10 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
       .then((data) => {
         if (data?.success) {
           setPaymentMode(data.mode || 'live');
+          setRazorpayEnabled(Boolean(data.razorpayEnabled));
+          if (!data.razorpayEnabled) {
+            setGateway('stripe');
+          }
           if (data.currency === 'inr' || data.currency === 'usd') {
             setCurrency(data.currency);
           }
@@ -315,17 +320,29 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
               </span>
               <div className="grid grid-cols-2 gap-2">
                 <button
-                  onClick={() => setGateway('razorpay')}
-                  className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
-                    gateway === 'razorpay'
-                      ? 'border-[#0D0D0D] dark:border-white bg-[#F4F4F5] dark:bg-[#242428] text-[#0D0D0D] dark:text-white'
-                      : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700'
+                  type="button"
+                  disabled={!razorpayEnabled}
+                  onClick={() => razorpayEnabled && setGateway('razorpay')}
+                  className={`flex items-center justify-between gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                    !razorpayEnabled
+                      ? 'border-gray-200 dark:border-gray-800 text-gray-400 dark:text-gray-500 opacity-60 cursor-not-allowed'
+                      : gateway === 'razorpay'
+                        ? 'border-[#0D0D0D] dark:border-white bg-[#F4F4F5] dark:bg-[#242428] text-[#0D0D0D] dark:text-white cursor-pointer'
+                        : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700 cursor-pointer'
                   }`}
                 >
-                  <Smartphone size={14} />
-                  <span>Razorpay (UPI/Card)</span>
+                  <span className="flex items-center gap-2">
+                    <Smartphone size={14} />
+                    <span>Razorpay (UPI)</span>
+                  </span>
+                  {!razorpayEnabled && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500">
+                      Setup Off
+                    </span>
+                  )}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setGateway('stripe')}
                   className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
                     gateway === 'stripe'

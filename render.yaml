@@ -14,10 +14,12 @@ services:
         value: 5000
       - key: GEMINI_API_KEY
         sync: false
-      - key: MONGO_URI
+      - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
         generateValue: true
+      - key: ALLOWED_ORIGINS
+        sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
@@ -27,5 +29,9 @@ services:
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_CURRENCY
+        value: usd
+      - key: RESEND_API_KEY
         sync: false
 

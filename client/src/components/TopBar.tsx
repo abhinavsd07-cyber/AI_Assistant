@@ -14,7 +14,7 @@ import {
   Settings,
   Share2
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import type { AiModelInfo, PersonaType } from '../types';
 
 interface TopBarProps {

@@ -30,17 +30,51 @@ const {
   retrieveStripeCheckoutSession,
   verifyStripeWebhookSignature,
 } = require("./services/stripe");
+const {
+  isRazorpayConfigured,
+  createRazorpayOrder,
+  verifyRazorpaySignature,
+} = require("./services/razorpay");
 
 const app = express();
+
+function isProUser(user) {
+  return Boolean(user && (user.plan === "pro" || user.plan === "enterprise"));
+}
+
+function buildAllowedOrigins() {
+  const defaults = [
+    "https://nebula-ai-assistant.onrender.com",
+    "http://localhost:5173",
+    "http://localhost:5000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5000",
+  ];
+  const extra = String(process.env.ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((o) => o.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+  const renderUrl = String(process.env.RENDER_EXTERNAL_URL || "")
+    .trim()
+    .replace(/\/+$/, "");
+  if (renderUrl) extra.push(renderUrl);
+  return new Set([...defaults, ...extra]);
+}
+
+function isOriginAllowed(origin) {
+  if (!origin) return true;
+  const normalized = String(origin).trim().replace(/\/+$/, "");
+  return buildAllowedOrigins().has(normalized);
+}
 
 // Enterprise Security Headers (Helmet standard)
 app.use(securityHeaders);
 
-// Rate Limiters
+// Rate Limiters (Pro users receive priority 120 req/min vs 30 req/min on Free tier)
 const chatLimiter = createRateLimiter({
   windowMs: 60 * 1000,
-  max: 60,
-  message: "Rate limit exceeded (60 messages/min). Please wait a moment or upgrade to Nebula Pro.",
+  max: (req) => (isProUser(req.user) ? 120 : 30),
+  message: "Rate limit reached. Please wait a moment or upgrade to Nebula Pro for priority 4x throughput.",
 });
 const authLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
@@ -48,10 +82,15 @@ const authLimiter = createRateLimiter({
   message: "Too many authentication attempts. Please try again in 15 minutes.",
 });
 
-// Cross-Origin Resource Sharing
+// Restricted Cross-Origin Resource Sharing
 app.use(
   cors({
-    origin: "*",
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"],
   })
@@ -70,14 +109,43 @@ app.post("/api/payments/webhook", express.raw({ type: "application/json" }), asy
     }
 
     const event = JSON.parse(req.body.toString("utf8"));
-    if (event?.type === "checkout.session.completed") {
-      const session = event.data?.object || {};
-      const userId = session.client_reference_id || session.metadata?.userId;
-      if (session.payment_status === "paid" && userId && isMongoConnected) {
-        await User.findByIdAndUpdate(userId, {
-          $set: { plan: "pro" },
-        }).catch(() => {});
-      }
+    const obj = event?.data?.object || {};
+    const userId = obj.client_reference_id || obj.metadata?.userId;
+
+    if (
+      (event?.type === "checkout.session.completed" || event?.type === "checkout.session.async_payment_succeeded") &&
+      obj.payment_status === "paid" &&
+      userId &&
+      isMongoConnected
+    ) {
+      const billingCycle = obj.metadata?.billingCycle === "annual" ? "annual" : "monthly";
+      const days = billingCycle === "annual" ? 365 : 30;
+      const now = new Date();
+      await User.findByIdAndUpdate(userId, {
+        $set: {
+          plan: "pro",
+          "subscription.status": "active",
+          "subscription.billingCycle": billingCycle,
+          "subscription.gateway": "stripe",
+          "subscription.receiptId": obj.id || null,
+          "subscription.sessionId": obj.id || null,
+          "subscription.activatedAt": now,
+          "subscription.currentPeriodEnd": new Date(now.getTime() + days * 24 * 60 * 60 * 1000),
+          "subscription.canceledAt": null,
+        },
+      }).catch(() => {});
+    } else if (
+      (event?.type === "customer.subscription.deleted" || event?.type === "charge.refunded") &&
+      userId &&
+      isMongoConnected
+    ) {
+      await User.findByIdAndUpdate(userId, {
+        $set: {
+          plan: "free",
+          "subscription.status": "canceled",
+          "subscription.canceledAt": new Date(),
+        },
+      }).catch(() => {});
     }
 
     return res.json({ received: true });
@@ -546,6 +614,81 @@ app.delete("/api/memories", requireAuth, async (req, res) => {
   }
 });
 
+const FREE_DAILY_CHAT_LIMIT = 40;
+const FREE_DAILY_FLUX_LIMIT = 8;
+
+function buildSubscriptionFields({ billingCycle = "monthly", gateway = "stripe", receiptId = null, sessionId = null }) {
+  const cycle = billingCycle === "annual" ? "annual" : "monthly";
+  const now = new Date();
+  const days = cycle === "annual" ? 365 : 30;
+  return {
+    plan: "pro",
+    "subscription.status": "active",
+    "subscription.billingCycle": cycle,
+    "subscription.gateway": gateway,
+    "subscription.receiptId": receiptId,
+    "subscription.sessionId": sessionId,
+    "subscription.activatedAt": now,
+    "subscription.currentPeriodEnd": new Date(now.getTime() + days * 24 * 60 * 60 * 1000),
+    "subscription.canceledAt": null,
+  };
+}
+
+async function getDailyQuotaSummary(user) {
+  const unlimited = isProUser(user);
+  let dailyChatUsed = 0;
+  let dailyFluxUsed = 0;
+
+  if (isMongoConnected && user?._id) {
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const [totalUsed, fluxUsed] = await Promise.all([
+      UsageLog.countDocuments({ userId: user._id, createdAt: { $gte: startOfDay } }).catch(() => 0),
+      UsageLog.countDocuments({
+        userId: user._id,
+        sessionId: "flux-studio",
+        createdAt: { $gte: startOfDay },
+      }).catch(() => 0),
+    ]);
+    dailyFluxUsed = fluxUsed;
+    dailyChatUsed = Math.max(0, totalUsed - fluxUsed);
+  }
+
+  return {
+    unlimited,
+    dailyChatLimit: unlimited ? null : FREE_DAILY_CHAT_LIMIT,
+    dailyChatUsed,
+    dailyFluxLimit: unlimited ? null : FREE_DAILY_FLUX_LIMIT,
+    dailyFluxUsed,
+  };
+}
+
+async function enforceDailyQuota(req, res, kind = "chat") {
+  if (!isMongoConnected || !req.user || isProUser(req.user)) {
+    return true;
+  }
+  const quota = await getDailyQuotaSummary(req.user);
+  if (kind === "flux" && quota.dailyFluxUsed >= FREE_DAILY_FLUX_LIMIT) {
+    res.status(429).json({
+      success: false,
+      upgradeRequired: true,
+      quota,
+      error: `Daily Free tier limit reached (${FREE_DAILY_FLUX_LIMIT} FLUX renders/day). Upgrade to Nebula Pro for unlimited studio renders.`,
+    });
+    return false;
+  }
+  if (kind === "chat" && quota.dailyChatUsed >= FREE_DAILY_CHAT_LIMIT) {
+    res.status(429).json({
+      success: false,
+      upgradeRequired: true,
+      quota,
+      error: `Daily Free tier limit reached (${FREE_DAILY_CHAT_LIMIT} messages/day). Upgrade to Nebula Pro for unlimited priority access.`,
+    });
+    return false;
+  }
+  return true;
+}
+
 // GET /api/payments/status - Reports configured payment gateway mode (live vs sandbox)
 app.get("/api/payments/status", (req, res) => {
   const key = process.env.STRIPE_SECRET_KEY || "";
@@ -556,9 +699,56 @@ app.get("/api/payments/status", (req, res) => {
     mode: live ? "live" : sandbox ? "sandbox" : "unconfigured",
     stripeConfigured: live || sandbox,
     checkoutEnabled: live || sandbox,
-    razorpayEnabled: false,
+    webhookConfigured: Boolean((process.env.STRIPE_WEBHOOK_SECRET || "").trim()),
+    razorpayEnabled: isRazorpayConfigured(),
     currency: (process.env.STRIPE_CURRENCY || "usd").toLowerCase() === "inr" ? "inr" : "usd",
   });
+});
+
+// GET /api/payments/subscription - Returns current user's subscription state & daily quota
+app.get("/api/payments/subscription", requireAuth, async (req, res) => {
+  try {
+    const quota = await getDailyQuotaSummary(req.user);
+    return res.json({
+      success: true,
+      plan: req.user.plan || "free",
+      isPro: isProUser(req.user),
+      subscription: req.user.subscription || { status: "inactive", billingCycle: null, gateway: null },
+      quota,
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/payments/cancel - Cancels active Pro plan cleanly and reverts user to Free tier
+app.post("/api/payments/cancel", requireAuth, async (req, res) => {
+  try {
+    let updatedUser = req.user;
+    if (isMongoConnected && req.user) {
+      updatedUser =
+        (await User.findByIdAndUpdate(
+          req.user._id,
+          {
+            $set: {
+              plan: "free",
+              "subscription.status": "canceled",
+              "subscription.canceledAt": new Date(),
+            },
+          },
+          { returnDocument: "after" }
+        ).catch(() => null)) || req.user;
+    }
+
+    return res.json({
+      success: true,
+      plan: "free",
+      user: typeof updatedUser?.toPublicJSON === "function" ? updatedUser.toPublicJSON() : undefined,
+      message: "Nebula Pro subscription canceled. Your account is now on the Free plan.",
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // POST /api/payments/upgrade - Sandbox-only test checkout (disabled in Live mode)
@@ -596,10 +786,20 @@ app.post("/api/payments/upgrade", requireAuth, async (req, res) => {
       stripePayment.paymentIntentId ||
       `rcpt_nebula_${Date.now()}_${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 
+    let updatedUser = req.user;
     if (isMongoConnected && req.user) {
-      await User.findByIdAndUpdate(req.user._id, {
-        $set: { plan: "pro" },
-      }).catch(() => {});
+      updatedUser =
+        (await User.findByIdAndUpdate(
+          req.user._id,
+          {
+            $set: buildSubscriptionFields({
+              billingCycle,
+              gateway: gateway || paymentMethod,
+              receiptId,
+            }),
+          },
+          { returnDocument: "after" }
+        ).catch(() => null)) || req.user;
     }
 
     res.json({
@@ -610,6 +810,7 @@ app.post("/api/payments/upgrade", requireAuth, async (req, res) => {
       receiptId,
       stripePayment,
       activatedAt: new Date().toISOString(),
+      user: typeof updatedUser?.toPublicJSON === "function" ? updatedUser.toPublicJSON() : undefined,
       message: "Nebula Pro subscription activated via Stripe Sandbox!",
     });
   } catch (err) {
@@ -675,7 +876,14 @@ app.post("/api/payments/verify-checkout-session", requireAuth, async (req, res) 
       updatedUser =
         (await User.findByIdAndUpdate(
           req.user._id,
-          { $set: { plan: "pro" } },
+          {
+            $set: buildSubscriptionFields({
+              billingCycle: session.metadata?.billingCycle === "annual" ? "annual" : "monthly",
+              gateway: "stripe",
+              receiptId: session.id,
+              sessionId: session.id,
+            }),
+          },
           { returnDocument: "after" }
         ).catch(() => null)) || req.user;
     }
@@ -695,10 +903,70 @@ app.post("/api/payments/verify-checkout-session", requireAuth, async (req, res) 
   }
 });
 
+// Optional Razorpay Order Creation & Verification (active when RAZORPAY_KEY_ID & SECRET are configured)
+app.post("/api/payments/razorpay/create-order", requireAuth, async (req, res) => {
+  try {
+    if (!isRazorpayConfigured()) {
+      return res.status(503).json({
+        success: false,
+        error: "Razorpay checkout is not configured on this server. Use Stripe Checkout.",
+      });
+    }
+    const { billingCycle = "monthly" } = req.body || {};
+    const order = await createRazorpayOrder({ billingCycle, userId: req.user._id });
+    return res.json({ success: true, ...order });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post("/api/payments/razorpay/verify", requireAuth, async (req, res) => {
+  try {
+    if (!isRazorpayConfigured()) {
+      return res.status(503).json({ success: false, error: "Razorpay is not configured." });
+    }
+    const { orderId, paymentId, signature, billingCycle = "monthly" } = req.body || {};
+    if (!verifyRazorpaySignature({ orderId, paymentId, signature })) {
+      return res.status(400).json({ success: false, error: "Invalid Razorpay payment signature." });
+    }
+
+    let updatedUser = req.user;
+    if (isMongoConnected && req.user) {
+      updatedUser =
+        (await User.findByIdAndUpdate(
+          req.user._id,
+          {
+            $set: buildSubscriptionFields({
+              billingCycle,
+              gateway: "razorpay",
+              receiptId: paymentId,
+              sessionId: orderId,
+            }),
+          },
+          { returnDocument: "after" }
+        ).catch(() => null)) || req.user;
+    }
+
+    return res.json({
+      success: true,
+      plan: "pro",
+      receiptId: paymentId,
+      activatedAt: new Date().toISOString(),
+      user: typeof updatedUser?.toPublicJSON === "function" ? updatedUser.toPublicJSON() : undefined,
+      message: "Nebula Pro subscription verified via Razorpay!",
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // FLUX.1 Visual Node-Graph Workflow Execution Endpoint (ComfyUI-style Hybrid Pipeline)
 app.post("/api/flux/workflow", requireAuth, chatLimiter, async (req, res) => {
   const workflowStart = Date.now();
   try {
+    const quotaAllowed = await enforceDailyQuota(req, res, "flux");
+    if (!quotaAllowed) return;
+
     const {
       prompt = "Minimalist glass and warm wood architectural pavilion overlooking a serene alpine mountain lake at sunrise",
       unetModel = "flux1-schnell-Q4_K_S.gguf",
@@ -736,6 +1004,7 @@ app.post("/api/flux/workflow", requireAuth, chatLimiter, async (req, res) => {
         }),
         UsageLog.create({
           userId: req.user._id,
+          sessionId: "flux-studio",
           model: unetModel,
           promptLength: String(prompt || "").length,
           latencyMs: totalLatencyMs,
@@ -778,6 +1047,9 @@ app.post("/api/flux/workflow", requireAuth, chatLimiter, async (req, res) => {
 app.post("/api/chat", requireAuth, chatLimiter, async (req, res) => {
   const startTime = Date.now();
   try {
+    const quotaAllowed = await enforceDailyQuota(req, res, "chat");
+    if (!quotaAllowed) return;
+
     const { 
       message, 
       model: requestedModel, 
@@ -1357,4 +1629,10 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app };
+module.exports = {
+  app,
+  isOriginAllowed,
+  buildAllowedOrigins,
+  isProUser,
+  buildSubscriptionFields,
+};

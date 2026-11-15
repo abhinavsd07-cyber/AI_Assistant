@@ -37,10 +37,50 @@ const UserSchema = new mongoose.Schema(
       type: String,
       sparse: true,
     },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    hasPassword: {
+      type: Boolean,
+      default: function () {
+        return this.provider !== "google";
+      },
+    },
+    resetTokenHash: {
+      type: String,
+      select: false,
+    },
+    resetTokenExpires: {
+      type: Date,
+      select: false,
+    },
     plan: {
       type: String,
       enum: ["free", "pro", "enterprise"],
       default: "free",
+    },
+    subscription: {
+      status: {
+        type: String,
+        enum: ["inactive", "active", "canceled"],
+        default: "inactive",
+      },
+      billingCycle: {
+        type: String,
+        enum: ["monthly", "annual", null],
+        default: null,
+      },
+      gateway: {
+        type: String,
+        enum: ["stripe", "razorpay", null],
+        default: null,
+      },
+      receiptId: { type: String, default: null },
+      sessionId: { type: String, default: null },
+      activatedAt: { type: Date, default: null },
+      currentPeriodEnd: { type: Date, default: null },
+      canceledAt: { type: Date, default: null },
     },
     preferences: {
       theme: { type: String, default: "dark" },
@@ -66,7 +106,10 @@ UserSchema.methods.toPublicJSON = function () {
     email: this.email,
     avatar: this.avatar,
     provider: this.provider,
+    emailVerified: Boolean(this.emailVerified),
+    hasPassword: this.hasPassword !== undefined ? Boolean(this.hasPassword) : this.provider !== "google",
     plan: this.plan,
+    subscription: this.subscription || { status: "inactive", billingCycle: null, gateway: null },
     preferences: this.preferences,
     usage: this.usage,
     createdAt: this.createdAt,

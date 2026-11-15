@@ -41,6 +41,7 @@ function createRateLimiter({ windowMs = 60 * 1000, max = 60, message = "Too many
 
   return function rateLimiterMiddleware(req, res, next) {
     const key = req.user?._id?.toString() || req.ip || req.headers["x-forwarded-for"] || "anonymous";
+    const limit = typeof max === "function" ? max(req) : max;
     const now = Date.now();
 
     let record = hits.get(key);
@@ -50,13 +51,13 @@ function createRateLimiter({ windowMs = 60 * 1000, max = 60, message = "Too many
     }
 
     record.count += 1;
-    const remaining = Math.max(0, max - record.count);
+    const remaining = Math.max(0, limit - record.count);
 
-    res.setHeader("X-RateLimit-Limit", String(max));
+    res.setHeader("X-RateLimit-Limit", String(limit));
     res.setHeader("X-RateLimit-Remaining", String(remaining));
     res.setHeader("X-RateLimit-Reset", String(Math.ceil(record.resetTime / 1000)));
 
-    if (record.count > max) {
+    if (record.count > limit) {
       return res.status(429).json({
         success: false,
         error: message,

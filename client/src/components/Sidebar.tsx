@@ -27,7 +27,7 @@ import {
   FileCode
 } from 'lucide-react';
 import type { ChatSession } from '../types';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 interface ProjectFolder {
   id: string;
@@ -170,6 +170,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
     );
   }, [sessions, searchQuery]);
 
+  const [referenceNow, setReferenceNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setReferenceNow(Date.now());
+    }, 60 * 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
   // Chronological & Pinned ChatGPT-style grouping
   const groupedSessions = useMemo(() => {
     const pinned: ChatSession[] = [];
@@ -177,7 +186,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const previous7Days: ChatSession[] = [];
     const older: ChatSession[] = [];
 
-    const now = Date.now();
     const oneDayMs = 24 * 60 * 60 * 1000;
     const sevenDaysMs = 7 * oneDayMs;
 
@@ -188,7 +196,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }
       const updatedTime = s.updatedAt ? new Date(s.updatedAt).getTime() : NaN;
       if (!isNaN(updatedTime)) {
-        const diff = now - updatedTime;
+        const diff = referenceNow - updatedTime;
         if (diff <= oneDayMs) today.push(s);
         else if (diff <= sevenDaysMs) previous7Days.push(s);
         else older.push(s);
@@ -200,7 +208,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     });
 
     return { pinned, today, previous7Days, older };
-  }, [filteredSessions, pinnedIds]);
+  }, [filteredSessions, pinnedIds, referenceNow]);
 
   const togglePin = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -264,11 +272,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     user?.avatar && user.avatar !== '/avatar.jpg' && !user.avatar.includes('dicebear.com')
       ? user.avatar
       : null;
-  const [avatarError, setAvatarError] = useState(false);
-
-  useEffect(() => {
-    setAvatarError(false);
-  }, [user?.avatar]);
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
+  const avatarError = Boolean(avatarUrl && failedAvatarUrl === avatarUrl);
 
   const initials =
     displayName
@@ -500,7 +505,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 src={avatarUrl}
                 alt={displayName}
                 referrerPolicy="no-referrer"
-                onError={() => setAvatarError(true)}
+                onError={() => setFailedAvatarUrl(avatarUrl)}
                 className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-2xs"
               />
             ) : (
@@ -897,7 +902,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         src={avatarUrl}
                         alt={displayName}
                         referrerPolicy="no-referrer"
-                        onError={() => setAvatarError(true)}
+                        onError={() => setFailedAvatarUrl(avatarUrl)}
                         className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-200 dark:border-gray-700 shadow-2xs"
                       />
                     ) : (
@@ -992,7 +997,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   src={avatarUrl}
                   alt={displayName}
                   referrerPolicy="no-referrer"
-                  onError={() => setAvatarError(true)}
+                  onError={() => setFailedAvatarUrl(avatarUrl)}
                   className="w-8 h-8 rounded-full object-cover shrink-0 border border-gray-200 dark:border-gray-700 shadow-2xs"
                 />
               ) : (

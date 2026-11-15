@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "chat": "node chat.js",
     "test:eval": "node tests/eval_suite.js",
-    "test": "node tests/eval_suite.js"
+    "test:integration": "node --test tests/api_integration.test.js",
+    "test": "node --test tests/api_integration.test.js && node tests/eval_suite.js"
   },
   "keywords": [],
   "author": "",

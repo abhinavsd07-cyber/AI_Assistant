@@ -93,7 +93,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     const cleanText = text
       .replace(/```[\s\S]*?```/g, '')
       .replace(/https?:\/\/\S+/g, '')
-      .replace(/[*#_`~>\[\]()]/g, '')
+      .replace(/[*#_`~>[\]()]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
 

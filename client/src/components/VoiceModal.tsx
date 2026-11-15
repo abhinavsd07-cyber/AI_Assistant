@@ -183,15 +183,24 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
   const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const availableVoicesRef = useRef<SpeechSynthesisVoice[]>([]);
   const activeSttLangRef = useRef<string>('en-IN');
+  const selectedLangRef = useRef<VoiceLangCode>(selectedLang);
+  const onSendMessageRef = useRef(onSendMessage);
+  const startListeningRef = useRef<(langOverride?: string) => void>(() => {});
+  const processUserSpeechRef = useRef<(speechText: string) => Promise<void>>(async () => {});
+  const speakResponseRef = useRef<(text: string) => void>(() => {});
 
-  isOpenRef.current = isOpen;
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+    selectedLangRef.current = selectedLang;
+    onSendMessageRef.current = onSendMessage;
+  }, [isOpen, selectedLang, onSendMessage]);
 
-  const updateStatus = (s: 'idle' | 'listening' | 'thinking' | 'speaking') => {
+  const updateStatus = React.useCallback((s: 'idle' | 'listening' | 'thinking' | 'speaking') => {
     statusRef.current = s;
     if (isMountedRef.current) {
       setStatus(s);
     }
-  };
+  }, []);
 
   const stopAll = React.useCallback(() => {
     if (restartTimerRef.current) {
@@ -232,7 +241,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
       synthRef.current.cancel();
     }
     updateStatus('idle');
-  }, []);
+  }, [updateStatus]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -252,114 +261,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
     };
   }, [stopAll]);
 
-  const processUserSpeech = async (speechText: string) => {
-    updateStatus('thinking');
-    if (silenceTimerRef.current) {
-      window.clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = null;
-    }
-
-    try {
-      const reply = await onSendMessage(speechText);
-      if (!isMountedRef.current || !isOpenRef.current) return;
-      if (reply) {
-        setLastAiReply(reply);
-        speakResponse(reply);
-      } else {
-        startListening(activeSttLangRef.current);
-      }
-    } catch (err: any) {
-      if (isMountedRef.current) {
-        setErrorMessage(err.message || 'Error processing response');
-        updateStatus('idle');
-      }
-    }
-  };
-
-  const speakResponse = (text: string) => {
-    if (speechWatchdogRef.current) {
-      window.clearTimeout(speechWatchdogRef.current);
-      speechWatchdogRef.current = null;
-    }
-    if (audioRef.current) {
-      try {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-      } catch {
-        // Ignore
-      }
-      audioRef.current = null;
-    }
-    if (synthRef.current) {
-      synthRef.current.cancel();
-    }
-
-    const cleanText = text
-      .replace(/```[\s\S]*?```/g, '')
-      .replace(/https?:\/\/\S+/g, '')
-      .replace(/[*#_`~>\[\]()]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    if (!cleanText) {
-      startListening(activeSttLangRef.current);
-      return;
-    }
-
-    const detected = detectLanguageFromText(cleanText);
-    setDetectedLangLabel(detected.label);
-    if (selectedLang === 'auto') {
-      activeSttLangRef.current = detected.sttLang;
-    }
-
-    updateStatus('speaking');
-
-    const finishSpeakingAndListen = () => {
-      if (speechWatchdogRef.current) {
-        window.clearTimeout(speechWatchdogRef.current);
-        speechWatchdogRef.current = null;
-      }
-      activeUtteranceRef.current = null;
-      audioRef.current = null;
-      if (!isMountedRef.current || !isOpenRef.current) return;
-      transcriptRef.current = '';
-      setTranscript('');
-      restartTimerRef.current = window.setTimeout(() => {
-        if (isMountedRef.current && isOpenRef.current) {
-          startListening(activeSttLangRef.current);
-        }
-      }, 350);
-    };
-
-    // Watchdog timer: If TTS takes too long, automatically resume listening
-    const estimatedMs = Math.max(4000, Math.min(35000, cleanText.length * 95));
-    speechWatchdogRef.current = window.setTimeout(() => {
-      if (statusRef.current === 'speaking') {
-        finishSpeakingAndListen();
-      }
-    }, estimatedMs);
-
-    // Primary: Play high-clarity Multilingual Neural TTS stream from backend (/api/tts)
-    // Works for Malayalam (ml), Tamil (ta), Hindi (hi), Telugu (te), Kannada (kn), Arabic (ar), and English (en) on ALL devices!
-    try {
-      const ttsAudioUrl = `${API_BASE}/api/tts?lang=${encodeURIComponent(detected.ttsLang)}&text=${encodeURIComponent(cleanText.slice(0, 750))}`;
-      const audio = new Audio(ttsAudioUrl);
-      audioRef.current = audio;
-      audio.onended = finishSpeakingAndListen;
-      audio.onerror = () => {
-        // Fallback to browser SpeechSynthesis if offline
-        fallbackBrowserSpeak(cleanText, detected.sttLang, finishSpeakingAndListen);
-      };
-      audio.play().catch(() => {
-        fallbackBrowserSpeak(cleanText, detected.sttLang, finishSpeakingAndListen);
-      });
-      return;
-    } catch {
-      fallbackBrowserSpeak(cleanText, detected.sttLang, finishSpeakingAndListen);
-    }
-  };
-
-  const fallbackBrowserSpeak = (cleanText: string, langCode: string, onDone: () => void) => {
+  const fallbackBrowserSpeak = React.useCallback((cleanText: string, langCode: string, onDone: () => void) => {
     if (!synthRef.current) {
       onDone();
       return;
@@ -393,7 +295,109 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
     utterance.onerror = onDone;
     if (synthRef.current.paused) synthRef.current.resume();
     synthRef.current.speak(utterance);
-  };
+  }, []);
+
+  const speakResponse = React.useCallback((text: string) => {
+    if (speechWatchdogRef.current) {
+      window.clearTimeout(speechWatchdogRef.current);
+      speechWatchdogRef.current = null;
+    }
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      } catch {
+        // Ignore
+      }
+      audioRef.current = null;
+    }
+    if (synthRef.current) {
+      synthRef.current.cancel();
+    }
+
+    const cleanText = text
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/[*#_`~>[\]()]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleanText) {
+      startListeningRef.current(activeSttLangRef.current);
+      return;
+    }
+
+    const detected = detectLanguageFromText(cleanText);
+    setDetectedLangLabel(detected.label);
+    if (selectedLangRef.current === 'auto') {
+      activeSttLangRef.current = detected.sttLang;
+    }
+
+    updateStatus('speaking');
+
+    const finishSpeakingAndListen = () => {
+      if (speechWatchdogRef.current) {
+        window.clearTimeout(speechWatchdogRef.current);
+        speechWatchdogRef.current = null;
+      }
+      activeUtteranceRef.current = null;
+      audioRef.current = null;
+      if (!isMountedRef.current || !isOpenRef.current) return;
+      transcriptRef.current = '';
+      setTranscript('');
+      restartTimerRef.current = window.setTimeout(() => {
+        if (isMountedRef.current && isOpenRef.current) {
+          startListeningRef.current(activeSttLangRef.current);
+        }
+      }, 350);
+    };
+
+    const estimatedMs = Math.max(4000, Math.min(35000, cleanText.length * 95));
+    speechWatchdogRef.current = window.setTimeout(() => {
+      if (statusRef.current === 'speaking') {
+        finishSpeakingAndListen();
+      }
+    }, estimatedMs);
+
+    try {
+      const ttsAudioUrl = `${API_BASE}/api/tts?lang=${encodeURIComponent(detected.ttsLang)}&text=${encodeURIComponent(cleanText.slice(0, 750))}`;
+      const audio = new Audio(ttsAudioUrl);
+      audioRef.current = audio;
+      audio.onended = finishSpeakingAndListen;
+      audio.onerror = () => {
+        fallbackBrowserSpeak(cleanText, detected.sttLang, finishSpeakingAndListen);
+      };
+      audio.play().catch(() => {
+        fallbackBrowserSpeak(cleanText, detected.sttLang, finishSpeakingAndListen);
+      });
+    } catch {
+      fallbackBrowserSpeak(cleanText, detected.sttLang, finishSpeakingAndListen);
+    }
+  }, [fallbackBrowserSpeak, updateStatus]);
+
+  const processUserSpeech = React.useCallback(async (speechText: string) => {
+    updateStatus('thinking');
+    if (silenceTimerRef.current) {
+      window.clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+
+    try {
+      const reply = await onSendMessageRef.current(speechText);
+      if (!isMountedRef.current || !isOpenRef.current) return;
+      if (reply) {
+        setLastAiReply(reply);
+        speakResponseRef.current(reply);
+      } else {
+        startListeningRef.current(activeSttLangRef.current);
+      }
+    } catch (err: any) {
+      if (isMountedRef.current) {
+        setErrorMessage(err.message || 'Error processing response');
+        updateStatus('idle');
+      }
+    }
+  }, [updateStatus]);
 
   const startListening = React.useCallback((langOverride?: string) => {
     setErrorMessage('');
@@ -478,7 +482,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
           if (isMountedRef.current && isOpenRef.current && statusRef.current === 'listening') {
             restartTimerRef.current = window.setTimeout(() => {
               if (isMountedRef.current && isOpenRef.current) {
-                startListening(activeLang);
+                startListeningRef.current(activeLang);
               }
             }, 200);
           }
@@ -501,12 +505,12 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         const finalPrompt = transcriptRef.current.trim();
         if (finalPrompt) {
           transcriptRef.current = '';
-          await processUserSpeech(finalPrompt);
+          await processUserSpeechRef.current(finalPrompt);
         } else {
           if (isMountedRef.current && isOpenRef.current && statusRef.current === 'listening') {
             restartTimerRef.current = window.setTimeout(() => {
               if (isMountedRef.current && isOpenRef.current) {
-                startListening(activeLang);
+                startListeningRef.current(activeLang);
               }
             }, 300);
           } else if (statusRef.current !== 'thinking' && statusRef.current !== 'speaking') {
@@ -523,7 +527,13 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         updateStatus('idle');
       }
     }
-  }, []);
+  }, [updateStatus]);
+
+  useEffect(() => {
+    startListeningRef.current = startListening;
+    processUserSpeechRef.current = processUserSpeech;
+    speakResponseRef.current = speakResponse;
+  }, [startListening, processUserSpeech, speakResponse]);
 
   const interruptSpeech = () => {
     if (audioRef.current) {
@@ -553,24 +563,23 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
   };
 
   useEffect(() => {
-    if (isOpen) {
-      transcriptRef.current = '';
-      setTranscript('');
-      setLastAiReply('');
-      setErrorMessage('');
-      const timer = window.setTimeout(() => {
-        if (isMountedRef.current) {
-          startListening(activeSttLangRef.current);
-        }
-      }, 150);
-      return () => {
-        window.clearTimeout(timer);
-        stopAll();
-      };
-    } else {
-      stopAll();
+    if (!isOpen) {
+      return;
     }
-  }, [isOpen]);
+    transcriptRef.current = '';
+    const timer = window.setTimeout(() => {
+      if (isMountedRef.current) {
+        setTranscript('');
+        setLastAiReply('');
+        setErrorMessage('');
+        startListening(activeSttLangRef.current);
+      }
+    }, 150);
+    return () => {
+      window.clearTimeout(timer);
+      stopAll();
+    };
+  }, [isOpen, startListening, stopAll]);
 
   if (!isOpen) return null;
 

@@ -1,24 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AuthContext, type ViewType } from './useAuth';
 import type { UserProfile, AuthResponse } from '../types';
-
-export type ViewType = 'chat' | 'login' | 'signup';
-
-interface AuthContextType {
-  user: UserProfile | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  currentView: ViewType;
-  navigateTo: (view: ViewType) => void;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  loginWithGoogle: (credential?: string, profile?: Partial<UserProfile>, accessToken?: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
-  refreshUser: () => Promise<void>;
-  updateProfile: (data: { name?: string; avatar?: string; preferences?: Record<string, any> }) => Promise<{ success: boolean; error?: string }>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
@@ -38,7 +20,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Synchronize route view with clean HTML5 pathname (/login, /signup, /) + Back/Forward popstate
   const getViewFromLocation = (): ViewType => {
     const path = window.location.pathname.toLowerCase();
     const hash = window.location.hash.toLowerCase();
@@ -80,7 +61,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Verify token on mount with /api/auth/me
   useEffect(() => {
     const verifySession = async () => {
       const storedToken = localStorage.getItem('nebula_token');
@@ -171,7 +151,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithGoogle = async (credential?: string, profile?: Partial<UserProfile>, accessToken?: string): Promise<{ success: boolean; error?: string }> => {
+  const loginWithGoogle = async (
+    credential?: string,
+    profile?: Partial<UserProfile>,
+    accessToken?: string
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await fetch(`${API_BASE}/api/auth/google`, {
         method: 'POST',
@@ -239,6 +223,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!token) return { success: false, error: 'Not authenticated' };
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const resData = await res.json();
+      if (!res.ok || !resData.success) {
+        return { success: false, error: resData.error || 'Failed to update password' };
+      }
+      if (resData.user) {
+        setUser(resData.user);
+        localStorage.setItem('nebula_user', JSON.stringify(resData.user));
+      }
+      return { success: true, message: resData.message || 'Password updated successfully.' };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to update password' };
+    }
+  };
+
+  const cancelSubscription = async () => {
+    if (!token) return { success: false, error: 'Not authenticated' };
+    try {
+      const res = await fetch(`${API_BASE}/api/payments/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const resData = await res.json();
+      if (!res.ok || !resData.success) {
+        return { success: false, error: resData.error || 'Could not cancel subscription' };
+      }
+      if (resData.user) {
+        setUser(resData.user);
+        localStorage.setItem('nebula_user', JSON.stringify(resData.user));
+        localStorage.removeItem(`nebula_is_pro_${resData.user.id}`);
+      }
+      localStorage.removeItem('nebula_is_pro');
+      return { success: true, message: resData.message };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to cancel subscription' };
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (!token) return { success: false, error: 'Not authenticated' };
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/account`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const resData = await res.json();
+      if (!res.ok || !resData.success) {
+        return { success: false, error: resData.error || 'Could not delete account' };
+      }
+      logout();
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to delete account' };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -254,17 +309,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         refreshUser,
         updateProfile,
+        changePassword,
+        cancelSubscription,
+        deleteAccount,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

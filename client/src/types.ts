@@ -1,10 +1,24 @@
+export interface UserSubscription {
+  status?: 'inactive' | 'active' | 'canceled';
+  billingCycle?: 'monthly' | 'annual' | null;
+  gateway?: 'stripe' | 'razorpay' | null;
+  receiptId?: string | null;
+  sessionId?: string | null;
+  activatedAt?: string | null;
+  currentPeriodEnd?: string | null;
+  canceledAt?: string | null;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
   email: string;
   avatar: string;
   provider: 'local' | 'google';
+  emailVerified?: boolean;
+  hasPassword?: boolean;
   plan: 'free' | 'pro' | 'enterprise';
+  subscription?: UserSubscription;
   preferences?: {
     theme?: string;
     defaultModel?: string;

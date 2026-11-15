@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  X, 
-  Server, 
-  Globe, 
-  Database, 
-  User, 
-  LogOut, 
-  LogIn, 
-  Check, 
-  Cpu, 
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  X,
+  Server,
+  Globe,
+  Database,
+  User,
+  LogOut,
+  LogIn,
+  Check,
+  Cpu,
   Sparkles,
   BarChart2,
   Brain,
@@ -16,9 +16,11 @@ import {
   Plus,
   Camera,
   Upload,
-  Loader2
+  Loader2,
+  Lock,
+  CreditCard
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
@@ -29,9 +31,18 @@ interface MemoryItem {
   value: string;
 }
 
+interface QuotaSummary {
+  unlimited: boolean;
+  dailyChatLimit: number | null;
+  dailyChatUsed: number;
+  dailyFluxLimit: number | null;
+  dailyFluxUsed: number;
+}
+
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenUpgrade?: () => void;
   apiUrl: string;
   setApiUrl: (url: string) => void;
   userName: string;
@@ -43,33 +54,48 @@ interface SettingsModalProps {
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
+  onOpenUpgrade,
   apiUrl,
   userName,
   setUserName,
   userEmail,
   setUserEmail,
 }) => {
-  const { user, token, isAuthenticated, logout, navigateTo, updateProfile } = useAuth();
+  const {
+    user,
+    token,
+    isAuthenticated,
+    logout,
+    navigateTo,
+    updateProfile,
+    changePassword,
+    cancelSubscription,
+    deleteAccount,
+  } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'memory'>('profile');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string>(
+
+  const savedAvatar =
     user?.avatar && user.avatar !== '/avatar.jpg' && !user.avatar.includes('dicebear.com')
       ? user.avatar
-      : ''
-  );
+      : '';
+  const [avatarDraft, setAvatarDraft] = useState<string | null>(null);
+  const avatarUrl = avatarDraft !== null ? avatarDraft : savedAvatar;
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [avatarImgError, setAvatarImgError] = useState(false);
+  const [failedAvatarSrc, setFailedAvatarSrc] = useState<string | null>(null);
+  const avatarImgError = Boolean(avatarUrl && failedAvatarSrc === avatarUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const cleanAvatar =
-      user?.avatar && user.avatar !== '/avatar.jpg' && !user.avatar.includes('dicebear.com')
-        ? user.avatar
-        : '';
-    setAvatarUrl(cleanAvatar);
-    setAvatarImgError(false);
-  }, [user?.avatar, isOpen]);
+  // Account security & subscription management state
+  const [quota, setQuota] = useState<QuotaSummary | null>(null);
+  const [isPasswordOpen, setIsPasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [securityFeedback, setSecurityFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [isUpdatingSecurity, setIsUpdatingSecurity] = useState(false);
+  const [confirmDeleteStep, setConfirmDeleteStep] = useState(false);
+  const [isCancelingPlan, setIsCancelingPlan] = useState(false);
 
   // Live backend health telemetry
   const [healthStatus, setHealthStatus] = useState<{
@@ -85,25 +111,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [newValue, setNewValue] = useState('');
 
   useEffect(() => {
-    if (isOpen) {
-      fetch(`${API_BASE}/api/health`)
+    if (!isOpen) return;
+    let active = true;
+    fetch(`${API_BASE}/api/health`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (active && data.success) {
+          setHealthStatus({
+            database: data.database || 'Connected',
+            modelsReady: Boolean(data.modelsReady),
+            status: data.status || 'healthy',
+          });
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setHealthStatus({ database: 'Offline', modelsReady: false, status: 'offline' });
+        }
+      });
+
+    if (isAuthenticated && token) {
+      fetch(`${API_BASE}/api/payments/subscription`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
         .then((r) => r.json())
         .then((data) => {
-          if (data.success) {
-            setHealthStatus({
-              database: data.database || 'Connected',
-              modelsReady: Boolean(data.modelsReady),
-              status: data.status || 'healthy',
-            });
+          if (active && data?.success && data.quota) {
+            setQuota(data.quota);
           }
         })
-        .catch(() => {
-          setHealthStatus({ database: 'Offline', modelsReady: false, status: 'offline' });
-        });
+        .catch(() => {});
     }
-  }, [isOpen]);
 
-  const fetchMemories = async () => {
+    return () => {
+      active = false;
+    };
+  }, [isOpen, isAuthenticated, token]);
+
+  const fetchMemories = useCallback(async () => {
     setIsLoadingMemories(true);
     try {
       const headers: Record<string, string> = {};
@@ -118,13 +163,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     } finally {
       setIsLoadingMemories(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
-    if (isOpen && activeTab === 'memory') {
-      fetchMemories();
-    }
-  }, [isOpen, activeTab]);
+    if (!isOpen || activeTab !== 'memory') return;
+    let active = true;
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    fetch(`${API_BASE}/api/memories`, { headers })
+      .then((r) => r.json())
+      .then((data) => {
+        if (active && data.success && Array.isArray(data.memories)) {
+          setMemories(data.memories);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setIsLoadingMemories(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isOpen, activeTab, token]);
+
+  const handleClose = () => {
+    setAvatarDraft(null);
+    setSecurityFeedback(null);
+    setConfirmDeleteStep(false);
+    setIsPasswordOpen(false);
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -133,7 +201,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     if (!file) return;
 
     setIsUploadingAvatar(true);
-    setAvatarImgError(false);
+    setFailedAvatarSrc(null);
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -152,10 +220,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
         }
         const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
-        setAvatarUrl(croppedDataUrl);
+        setAvatarDraft(croppedDataUrl);
 
         if (isAuthenticated) {
           await updateProfile({ name: userName, avatar: croppedDataUrl });
+          setAvatarDraft(null);
         }
         setIsUploadingAvatar(false);
       };
@@ -169,10 +238,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const handleRemoveAvatar = async () => {
-    setAvatarUrl('');
-    setAvatarImgError(false);
+    setAvatarDraft('');
+    setFailedAvatarSrc(null);
     if (isAuthenticated) {
       await updateProfile({ name: userName, avatar: '' });
+      setAvatarDraft(null);
     }
   };
 
@@ -182,6 +252,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
     if (isAuthenticated) {
       await updateProfile({ name: userName, avatar: avatarUrl });
+      setAvatarDraft(null);
     } else {
       localStorage.setItem('nebula_user_name', userName);
       localStorage.setItem('nebula_user_email', userEmail);
@@ -191,8 +262,56 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setSaveSuccess(true);
     setTimeout(() => {
       setSaveSuccess(false);
-      onClose();
+      handleClose();
     }, 600);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSecurityFeedback(null);
+    if (newPassword.length < 6) {
+      setSecurityFeedback({ type: 'err', text: 'New password must be at least 6 characters.' });
+      return;
+    }
+    setIsUpdatingSecurity(true);
+    const res = await changePassword(currentPassword, newPassword);
+    setIsUpdatingSecurity(false);
+    if (res.success) {
+      setCurrentPassword('');
+      setNewPassword('');
+      setIsPasswordOpen(false);
+      setSecurityFeedback({ type: 'ok', text: res.message || 'Password updated.' });
+    } else {
+      setSecurityFeedback({ type: 'err', text: res.error || 'Could not update password.' });
+    }
+  };
+
+  const handleCancelPro = async () => {
+    setIsCancelingPlan(true);
+    setSecurityFeedback(null);
+    const res = await cancelSubscription();
+    setIsCancelingPlan(false);
+    if (res.success) {
+      setQuota((q) => (q ? { ...q, unlimited: false, dailyChatLimit: 40, dailyFluxLimit: 8 } : null));
+      setSecurityFeedback({ type: 'ok', text: res.message || 'Switched back to Free tier.' });
+    } else {
+      setSecurityFeedback({ type: 'err', text: res.error || 'Unable to cancel plan.' });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!confirmDeleteStep) {
+      setConfirmDeleteStep(true);
+      return;
+    }
+    setIsUpdatingSecurity(true);
+    const res = await deleteAccount();
+    setIsUpdatingSecurity(false);
+    if (res.success) {
+      handleClose();
+    } else {
+      setSecurityFeedback({ type: 'err', text: res.error || 'Account deletion failed.' });
+    }
   };
 
   const handleAddMemory = async () => {
@@ -257,7 +376,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <h2 className="text-base font-bold text-[#0D0D0D] dark:text-white">Settings & AI Memory</h2>
           </div>
           <button 
-            onClick={onClose}
+            onClick={handleClose}
             className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 flex items-center justify-center text-gray-500 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
           >
             <X size={15} />
@@ -278,7 +397,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <span>Profile & System</span>
           </button>
           <button
-            onClick={() => setActiveTab('memory')}
+            onClick={() => {
+              setIsLoadingMemories(true);
+              setActiveTab('memory');
+            }}
             className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
               activeTab === 'memory'
                 ? 'bg-white dark:bg-[#2E2E2E] text-black dark:text-white shadow-2xs'
@@ -320,7 +442,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         src={avatarUrl}
                         alt={userName || 'Profile'}
                         referrerPolicy="no-referrer"
-                        onError={() => setAvatarImgError(true)}
+                        onError={() => setFailedAvatarSrc(avatarUrl)}
                         className="w-14 h-14 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-xs"
                       />
                     ) : (
@@ -422,13 +544,81 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
 
+                {securityFeedback && (
+                  <div
+                    className={`px-3 py-2 rounded-xl text-[11px] font-medium border ${
+                      securityFeedback.type === 'ok'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                        : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300'
+                    }`}
+                  >
+                    {securityFeedback.text}
+                  </div>
+                )}
+
+                {isAuthenticated && (
+                  <div className="pt-2 border-t border-[#E5E5E5] dark:border-[#2C2C2C] flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsPasswordOpen((v) => !v);
+                          setSecurityFeedback(null);
+                        }}
+                        className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white cursor-pointer"
+                      >
+                        <Lock size={12} />
+                        <span>{user?.hasPassword === false ? 'Set Account Password' : 'Change Password'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={isUpdatingSecurity}
+                        onClick={handleDeleteAccount}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer disabled:opacity-50"
+                      >
+                        <Trash2 size={11} />
+                        <span>{confirmDeleteStep ? 'Confirm Permanent Delete' : 'Delete Account'}</span>
+                      </button>
+                    </div>
+
+                    {isPasswordOpen && (
+                      <form onSubmit={handleChangePassword} className="flex flex-col gap-2 p-2.5 rounded-xl bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#333]">
+                        {user?.hasPassword !== false && (
+                          <input
+                            type="password"
+                            placeholder="Current password"
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            className="w-full px-2.5 py-1.5 rounded-lg bg-[#FBFBFB] dark:bg-[#222222] border border-[#E5E5E5] dark:border-[#333] text-xs outline-none focus:border-black dark:focus:border-white"
+                          />
+                        )}
+                        <input
+                          type="password"
+                          placeholder="New password (min 6 characters)"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#FBFBFB] dark:bg-[#222222] border border-[#E5E5E5] dark:border-[#333] text-xs outline-none focus:border-black dark:focus:border-white"
+                        />
+                        <button
+                          type="submit"
+                          disabled={isUpdatingSecurity}
+                          className="py-1.5 px-3 rounded-lg bg-[#0D0D0D] dark:bg-white text-white dark:text-black text-[11px] font-semibold hover:opacity-90 cursor-pointer disabled:opacity-50"
+                        >
+                          {isUpdatingSecurity ? 'Updating...' : 'Save Password'}
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                )}
+
                 <div className="pt-2 border-t border-[#E5E5E5] dark:border-[#2C2C2C]">
                   {isAuthenticated ? (
                     <button
                       type="button"
                       onClick={() => {
                         logout();
-                        onClose();
+                        handleClose();
                       }}
                       className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-medium text-xs transition-colors cursor-pointer"
                     >
@@ -439,7 +629,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        onClose();
+                        handleClose();
                         navigateTo('login');
                       }}
                       className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#0D0D0D] dark:bg-white hover:bg-[#262626] dark:hover:bg-gray-100 text-white dark:text-black font-medium text-xs transition-colors cursor-pointer shadow-xs"
@@ -450,6 +640,48 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   )}
                 </div>
               </div>
+
+              {isAuthenticated && (
+                <div className="p-3.5 rounded-2xl bg-[#FBFBFB] dark:bg-[#222222] border border-[#E5E5E5] dark:border-[#2C2C2C] flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CreditCard size={15} className="text-gray-600 dark:text-gray-400" />
+                      <div>
+                        <span className="text-[#0D0D0D] dark:text-white font-semibold text-xs block">
+                          Subscription & Daily Quota
+                        </span>
+                        <span className="text-[10.5px] text-gray-500 dark:text-gray-400">
+                          {user?.plan === 'pro' || user?.plan === 'enterprise'
+                            ? `Unlimited priority throughput (${user?.subscription?.billingCycle || 'pro'})`
+                            : quota
+                              ? `${quota.dailyChatUsed}/${quota.dailyChatLimit} chats • ${quota.dailyFluxUsed}/${quota.dailyFluxLimit} FLUX renders today`
+                              : '40 daily chats & 8 daily FLUX studio renders'}
+                        </span>
+                      </div>
+                    </div>
+                    {user?.plan === 'pro' || user?.plan === 'enterprise' ? (
+                      <button
+                        type="button"
+                        disabled={isCancelingPlan}
+                        onClick={handleCancelPro}
+                        className="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-gray-700 dark:text-gray-200 hover:text-rose-600 text-[10.5px] font-semibold cursor-pointer disabled:opacity-50"
+                      >
+                        {isCancelingPlan ? 'Updating...' : 'Cancel Pro'}
+                      </button>
+                    ) : (
+                      onOpenUpgrade && (
+                        <button
+                          type="button"
+                          onClick={onOpenUpgrade}
+                          className="px-2.5 py-1 rounded-lg bg-[#0D0D0D] dark:bg-white text-white dark:text-black text-[10.5px] font-semibold hover:opacity-90 cursor-pointer"
+                        >
+                          Upgrade Pro
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
 
               {isAuthenticated && user?.usage && (
                 <div className="p-3.5 rounded-2xl bg-[#FBFBFB] dark:bg-[#222222] border border-[#E5E5E5] dark:border-[#2C2C2C] flex items-center justify-between">

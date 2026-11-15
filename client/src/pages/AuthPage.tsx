@@ -11,7 +11,9 @@ import {
   Loader2, 
   ShieldCheck
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
+
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
 interface AuthPageProps {
   initialMode?: 'login' | 'signup';
@@ -19,19 +21,9 @@ interface AuthPageProps {
 
 export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => {
   const { currentView, navigateTo, login, register, loginWithGoogle } = useAuth();
-  
-  // Track active mode: 'login' | 'signup'
-  const [internalMode, setInternalMode] = useState<'login' | 'signup'>(
-    currentView === 'signup' ? 'signup' : (currentView === 'login' ? 'login' : initialMode)
-  );
 
-  useEffect(() => {
-    if (currentView === 'signup' || currentView === 'login') {
-      setInternalMode(currentView);
-    }
-  }, [currentView]);
-
-  const mode = internalMode;
+  const mode: 'login' | 'signup' =
+    currentView === 'signup' ? 'signup' : currentView === 'login' ? 'login' : initialMode;
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -43,17 +35,25 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Forgot Password inline drawer + Legal Notice modal
+  const [isForgotOpen, setIsForgotOpen] = useState(false);
+  const [resetStep, setResetStep] = useState<'request' | 'confirm'>('request');
+  const [resetCode, setResetCode] = useState('');
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [legalModal, setLegalModal] = useState<'terms' | 'privacy' | null>(null);
+
   const googleBtnRef = useRef<HTMLDivElement>(null);
   const googleClientId =
     import.meta.env.VITE_GOOGLE_CLIENT_ID ||
     '966040753081-ni3e6p4sen6pau4mb6eeeglmmfdjbe8g.apps.googleusercontent.com';
 
-  // Clear alerts on mode switch
+  // Clear alerts on mode switch and keep URL pathname aligned
   const switchMode = (newMode: 'login' | 'signup') => {
-    setInternalMode(newMode);
     setErrorMessage(null);
     setSuccessMessage(null);
     setIsSubmitting(false);
+    setIsForgotOpen(false);
+    navigateTo(newMode);
   };
 
   // Google Identity Services (GIS) button initialization (handles async defer script load)
@@ -426,13 +426,110 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
                   {mode === 'login' && (
                     <button
                       type="button"
-                      onClick={() => alert('Password reset instructions sent to your email.')}
+                      onClick={() => {
+                        setErrorMessage(null);
+                        setSuccessMessage(null);
+                        setIsForgotOpen((v) => !v);
+                        setResetStep('request');
+                      }}
                       className="text-[10.5px] text-gray-500 hover:text-black hover:underline transition-colors cursor-pointer"
                     >
-                      Forgot password?
+                      {isForgotOpen ? 'Back to sign in' : 'Forgot password?'}
                     </button>
                   )}
                 </div>
+
+                {mode === 'login' && isForgotOpen && (
+                  <div className="p-3 rounded-xl bg-gray-50 border border-[#E5E5E5] flex flex-col gap-2 mb-1 animate-in fade-in duration-150">
+                    <span className="text-[11px] font-semibold text-gray-800">
+                      {resetStep === 'request' ? 'Reset your password' : 'Enter 8-character reset code'}
+                    </span>
+                    {resetStep === 'confirm' && (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Reset code from email"
+                          value={resetCode}
+                          onChange={(e) => setResetCode(e.target.value)}
+                          className="w-full h-8.5 px-2.5 rounded-lg bg-white border border-[#E5E5E5] text-xs outline-none focus:border-black"
+                        />
+                        <input
+                          type="password"
+                          placeholder="New password (min 6 characters)"
+                          value={resetNewPassword}
+                          onChange={(e) => setResetNewPassword(e.target.value)}
+                          className="w-full h-8.5 px-2.5 rounded-lg bg-white border border-[#E5E5E5] text-xs outline-none focus:border-black"
+                        />
+                      </>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={async () => {
+                          setErrorMessage(null);
+                          setSuccessMessage(null);
+                          if (!email.trim() || !email.includes('@')) {
+                            setErrorMessage('Enter your account email address above first.');
+                            return;
+                          }
+                          setIsSubmitting(true);
+                          try {
+                            if (resetStep === 'request') {
+                              const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ email: email.trim() }),
+                              });
+                              const data = await res.json();
+                              if (!res.ok || !data.success) {
+                                setErrorMessage(data.error || 'Could not send reset email.');
+                              } else {
+                                setSuccessMessage(data.message || 'Check your inbox for the reset code.');
+                                setResetStep('confirm');
+                              }
+                            } else {
+                              const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  email: email.trim(),
+                                  code: resetCode.trim(),
+                                  newPassword: resetNewPassword,
+                                }),
+                              });
+                              const data = await res.json();
+                              if (!res.ok || !data.success) {
+                                setErrorMessage(data.error || 'Could not reset password.');
+                              } else {
+                                setSuccessMessage(data.message || 'Password reset! Sign in below.');
+                                setIsForgotOpen(false);
+                                setResetCode('');
+                                setResetNewPassword('');
+                              }
+                            }
+                          } catch {
+                            setErrorMessage('Unable to reach authentication server.');
+                          } finally {
+                            setIsSubmitting(false);
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-[#0D0D0D] text-white text-[11px] font-semibold hover:bg-[#262626] disabled:opacity-60 cursor-pointer"
+                      >
+                        {resetStep === 'request' ? 'Send Reset Code' : 'Update Password'}
+                      </button>
+                      {resetStep === 'request' && (
+                        <button
+                          type="button"
+                          onClick={() => setResetStep('confirm')}
+                          className="text-[10.5px] text-gray-500 hover:text-black underline cursor-pointer"
+                        >
+                          Have a code?
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div className="relative flex items-center">
                   <Lock size={13} className="absolute left-3.5 text-gray-400" />
                   <input
@@ -564,13 +661,61 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode = 'login' }) => 
             </div>
             <p className="text-[10px] text-gray-400 max-w-xs">
               By continuing, you agree to Nebula's{' '}
-              <span className="underline hover:text-gray-600 cursor-pointer">Terms</span> and{' '}
-              <span className="underline hover:text-gray-600 cursor-pointer">Privacy Policy</span>.
+              <button
+                type="button"
+                onClick={() => setLegalModal('terms')}
+                className="underline hover:text-gray-600 cursor-pointer"
+              >
+                Terms
+              </button>{' '}
+              and{' '}
+              <button
+                type="button"
+                onClick={() => setLegalModal('privacy')}
+                className="underline hover:text-gray-600 cursor-pointer"
+              >
+                Privacy Policy
+              </button>
+              .
             </p>
           </div>
 
         </div>
       </main>
+
+      {legalModal && (
+        <div
+          onClick={() => setLegalModal(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-2xl bg-white border border-[#E5E5E5] p-5 shadow-2xl text-xs text-gray-700 flex flex-col gap-3"
+          >
+            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+              <h3 className="text-sm font-bold text-[#0D0D0D]">
+                {legalModal === 'terms' ? 'Nebula AI Terms of Service' : 'Nebula AI Privacy Policy'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setLegalModal(null)}
+                className="text-gray-400 hover:text-black font-semibold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+            {legalModal === 'terms' ? (
+              <p className="leading-relaxed">
+                Nebula AI provides conversational AI, visual node-graph synthesis, and in-browser code execution tools. Do not submit sensitive credentials, payment card numbers, or regulated data you do not intend to process.
+              </p>
+            ) : (
+              <p className="leading-relaxed">
+                Account credentials and chat sessions are transmitted over TLS and stored in MongoDB Atlas. You can inspect, clear, or delete persisted MemGPT memories and your full account anytime inside Settings.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="relative z-10 w-full py-2.5 text-center text-[10.5px] text-gray-400 border-t border-[#E5E5E5]/50">

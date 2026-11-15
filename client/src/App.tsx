@@ -5,7 +5,7 @@ import { Hero } from './components/Hero';
 import { ChatThread } from './components/ChatThread';
 import { ChatInput, type FileAttachment } from './components/ChatInput';
 import { AuthPage } from './pages/AuthPage';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from './context/useAuth';
 import type { VerifiedPaymentReceipt } from './components/UpgradeModal';
 import type { Message, ChatSession, PersonaType } from './types';
 
@@ -109,16 +109,21 @@ export const App: React.FC = () => {
     }
   }, [isAuthenticated, userId]);
 
-  // Synchronize profile display and Pro tier without resetting open conversations
+  // Synchronize profile display and Pro tier strictly with server user plan
   useEffect(() => {
     if (isAuthenticated && user) {
       setUserName(user.name);
       setUserEmail(user.email);
       const userProKey = `nebula_is_pro_${user.id}`;
       const proStatus =
-        (user as any)?.plan === 'pro' ||
-        (user as any)?.role === 'pro' ||
-        localStorage.getItem(userProKey) === 'true';
+        user.plan === 'pro' ||
+        user.plan === 'enterprise' ||
+        (user as any)?.role === 'pro';
+      if (proStatus) {
+        localStorage.setItem(userProKey, 'true');
+      } else {
+        localStorage.removeItem(userProKey);
+      }
       setIsPro(proStatus);
     }
   }, [isAuthenticated, user]);
@@ -608,9 +613,17 @@ export const App: React.FC = () => {
         return fullText;
       }
 
-      // Fallback JSON handling
+      // Fallback JSON handling (including 429 tier quota responses)
       const data = await response.json();
       setIsLoading(false);
+
+      if (!response.ok) {
+        if (data?.upgradeRequired) {
+          setUpgradeError(data.error || 'Daily Free tier limit reached. Upgrade to Nebula Pro for unlimited access.');
+          setIsUpgradeOpen(true);
+        }
+        throw new Error(data?.error || `Request failed (${response.status})`);
+      }
 
       if (data.success && data.reply) {
         const assistantMsg: Message = {
@@ -869,6 +882,11 @@ export const App: React.FC = () => {
         <SettingsModal
           isOpen={isSettingsOpen}
           onClose={closeOverlayToCurrentChat}
+          onOpenUpgrade={() => {
+            setIsSettingsOpen(false);
+            setIsUpgradeOpen(true);
+            pushRoute('/pricing');
+          }}
           apiUrl={apiUrl}
           setApiUrl={setApiUrl}
           userName={userName}

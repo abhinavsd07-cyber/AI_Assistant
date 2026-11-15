@@ -30,11 +30,14 @@ jobs:
       - name: Install Frontend Dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Run Frontend Linter (oxlint)
+        run: npm run lint
+
       - name: Build Production Bundle (TypeScript + Vite)
         run: npm run build
 
   backend-verification:
-    name: Backend Syntax & ML Evaluation Suite
+    name: Backend Syntax, Integration & ML Evaluation Suite
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -56,11 +59,15 @@ jobs:
       - name: Verify Server & Middleware Syntax
         run: |
           node -c server.js
+          node -c routes/auth.js
+          node -c models/User.js
           node -c middleware/security.js
+          node -c services/stripe.js
+          node -c services/razorpay.js
           node -c services/imageGen.js
           node -c services/memory.js
           node -c services/ollama.js
           node -c services/cloudinary.js
 
-      - name: Run Automated NLP & ML Evaluation Suite
+      - name: Run HTTP Integration & Evaluation Suite
         run: npm test
