@@ -1,5 +1,138 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { X, Mic, MicOff, AlertCircle, Square, Globe } from 'lucide-react';
+
+type EmblemStatus = 'idle' | 'listening' | 'thinking' | 'speaking';
+
+const EMBLEM_ACCENTS: Record<EmblemStatus, { ringGlow: string; glint: string; nClass: string; ringClass: string }> = {
+  idle: { ringGlow: '#CBD5E1', glint: '#F8FAFC', nClass: 'nebula-n-idle', ringClass: 'nebula-ring-idle' },
+  listening: { ringGlow: '#7DD3FC', glint: '#E0F2FE', nClass: 'nebula-n-listening', ringClass: 'nebula-ring-listening' },
+  thinking: { ringGlow: '#FCD34D', glint: '#FEF3C7', nClass: 'nebula-n-thinking', ringClass: 'nebula-ring-thinking' },
+  speaking: { ringGlow: '#FFFFFF', glint: '#FFFFFF', nClass: 'nebula-n-speaking', ringClass: 'nebula-ring-speaking' },
+};
+
+const NebulaAnimatedEmblem: React.FC<{ status: EmblemStatus }> = ({ status }) => {
+  const uid = useId().replace(/:/g, '');
+  const backClipId = `${uid}-back`;
+  const frontClipId = `${uid}-front`;
+  const metalGradId = `${uid}-metal`;
+  const diagonalGradId = `${uid}-diag`;
+  const darkBevelId = `${uid}-bevel`;
+  const ringTrackId = `${uid}-track`;
+  const ringSweepId = `${uid}-sweep`;
+  const accent = EMBLEM_ACCENTS[status];
+
+  const renderOrbitGroup = () => (
+    <g className={accent.ringClass}>
+      <circle cx="0" cy="0" r="112" fill="none" stroke="none" />
+      <circle cx="0" cy="0" r="102" fill="none" stroke={`url(#${ringTrackId})`} strokeWidth="13" />
+      <circle cx="0" cy="0" r="97.5" fill="none" stroke="#1E293B" strokeWidth="3.5" strokeOpacity="0.85" />
+      <circle
+        cx="0"
+        cy="0"
+        r="102"
+        fill="none"
+        stroke={`url(#${ringSweepId})`}
+        strokeWidth="8"
+        strokeDasharray="128 192 88 232"
+        strokeLinecap="round"
+      />
+      <circle
+        cx="0"
+        cy="0"
+        r="105.5"
+        fill="none"
+        stroke="rgba(255,255,255,0.9)"
+        strokeWidth="2"
+        strokeDasharray="105 215 70 250"
+        strokeLinecap="round"
+      />
+      <circle cx="102" cy="0" r="4" fill={accent.glint} opacity="0.95" />
+      <circle cx="-102" cy="0" r="2.8" fill="#E2E8F0" opacity="0.75" />
+    </g>
+  );
+
+  return (
+    <svg
+      viewBox="-145 -135 290 270"
+      className="w-48 h-48 overflow-visible select-none pointer-events-none drop-shadow-[0_12px_28px_rgba(0,0,0,0.65)]"
+      aria-hidden="true"
+    >
+      <defs>
+        <clipPath id={backClipId}>
+          <rect x="-150" y="-150" width="300" height="150" />
+        </clipPath>
+        <clipPath id={frontClipId}>
+          <rect x="-150" y="0" width="300" height="150" />
+        </clipPath>
+        <linearGradient id={metalGradId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="28%" stopColor="#CBD5E1" />
+          <stop offset="72%" stopColor="#64748B" />
+          <stop offset="100%" stopColor="#E2E8F0" />
+        </linearGradient>
+        <linearGradient id={diagonalGradId} x1="15%" y1="0%" x2="85%" y2="100%">
+          <stop offset="0%" stopColor="#F8FAFC" />
+          <stop offset="45%" stopColor="#94A3B8" />
+          <stop offset="100%" stopColor="#475569" />
+        </linearGradient>
+        <linearGradient id={darkBevelId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#090D16" />
+          <stop offset="55%" stopColor="#283548" />
+          <stop offset="100%" stopColor="#1E293B" />
+        </linearGradient>
+        <linearGradient id={ringTrackId} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#475569" />
+          <stop offset="35%" stopColor="#94A3B8" />
+          <stop offset="70%" stopColor="#334155" />
+          <stop offset="100%" stopColor="#CBD5E1" />
+        </linearGradient>
+        <linearGradient id={ringSweepId} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.96" />
+          <stop offset="50%" stopColor={accent.ringGlow} stopOpacity="0.92" />
+          <stop offset="100%" stopColor="#E2E8F0" stopOpacity="0.45" />
+        </linearGradient>
+      </defs>
+
+      {/* Rear half of tilted orbital ring passing smoothly behind the 'N' */}
+      <g transform="translate(0, 10) rotate(-22) scale(1, 0.36)">
+        <g clipPath={`url(#${backClipId})`}>{renderOrbitGroup()}</g>
+      </g>
+
+      {/* Sculpted metallic 3D 'N' moving strictly up and down */}
+      <g className={accent.nClass}>
+        <path
+          d="M -22 -64 L -12 -30 Q -26 24 -44 68 Q -32 6 -22 -64 Z"
+          fill={`url(#${darkBevelId})`}
+        />
+        <path
+          d="M -21 -44 Q -6 -10 18 52 L 28 62 Q 4 12 -22 -30 Z"
+          fill={`url(#${darkBevelId})`}
+        />
+        <path
+          d="M -56 76 Q -42 10 -24 -70 L -14 -70 Q -28 8 -44 70 Q -50 75 -56 76 Z"
+          fill={`url(#${metalGradId})`}
+        />
+        <path
+          d="M -24 -70 C -10 -70 4 -40 28 40 L 22 64 C 2 8 -14 -40 -24 -70 Z"
+          fill={`url(#${diagonalGradId})`}
+        />
+        <path
+          d="M 22 64 Q 30 -32 62 -76 Q 48 -14 34 62 L 22 64 Z"
+          fill={`url(#${darkBevelId})`}
+        />
+        <path
+          d="M 32 60 Q 44 -20 62 -76 Q 42 -44 26 42 Q 24 54 22 64 Z"
+          fill={`url(#${metalGradId})`}
+        />
+      </g>
+
+      {/* Front half of tilted orbital ring sweeping in front of the 'N' */}
+      <g transform="translate(0, 10) rotate(-22) scale(1, 0.36)">
+        <g clipPath={`url(#${frontClipId})`}>{renderOrbitGroup()}</g>
+      </g>
+    </svg>
+  );
+};
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
@@ -508,22 +641,21 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
           })}
         </div>
 
-        {/* Central Living Nebula Metallic Core */}
-        <div className="relative flex items-center justify-center my-8 h-44 w-44">
-          {/* Outer atmospheric halo */}
+        {/* Central Open-Stage Living Nebula Emblem (No Outer Circle Ring) */}
+        <div className="relative flex items-center justify-center my-6 h-52 w-52">
+          {/* Subtle atmospheric ambient backlight (soft glow only, zero ring border) */}
           <div
-            className={`absolute inset-0 rounded-full blur-3xl transition-all duration-700 ${
+            className={`absolute inset-4 rounded-full blur-3xl transition-all duration-700 pointer-events-none ${
               status === 'listening'
-                ? 'bg-sky-400/25 scale-125 animate-pulse'
+                ? 'bg-sky-400/20 scale-110'
                 : status === 'thinking'
-                  ? 'bg-amber-400/25 scale-130 animate-pulse'
+                  ? 'bg-amber-400/20 scale-115'
                   : status === 'speaking'
-                    ? 'bg-slate-200/30 scale-135 animate-pulse'
-                    : 'bg-slate-400/15 scale-100'
+                    ? 'bg-slate-200/25 scale-120'
+                    : 'bg-slate-400/10 scale-100'
             }`}
           />
 
-          {/* Bouncing / Jumping Metallic Container */}
           <button
             type="button"
             onClick={() => {
@@ -537,67 +669,39 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
               status === 'speaking'
                 ? 'Interrupt Nebula speech'
                 : status === 'idle'
-                  ? 'Tap orb to start talking'
-                  : 'Nebula Voice Orb'
+                  ? 'Tap emblem to start talking'
+                  : 'Nebula Voice Emblem'
             }
-            className={`relative w-36 h-36 rounded-full p-[2.5px] cursor-pointer focus:outline-none transition-shadow duration-500 ${
-              status === 'listening'
-                ? 'nebula-orb-listening shadow-[0_0_40px_rgba(56,189,248,0.35)]'
-                : status === 'thinking'
-                  ? 'nebula-orb-thinking shadow-[0_0_42px_rgba(251,191,36,0.35)]'
-                  : status === 'speaking'
-                    ? 'nebula-orb-speaking shadow-[0_0_48px_rgba(226,232,240,0.4)]'
-                    : 'nebula-orb-idle shadow-[0_0_24px_rgba(148,163,184,0.2)]'
-            }`}
+            className="relative flex items-center justify-center w-48 h-48 bg-transparent border-0 p-0 cursor-pointer focus:outline-none"
           >
-            {/* Spinning metallic silver-slate border ring */}
-            <div
-              className={`absolute inset-0 rounded-full ${
-                status === 'thinking'
-                  ? 'bg-gradient-to-tr from-amber-300/80 via-slate-200/70 to-zinc-600/80 nebula-logo-spin-thinking'
-                  : status === 'speaking'
-                    ? 'bg-gradient-to-tr from-white/90 via-slate-300/75 to-zinc-500/80 nebula-logo-spin-speaking'
-                    : status === 'listening'
-                      ? 'bg-gradient-to-tr from-sky-300/85 via-slate-200/75 to-zinc-600/80 nebula-logo-spin-listening'
-                      : 'bg-gradient-to-tr from-slate-300/45 via-zinc-500/35 to-slate-200/45 nebula-logo-spin-idle'
-              }`}
-            />
-
-            {/* Frosted Deep Obsidian Core with Floating Metallic Nebula Logo */}
-            <div className="relative w-full h-full rounded-full overflow-hidden bg-radial from-[#23252F] via-[#14151B] to-[#090A0E] flex items-center justify-center">
-              <img
-                src="/nebula-logo.png"
-                alt="Nebula AI Emblem"
-                className={`w-[78%] h-[78%] object-contain select-none pointer-events-none brightness-115 drop-shadow-[0_0_14px_rgba(226,232,240,0.28)] ${
-                  status === 'listening'
-                    ? 'nebula-emblem-listening'
-                    : status === 'thinking'
-                      ? 'nebula-emblem-thinking'
-                      : status === 'speaking'
-                        ? 'nebula-emblem-speaking'
-                        : 'nebula-emblem-idle'
-                }`}
-              />
-              {/* Subtle living inner glass sheen */}
-              <div className="absolute inset-0 rounded-full bg-radial from-white/12 via-transparent to-black/40 pointer-events-none" />
-            </div>
+            <NebulaAnimatedEmblem status={status} />
           </button>
         </div>
 
         {/* Status Indicator & Transcript Subtitles */}
         <div className="w-full flex flex-col items-center text-center px-4 gap-2">
-          <div className="px-3.5 py-1.5 rounded-full bg-white/10 text-xs font-semibold uppercase tracking-wider text-gray-300 flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${
-              status === 'listening' ? 'bg-sky-400 animate-ping' :
-              status === 'thinking' ? 'bg-amber-400 animate-spin' :
-              status === 'speaking' ? 'bg-white animate-pulse' :
-              'bg-gray-500'
-            }`} />
+          <div className="px-3.5 py-1.5 rounded-full bg-white/10 text-xs font-semibold uppercase tracking-wider text-gray-300 inline-flex items-center justify-center gap-2">
+            <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
+              {status === 'listening' && (
+                <span className="absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75 animate-ping" />
+              )}
+              <span
+                className={`relative inline-flex rounded-full h-2 w-2 ${
+                  status === 'listening'
+                    ? 'bg-sky-400'
+                    : status === 'thinking'
+                      ? 'bg-amber-400 animate-spin'
+                      : status === 'speaking'
+                        ? 'bg-white animate-pulse'
+                        : 'bg-gray-500'
+                }`}
+              />
+            </span>
             <span>
               {status === 'listening' ? 'Listening to you...' :
                status === 'thinking' ? 'Nebula is thinking...' :
                status === 'speaking' ? 'Speaking (Click orb to interrupt)...' :
-               'Tap Orb to Start'}
+               'Tap Emblem to Start'}
             </span>
           </div>
 
