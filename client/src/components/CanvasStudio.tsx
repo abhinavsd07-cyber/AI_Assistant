@@ -119,8 +119,10 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
         if (!parentEl) return;
         const rect = parentEl.getBoundingClientRect();
         if (rect.width <= 0) return;
+        const maxPctFromChatFloor = Math.max(32, Math.floor(((rect.width - 340) / rect.width) * 100));
+        const maxAllowed = Math.min(72, maxPctFromChatFloor);
         const pct = ((rect.right - e.clientX) / rect.width) * 100;
-        setCustomPanelPct(Math.round(Math.min(95, Math.max(25, pct))));
+        setCustomPanelPct(Math.round(Math.min(maxAllowed, Math.max(32, pct))));
       } else if (activeDrag === 'inner') {
         const stageEl = splitStageRef.current;
         if (!stageEl) return;
@@ -903,8 +905,8 @@ json.dumps(__nebula_plots__)
           aria-orientation="vertical"
           aria-label="Resize Canvas panel width"
           aria-valuenow={panelWidthPct}
-          aria-valuemin={25}
-          aria-valuemax={95}
+          aria-valuemin={32}
+          aria-valuemax={72}
           tabIndex={0}
           onPointerDown={(e) => {
             e.preventDefault();
@@ -914,10 +916,10 @@ json.dumps(__nebula_plots__)
           onKeyDown={(e) => {
             if (e.key === 'ArrowLeft') {
               e.preventDefault();
-              setCustomPanelPct((prev) => Math.min(95, (prev ?? panelWidthPct) + 2));
+              setCustomPanelPct((prev) => Math.min(72, (prev ?? panelWidthPct) + 2));
             } else if (e.key === 'ArrowRight') {
               e.preventDefault();
-              setCustomPanelPct((prev) => Math.max(25, (prev ?? panelWidthPct) - 2));
+              setCustomPanelPct((prev) => Math.max(32, (prev ?? panelWidthPct) - 2));
             }
           }}
           title="Drag slider left/right to resize Canvas width (double-click to reset)"
@@ -1119,14 +1121,14 @@ json.dumps(__nebula_plots__)
                     </div>
                     <input
                       type="range"
-                      min={25}
-                      max={95}
-                      value={panelWidthPct}
+                      min={32}
+                      max={72}
+                      value={Math.min(72, Math.max(32, panelWidthPct))}
                       onChange={(e) => setCustomPanelPct(Number(e.target.value))}
                       className="w-full accent-emerald-500 cursor-pointer"
                     />
                     <div className="flex items-center gap-1 pt-0.5">
-                      {[50, 75, 92].map((preset) => (
+                      {[45, 58, 70].map((preset) => (
                         <button
                           key={preset}
                           onClick={() => setCustomPanelPct(preset)}

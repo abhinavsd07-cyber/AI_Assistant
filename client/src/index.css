@@ -62,10 +62,12 @@
   animation: pulseSlow 5s ease-in-out infinite;
 }
 
-/* Interactive split & panel slider sizing */
+/* Interactive split & panel slider sizing (preserve >= 340px readable Chat stage) */
 @media (min-width: 1024px) {
   .canvas-panel-width {
     width: var(--canvas-w, 58%);
+    max-width: calc(100% - 340px);
+    min-width: 320px;
   }
 }
 

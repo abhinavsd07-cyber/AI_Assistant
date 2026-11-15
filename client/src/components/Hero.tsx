@@ -54,12 +54,12 @@ export const Hero: React.FC<HeroProps> = ({ onSelectSuggestion }) => {
       </div>
 
       {/* Main Heading */}
-      <h1 className="text-2xl sm:text-[28px] md:text-[32px] font-semibold tracking-[-0.025em] leading-tight text-[#0D0D0D] dark:text-[#F4F4F5] mb-2 break-words w-full">
+      <h1 className="text-2xl sm:text-[28px] md:text-[32px] font-semibold tracking-[-0.025em] leading-tight text-[#0D0D0D] dark:text-[#F4F4F5] mb-2 text-balance w-full">
         Welcome to your cognitive copilot
       </h1>
 
       {/* Subtitle */}
-      <p className="text-[13.5px] sm:text-[14.5px] text-zinc-500 dark:text-zinc-400 max-w-lg mx-auto mb-7 leading-relaxed font-normal">
+      <p className="text-[13.5px] sm:text-[14.5px] text-zinc-500 dark:text-zinc-400 max-w-lg mx-auto mb-7 leading-relaxed font-normal text-pretty">
         I am Nebula. Ask me to write, code, plan, generate visuals, or explore any idea.
       </p>
 

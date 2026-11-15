@@ -115,7 +115,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                 ? 'Reasoning'
                 : selectedModel.startsWith('ollama:')
                 ? selectedModel.replace(/^ollama:/i, '')
-                : activeModel?.name || '4.0e';
+                : selectedModel === 'gemini-3.5-flash-lite'
+                ? '4.0e'
+                : activeModel?.name?.replace(/^Nebula\s*/i, '') || '4.0e';
 
             return (
               <button
