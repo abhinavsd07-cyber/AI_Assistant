@@ -345,7 +345,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
               <span className="text-sm sm:text-[15px] font-extrabold tracking-tight text-slate-900 truncate">
                 Nebula FLUX.1 Studio
               </span>
-              <span className="hidden sm:inline-block text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-indigo-600 text-white font-semibold whitespace-nowrap shrink-0">
+              <span className="hidden sm:inline-block text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-slate-900 text-white font-semibold whitespace-nowrap shrink-0">
                 Visual Node Pipeline
               </span>
             </div>
@@ -356,8 +356,8 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
         <div className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-medium whitespace-nowrap shrink-0">
           {isRunning ? (
             <>
-              <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-ping shrink-0" />
-              <span className="text-indigo-700 font-semibold">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#D9383A] animate-ping shrink-0" />
+              <span className="text-slate-800 font-semibold">
                 {activeStep === 1 && 'Step 1/4: Loading FLUX.1 & DualCLIP Models...'}
                 {activeStep === 2 && 'Step 2/4: Enhancing Prompt with Gemini NLP...'}
                 {activeStep === 3 && `Step 3/4: Generating ${width}×${height} HD Image...`}
@@ -373,7 +373,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                   {(lastLatencyMs / 1000).toFixed(2)}s
                 </strong>{' '}
                 <span className="text-slate-300">|</span>{' '}
-                <span className="text-indigo-600 font-bold">
+                <span className="text-slate-700 font-bold">
                   Cloud GPU Pipeline • Cloudinary CDN
                 </span>
               </span>
@@ -388,8 +388,8 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
             disabled={isRunning}
             className={`flex items-center gap-1.5 px-3.5 sm:px-5 py-2 rounded-xl font-bold text-xs whitespace-nowrap transition-all cursor-pointer shrink-0 ${
               isRunning
-                ? 'bg-indigo-100 text-indigo-700 cursor-wait border border-indigo-300'
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20 active:scale-95'
+                ? 'bg-red-50 text-[#B92B2D] cursor-wait border border-red-200'
+                : 'bg-[#D9383A] hover:bg-[#B92B2D] text-white shadow-md shadow-red-600/15 active:scale-95'
             }`}
           >
             <Play size={13} fill="currentColor" className="shrink-0" />
@@ -417,7 +417,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
             <button
               key={i}
               onClick={() => setPrompt(preset.text)}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 text-[11px] font-semibold text-slate-700 whitespace-nowrap transition-all cursor-pointer shrink-0"
+              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 hover:text-slate-900 border border-slate-200 hover:border-slate-300 text-[11px] font-semibold text-slate-700 whitespace-nowrap transition-all cursor-pointer shrink-0"
             >
               {preset.label}
             </button>
@@ -433,13 +433,13 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                 <div
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] whitespace-nowrap transition-all ${
                     isStageActive
-                      ? 'bg-indigo-50 border-indigo-400 text-indigo-900 shadow-xs font-bold'
+                      ? 'bg-slate-100 border-slate-400 text-slate-900 shadow-xs font-bold'
                       : 'bg-slate-50 border-slate-200/90 text-slate-700 font-semibold'
                   }`}
                 >
                   <span
                     className={`w-2 h-2 rounded-full shrink-0 ${
-                      isStageActive ? 'bg-indigo-600 animate-pulse' : 'bg-emerald-500'
+                      isStageActive ? 'bg-[#D9383A] animate-pulse' : 'bg-emerald-500'
                     }`}
                   />
                   <span>{s.title}</span>
@@ -467,7 +467,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           <svg className="hidden xl:block absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible">
             {wires.map((w) => {
               const isActive = isRunning && activeStep === w.targetStep;
-              const strokeColor = isActive ? '#6366F1' : '#64748B';
+              const strokeColor = isActive ? '#D9383A' : '#64748B';
               const chevronPath =
                 w.dir === 'down'
                   ? `M ${w.x2 - 4} ${w.y2 - 5} L ${w.x2} ${w.y2} L ${w.x2 + 4} ${w.y2 - 5}`
@@ -517,12 +517,12 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
             {/* NODE 1: Load AI Models */}
             <div
               className={`flux-node-card rounded-2xl bg-white border-2 transition-all shadow-[0_4px_16px_-4px_rgba(15,23,42,0.06)] ${
-                activeStep === 1 ? 'border-indigo-600 ring-4 ring-indigo-500/15' : 'border-slate-200/90'
+                activeStep === 1 ? 'border-slate-800 ring-4 ring-slate-500/10' : 'border-slate-200/90'
               }`}
             >
-              <div className="px-4 py-3.5 bg-indigo-50/70 rounded-t-2xl border-b border-indigo-100 flex items-center justify-between">
+              <div className="px-4 py-3.5 bg-slate-100/90 rounded-t-2xl border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-2xs">
+                  <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-white shadow-2xs">
                     <Cpu size={15} />
                   </div>
                   <div>
@@ -534,7 +534,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-indigo-100 text-indigo-700">
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-slate-200/80 text-slate-700">
                   GGUF / FP8
                 </span>
               </div>
@@ -546,18 +546,18 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                     <span className="text-xs font-bold text-slate-800">
                       Image Generator Model (UNet)
                     </span>
-                    <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-indigo-600">
+                    <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-700">
                       MODEL{' '}
                       <span
                         ref={modelOutRef}
-                        className="w-3 h-3 rounded-full bg-indigo-600 inline-block ring-4 ring-indigo-200"
+                        className="w-3 h-3 rounded-full bg-slate-700 inline-block ring-4 ring-slate-200"
                       />
                     </span>
                   </div>
                   <select
                     value={unetModel}
                     onChange={(e) => setUnetModel(e.target.value)}
-                    className="w-full bg-white text-xs font-semibold text-slate-900 px-3 py-2 rounded-lg border border-slate-300 focus:border-indigo-600 outline-hidden cursor-pointer"
+                    className="w-full bg-white text-xs font-semibold text-slate-900 px-3 py-2 rounded-lg border border-slate-300 focus:border-slate-700 outline-hidden cursor-pointer"
                   >
                     <option value="FLUX.1-Schnell (Q4_K_S GGUF)">
                       FLUX.1-Schnell (Q4_K_S GGUF)
@@ -713,24 +713,24 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   rows={4}
-                  className="w-full rounded-xl bg-slate-50 border border-slate-300 focus:border-indigo-600 focus:bg-white p-3 text-[13px] font-medium text-slate-900 leading-relaxed outline-hidden resize-none transition-all"
+                  className="w-full rounded-xl bg-slate-50 border border-slate-300 focus:border-slate-700 focus:bg-white p-3 text-[13px] font-medium text-slate-900 leading-relaxed outline-hidden resize-none transition-all"
                   placeholder="Type any image description here..."
                 />
 
                 {expandedPrompt && (
-                  <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-200 text-xs space-y-1.5">
-                    <div className="flex items-center gap-1.5 font-bold text-indigo-700 text-xs">
-                      <Sparkles size={13} />
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
+                      <Sparkles size={13} className="text-amber-600" />
                       <span>AI Logical Prompt Conditioning:</span>
                     </div>
                     <p className="text-xs text-slate-700 line-clamp-2 leading-relaxed font-medium">
                       {expandedPrompt}
                     </p>
                     {(reasoningSummary || detectedIssues.length > 0) && (
-                      <div className="pt-1.5 border-t border-indigo-200/80 space-y-1">
+                      <div className="pt-1.5 border-t border-slate-200 space-y-1">
                         {reasoningSummary && (
                           <p className="text-[11px] text-slate-600 leading-snug">
-                            <span className="font-bold text-indigo-700">Intent Logic:</span> {reasoningSummary}
+                            <span className="font-bold text-slate-800">Intent Logic:</span> {reasoningSummary}
                           </p>
                         )}
                         {detectedIssues.length > 0 && (
@@ -759,7 +759,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                     max="10"
                     value={guidance}
                     onChange={(e) => setGuidance(Number(e.target.value))}
-                    className="w-16 text-right bg-white px-2 py-1 rounded border border-slate-300 font-extrabold text-indigo-700 outline-hidden"
+                    className="w-16 text-right bg-white px-2 py-1 rounded border border-slate-300 font-extrabold text-slate-900 outline-hidden"
                   />
                 </div>
               </div>
@@ -799,7 +799,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
               <div className="p-4 space-y-3 text-xs">
                 <div className="flex items-center gap-3 pb-1 text-xs font-bold text-slate-600">
                   <span className="flex items-center gap-1.5">
-                    <span ref={samplerModelInRef} className="w-2.5 h-2.5 rounded-full bg-indigo-600 ring-2 ring-indigo-200" />{' '}
+                    <span ref={samplerModelInRef} className="w-2.5 h-2.5 rounded-full bg-slate-700 ring-2 ring-slate-200" />{' '}
                     Model
                   </span>
                   <span className="flex items-center gap-1.5">
@@ -909,11 +909,11 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
 
                   {isRunning && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-xs p-4 text-center">
-                      <RotateCcw size={30} className="text-indigo-600 animate-spin mb-2.5" />
+                      <RotateCcw size={30} className="text-[#D9383A] animate-spin mb-2.5" />
                       <span className="text-sm font-extrabold text-slate-900">
                         Generating {width}×{height} HD Image...
                       </span>
-                      <span className="text-xs font-bold text-indigo-600 mt-1">
+                      <span className="text-xs font-bold text-slate-600 mt-1">
                         Step {activeStep} of 4 • Hybrid Cloud Acceleration
                       </span>
                     </div>
@@ -968,7 +968,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                         onSendToChat(md, currentImage);
                         onClose();
                       }}
-                      className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-sm"
+                      className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer shadow-sm"
                     >
                       <Send size={14} />
                       <span>To Chat</span>
@@ -990,7 +990,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           <div className="rounded-2xl bg-white border-2 border-slate-200/90 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.06)] p-4">
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
               <span className="text-[13px] font-extrabold text-slate-900 flex items-center gap-2">
-                <Clock size={15} className="text-indigo-600" />
+                <Clock size={15} className="text-slate-700" />
                 Completed Renders
               </span>
               <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">
@@ -1003,7 +1003,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                 <div
                   key={job.id}
                   onClick={() => setCurrentImage(job.imageUrl)}
-                  className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 hover:bg-indigo-50/60 border border-slate-200 cursor-pointer transition-all"
+                  className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 cursor-pointer transition-all"
                 >
                   <img
                     src={job.imageUrl}
@@ -1030,10 +1030,10 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           <div className="rounded-2xl bg-white border-2 border-slate-200/90 p-4 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.06)] space-y-3.5">
             <div className="flex items-center justify-between">
               <span className="text-[13px] font-extrabold text-slate-900 flex items-center gap-1.5">
-                <Sparkles size={15} className="text-indigo-600" />
+                <Sparkles size={15} className="text-slate-700" />
                 Style & Idea Enhancers
               </span>
-              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-extrabold">
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-extrabold">
                 1-Click Boost
               </span>
             </div>
@@ -1051,7 +1051,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                       setPrompt((prev) => `${prev.trim()}${item.tag}`);
                     }
                   }}
-                  className="px-2.5 py-2 rounded-xl bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 hover:border-indigo-300 text-[11px] font-bold text-slate-700 text-left transition-all cursor-pointer truncate"
+                  className="px-2.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 hover:border-slate-300 text-[11px] font-bold text-slate-700 text-left transition-all cursor-pointer truncate"
                   title={`Add "${item.tag}"`}
                 >
                   {item.label}
