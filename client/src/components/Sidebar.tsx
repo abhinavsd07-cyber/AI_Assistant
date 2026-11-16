@@ -606,7 +606,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoFocus
                   placeholder="Search chats..."
-                  className="w-full pl-8 pr-6 py-1.5 rounded-lg bg-white dark:bg-[#222222] text-xs text-[#1F1E1B] dark:text-[#F0ECE1] placeholder-gray-400 border border-[#E5DFD3] dark:border-[#333] outline-hidden transition-all"
+                  className="w-full pl-8 pr-6 py-1.5 rounded-lg bg-white dark:bg-[#222222] text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 border border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600 focus:border-gray-400 dark:focus:border-zinc-500 outline-hidden transition-all"
                 />
                 {searchQuery && (
                   <button
