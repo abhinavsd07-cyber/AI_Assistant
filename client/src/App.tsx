@@ -760,11 +760,14 @@ export const App: React.FC = () => {
 
   if (isAuthLoading) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#FCFCFC] dark:bg-[#121212] text-[#0D0D0D] dark:text-[#ECECEC] gap-3">
-        <div className="w-14 h-14 flex items-center justify-center animate-pulse dark:brightness-125">
-          <img src="/nebula-logo.png" alt="Nebula AI" className="w-full h-full object-contain drop-shadow-[0_6px_14px_rgba(15,23,42,0.18)]" />
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#1F1E1B] dark:text-[#F0ECE1] gap-4">
+        <div className="relative w-16 h-16 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full border-2 border-[#D97736]/25 border-t-[#D97736] animate-spin" />
+          <div className="w-10 h-10 flex items-center justify-center animate-cosmic-orb">
+            <img src="/nebula-logo.png" alt="Nebula AI" className="w-full h-full object-contain drop-shadow-[0_4px_12px_rgba(217,119,54,0.3)]" />
+          </div>
         </div>
-        <span className="text-xs font-semibold text-gray-500">Verifying Nebula session...</span>
+        <span className="text-xs font-semibold text-[#736B63] dark:text-[#A39E93] tracking-tight">Verifying Nebula session...</span>
       </div>
     );
   }
@@ -790,7 +793,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="h-screen w-screen flex overflow-hidden bg-[#FCFCFC] dark:bg-[#121212] text-[#0D0D0D] dark:text-[#ECECEC] transition-colors duration-200">
+    <div className="h-screen w-screen flex overflow-hidden bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#1F1E1B] dark:text-[#F0ECE1] transition-colors duration-200">
       {/* Left Sidebar */}
       <Sidebar
         currentSessionId={currentSessionId}
@@ -826,7 +829,7 @@ export const App: React.FC = () => {
       />
 
       {/* Right Main Chat Stage */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#FCFCFC] dark:bg-[#121212]">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#FAF8F5] dark:bg-[#1F1E1B]">
         {/* Top Bar */}
         <TopBar
           selectedModel={selectedModel}

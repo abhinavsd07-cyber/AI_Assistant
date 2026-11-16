@@ -193,25 +193,25 @@ export const VerifyOtpPage: React.FC = () => {
         </span>
       }
     >
-      <div className="flex items-center justify-between text-[10px] font-semibold text-gray-400 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5 mb-3">
-        <span className="text-emerald-600">✓ 1. OTP Sent</span>
+      <div className="flex items-center justify-between text-[10px] font-semibold text-[#8C827A] bg-[#FAF8F5] border border-[#EAE4D9] rounded-xl px-3 py-1.5 mb-3">
+        <span className="text-emerald-600 font-semibold">✓ 1. OTP Sent</span>
         <span>→</span>
-        <span className="text-[#0D0D0D]">2. Verify OTP</span>
+        <span className="text-[#D97736] font-bold">2. Verify OTP</span>
         <span>→</span>
         <span>3. New Password</span>
       </div>
 
-      <div className="flex items-center justify-between bg-[#FBFBFB] border border-[#E5E5E5] rounded-xl px-3 py-2 mb-3 text-[11px]">
+      <div className="flex items-center justify-between bg-[#FDFCFB] border border-[#E5DFD3] rounded-xl px-3 py-2 mb-3 text-[11px]">
         <div className="flex items-center gap-1.5 min-w-0">
-          <ShieldCheck size={13} className="text-emerald-600 shrink-0" />
-          <span className="text-gray-600 truncate">
-            Account: <strong className="text-[#0D0D0D]">{initialEmail}</strong>
+          <ShieldCheck size={13} className="text-[#D97736] shrink-0" />
+          <span className="text-[#736B63] truncate">
+            Account: <strong className="text-[#1F1E1B]">{initialEmail}</strong>
           </span>
         </div>
         <AuthRouteLink
           to="forgot-password"
           href={changeEmailHref}
-          className="text-[10.5px] font-semibold text-gray-500 hover:text-black hover:underline shrink-0 ml-2 no-underline"
+          className="text-[10.5px] font-semibold text-[#736B63] hover:text-[#D97736] hover:underline shrink-0 ml-2 no-underline"
         >
           Change email
         </AuthRouteLink>
@@ -220,14 +220,14 @@ export const VerifyOtpPage: React.FC = () => {
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3 text-xs">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <label htmlFor="otp-digit-0" className="text-[11px] font-semibold text-gray-700">
+            <label htmlFor="otp-digit-0" className="text-[11px] font-semibold text-[#1F1E1B]">
               6-Digit Verification OTP
             </label>
             <button
               type="button"
               onClick={handleResendOtp}
               disabled={isResending || cooldown > 0}
-              className="text-[10.5px] font-medium text-gray-500 hover:text-black disabled:opacity-50 inline-flex items-center gap-1 cursor-pointer disabled:cursor-not-allowed"
+              className="text-[10.5px] font-medium text-[#736B63] hover:text-[#D97736] disabled:opacity-50 inline-flex items-center gap-1 cursor-pointer disabled:cursor-not-allowed"
             >
               <RefreshCw size={10} className={isResending ? 'animate-spin' : ''} />
               {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend OTP'}
@@ -251,7 +251,7 @@ export const VerifyOtpPage: React.FC = () => {
                 onChange={(e) => handleDigitChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={handlePaste}
-                className="w-full h-11 text-center rounded-xl bg-[#FBFBFB] hover:bg-white focus:bg-white border border-[#E5E5E5] text-[#0D0D0D] text-sm font-mono font-bold focus:outline-none focus:border-black focus:ring-1 focus:ring-black/10 transition-all"
+                className="w-full h-11 text-center rounded-xl bg-[#FDFCFB] hover:bg-white focus:bg-white border border-[#E5DFD3] text-[#1F1E1B] text-sm font-mono font-bold focus:outline-none focus:border-[#D97736] focus:ring-1 focus:ring-[#D97736]/20 transition-all"
               />
             ))}
           </div>
@@ -260,7 +260,7 @@ export const VerifyOtpPage: React.FC = () => {
         <button
           type="submit"
           disabled={isVerifying || otpCode.length !== 6}
-          className="w-full h-10 mt-1 rounded-xl text-xs font-semibold text-white bg-[#0D0D0D] hover:bg-[#262626] shadow-xs transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+          className="w-full h-10 mt-1 rounded-xl text-xs font-semibold text-white bg-[#D97736] hover:bg-[#C26224] shadow-xs transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
         >
           {isVerifying ? (
             <>

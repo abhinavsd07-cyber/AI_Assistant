@@ -19,16 +19,21 @@
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background-color: #FCFCFC;
-    color: #0D0D0D;
+    background-color: #FAF8F5;
+    color: #1F1E1B;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
   html.dark, html.dark body, html.dark #root {
-    background-color: #121212;
-    color: #ECECEC;
+    background-color: #1F1E1B;
+    color: #F0ECE1;
   }
   body {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Söhne', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    letter-spacing: -0.011em;
+  }
+  ::selection {
+    background-color: #F6D7C3;
+    color: #7A2E14;
   }
 }
 
@@ -49,12 +54,12 @@
   0%, 100% {
     transform: scale(1);
     opacity: 0.96;
-    filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.14));
+    filter: drop-shadow(0 6px 14px rgba(217, 119, 54, 0.22));
   }
   50% {
     transform: scale(1.03);
     opacity: 1;
-    filter: drop-shadow(0 10px 22px rgba(15, 23, 42, 0.22));
+    filter: drop-shadow(0 10px 22px rgba(217, 119, 54, 0.34));
   }
 }
 

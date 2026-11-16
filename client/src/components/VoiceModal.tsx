@@ -4,10 +4,10 @@ import { X, Mic, MicOff, AlertCircle, Square, Globe } from 'lucide-react';
 type EmblemStatus = 'idle' | 'listening' | 'thinking' | 'speaking';
 
 const EMBLEM_ACCENTS: Record<EmblemStatus, { ringGlow: string; glint: string; nClass: string; ringClass: string }> = {
-  idle: { ringGlow: '#CBD5E1', glint: '#F8FAFC', nClass: 'nebula-n-idle', ringClass: 'nebula-ring-idle' },
-  listening: { ringGlow: '#7DD3FC', glint: '#E0F2FE', nClass: 'nebula-n-listening', ringClass: 'nebula-ring-listening' },
-  thinking: { ringGlow: '#FCD34D', glint: '#FEF3C7', nClass: 'nebula-n-thinking', ringClass: 'nebula-ring-thinking' },
-  speaking: { ringGlow: '#FFFFFF', glint: '#FFFFFF', nClass: 'nebula-n-speaking', ringClass: 'nebula-ring-speaking' },
+  idle: { ringGlow: '#D97736', glint: '#FDEEE2', nClass: 'nebula-n-idle', ringClass: 'nebula-ring-idle' },
+  listening: { ringGlow: '#E07A5F', glint: '#FFF1E8', nClass: 'nebula-n-listening', ringClass: 'nebula-ring-listening' },
+  thinking: { ringGlow: '#F59E0B', glint: '#FEF3C7', nClass: 'nebula-n-thinking', ringClass: 'nebula-ring-thinking' },
+  speaking: { ringGlow: '#D97736', glint: '#FFFFFF', nClass: 'nebula-n-speaking', ringClass: 'nebula-ring-speaking' },
 };
 
 const NebulaAnimatedEmblem: React.FC<{ status: EmblemStatus }> = ({ status }) => {

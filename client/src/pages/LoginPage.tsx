@@ -62,7 +62,7 @@ export const LoginPage: React.FC = () => {
           <AuthRouteLink
             to="signup"
             href="/signup"
-            className="text-[#0D0D0D] font-semibold hover:underline transition-colors no-underline"
+            className="text-[#D97736] font-semibold hover:text-[#C26224] hover:underline transition-colors no-underline"
           >
             Create one for free →
           </AuthRouteLink>
@@ -79,11 +79,11 @@ export const LoginPage: React.FC = () => {
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3 text-xs">
         <div className="flex flex-col gap-1">
-          <label htmlFor="login-email" className="text-[11px] font-semibold text-gray-700">
+          <label htmlFor="login-email" className="text-[11px] font-semibold text-[#1F1E1B]">
             Email Address
           </label>
           <div className="relative flex items-center">
-            <Mail size={13} className="absolute left-3.5 text-gray-400" />
+            <Mail size={13} className="absolute left-3.5 text-[#8C827A]" />
             <input
               id="login-email"
               type="email"
@@ -91,26 +91,26 @@ export const LoginPage: React.FC = () => {
               placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-9.5 pl-9.5 pr-3 rounded-xl bg-[#FBFBFB] hover:bg-white focus:bg-white border border-[#E5E5E5] text-[#0D0D0D] placeholder-gray-400 text-xs focus:outline-none focus:border-black focus:ring-1 focus:ring-black/10 transition-all"
+              className="w-full h-9.5 pl-9.5 pr-3 rounded-xl bg-[#FDFCFB] hover:bg-white focus:bg-white border border-[#E5DFD3] text-[#1F1E1B] placeholder-[#A39E93] text-xs focus:outline-none focus:border-[#D97736] focus:ring-1 focus:ring-[#D97736]/20 transition-all"
             />
           </div>
         </div>
 
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <label htmlFor="login-password" className="text-[11px] font-semibold text-gray-700">
+            <label htmlFor="login-password" className="text-[11px] font-semibold text-[#1F1E1B]">
               Password
             </label>
             <AuthRouteLink
               to="forgot-password"
               href={forgotPasswordHref}
-              className="text-[10.5px] text-gray-500 hover:text-black hover:underline transition-colors no-underline"
+              className="text-[10.5px] text-[#736B63] hover:text-[#D97736] hover:underline transition-colors no-underline"
             >
               Forgot password?
             </AuthRouteLink>
           </div>
           <div className="relative flex items-center">
-            <Lock size={13} className="absolute left-3.5 text-gray-400" />
+            <Lock size={13} className="absolute left-3.5 text-[#8C827A]" />
             <input
               id="login-password"
               type={showPassword ? 'text' : 'password'}
@@ -118,13 +118,13 @@ export const LoginPage: React.FC = () => {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full h-9.5 pl-9.5 pr-9.5 rounded-xl bg-[#FBFBFB] hover:bg-white focus:bg-white border border-[#E5E5E5] text-[#0D0D0D] placeholder-gray-400 text-xs focus:outline-none focus:border-black focus:ring-1 focus:ring-black/10 transition-all"
+              className="w-full h-9.5 pl-9.5 pr-9.5 rounded-xl bg-[#FDFCFB] hover:bg-white focus:bg-white border border-[#E5DFD3] text-[#1F1E1B] placeholder-[#A39E93] text-xs focus:outline-none focus:border-[#D97736] focus:ring-1 focus:ring-[#D97736]/20 transition-all"
             />
             <button
               type="button"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+              className="absolute right-3 text-[#8C827A] hover:text-[#1F1E1B] transition-colors cursor-pointer"
             >
               {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
             </button>
@@ -137,11 +137,11 @@ export const LoginPage: React.FC = () => {
             id="login-remember"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="w-3.5 h-3.5 rounded border-gray-300 accent-[#0D0D0D] cursor-pointer"
+            className="w-3.5 h-3.5 rounded border-[#E5DFD3] accent-[#D97736] cursor-pointer"
           />
           <label
             htmlFor="login-remember"
-            className="text-[11px] text-gray-600 cursor-pointer select-none"
+            className="text-[11px] text-[#736B63] cursor-pointer select-none"
           >
             Remember my session on this device
           </label>
@@ -150,7 +150,7 @@ export const LoginPage: React.FC = () => {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full h-10 mt-1 rounded-xl text-xs font-semibold text-white bg-[#0D0D0D] hover:bg-[#262626] shadow-xs transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+          className="w-full h-10 mt-1 rounded-xl text-xs font-semibold text-white bg-[#D97736] hover:bg-[#C26224] shadow-xs transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
         >
           {isSubmitting ? (
             <>

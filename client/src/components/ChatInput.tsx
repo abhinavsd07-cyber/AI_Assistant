@@ -203,34 +203,34 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
 
       <form
         onSubmit={handleSubmit}
-        className="relative flex flex-col bg-[#F4F4F4] dark:bg-[#1E1E1E] rounded-[26px] border border-[#E5E5E5] dark:border-[#2E2E2E] p-2 sm:p-2.5 shadow-xs focus-within:border-gray-400 dark:focus-within:border-gray-600 focus-within:bg-white dark:focus-within:bg-[#202020] transition-all overflow-hidden"
+        className="relative flex flex-col bg-white dark:bg-[#252320] rounded-[26px] border border-[#EAE4D9] dark:border-[#38352F] p-2 sm:p-2.5 shadow-xs focus-within:border-[#D97736]/60 dark:focus-within:border-[#D97736]/60 focus-within:ring-2 focus-within:ring-[#D97736]/15 transition-all overflow-hidden"
       >
         {/* Attachment preview banner */}
         {attachment && (
-          <div className="mb-2 p-1.5 px-3 rounded-2xl bg-white dark:bg-[#282828] border border-gray-200 dark:border-gray-750 flex items-center gap-2.5 max-w-fit shadow-2xs">
+          <div className="mb-2 p-1.5 px-3 rounded-2xl bg-[#FAF8F5] dark:bg-[#2E2B27] border border-[#EAE4D9] dark:border-[#3E3A33] flex items-center gap-2.5 max-w-fit shadow-2xs">
             {attachment.isImage ? (
               <img
                 src={attachment.previewUrl}
                 alt="Upload preview"
-                className="w-10 h-10 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                className="w-10 h-10 object-cover rounded-lg border border-[#EAE4D9] dark:border-[#3E3A33]"
               />
             ) : (
-              <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <div className="w-10 h-10 rounded-lg bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 flex items-center justify-center text-[#D97736]">
                 <FileText size={18} />
               </div>
             )}
             <div className="flex flex-col text-left">
-              <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 max-w-[180px] truncate">
+              <span className="text-xs font-semibold text-[#1F1E1B] dark:text-[#F0ECE1] max-w-[180px] truncate">
                 {attachment.name}
               </span>
-              <span className="text-[10px] text-gray-500 uppercase">
+              <span className="text-[10px] text-[#8C827A] uppercase">
                 {attachment.isImage ? 'Image' : attachment.mimeType.split('/')[1] || 'Document'}
               </span>
             </div>
             <button
               type="button"
               onClick={() => setAttachment(null)}
-              className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 flex items-center justify-center transition-colors ml-1 cursor-pointer"
+              className="w-5 h-5 rounded-full bg-[#EAE4D8] dark:bg-[#38352F] hover:bg-[#DDD5C7] dark:hover:bg-[#46413A] text-[#1F1E1B] dark:text-[#F0ECE1] flex items-center justify-center transition-colors ml-1 cursor-pointer"
             >
               <X size={12} />
             </button>
@@ -242,7 +242,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            className="w-8 h-8 rounded-full hover:bg-[#F3EFE6] dark:hover:bg-[#2E2B27] text-[#736B63] dark:text-[#A39E93] hover:text-[#1F1E1B] dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
             title="Add images, PDFs or documents"
           >
             <Plus size={19} />
@@ -269,7 +269,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
                 : 'Ask Nebula anything...'
             }
             rows={1}
-            className="flex-1 min-w-[110px] bg-transparent border-0 outline-hidden resize-none text-[15px] text-[#0D0D0D] dark:text-[#ECECEC] placeholder-gray-400 py-1.5 max-h-[140px] leading-relaxed font-normal"
+            className="flex-1 min-w-[110px] bg-transparent border-0 outline-hidden resize-none text-[15px] text-[#1F1E1B] dark:text-[#F0ECE1] placeholder-[#8C827A] py-1.5 max-h-[140px] leading-relaxed font-normal"
           />
 
           {/* Right Action Icons */}
@@ -280,8 +280,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
               onClick={toggleImageGen}
               className={`flex items-center gap-1 px-2 @md:px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isImageGen
-                  ? 'bg-[#18181B] dark:bg-white text-white dark:text-[#0D0D0D] border border-[#18181B] dark:border-white shadow-2xs'
-                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200/70 dark:hover:bg-gray-800 border border-transparent'
+                  ? 'bg-[#D97736] text-white border border-[#D97736] shadow-2xs'
+                  : 'text-[#736B63] hover:text-[#1F1E1B] dark:hover:text-[#F0ECE1] hover:bg-[#F3EFE6] dark:hover:bg-[#2E2B27] border border-transparent'
               }`}
               title="Generate AI Images with Cloudinary CDN (/image <prompt>)"
             >
@@ -295,8 +295,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
               onClick={() => setIsWebSearch(!isWebSearch)}
               className={`flex items-center gap-1 px-2 @md:px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isWebSearch
-                  ? 'bg-[#18181B] dark:bg-white text-white dark:text-[#0D0D0D] border border-[#18181B] dark:border-white shadow-2xs'
-                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200/70 dark:hover:bg-gray-800 border border-transparent'
+                  ? 'bg-[#D97736] text-white border border-[#D97736] shadow-2xs'
+                  : 'text-[#736B63] hover:text-[#1F1E1B] dark:hover:text-[#F0ECE1] hover:bg-[#F3EFE6] dark:hover:bg-[#2E2B27] border border-transparent'
               }`}
               title="Toggle Live Web Search (Real-time Internet Grounding)"
             >
@@ -310,8 +310,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
               onClick={() => setIsReasoning(!isReasoning)}
               className={`flex items-center gap-1 px-2 @md:px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                 isReasoning
-                  ? 'bg-[#18181B] dark:bg-white text-white dark:text-[#0D0D0D] border border-[#18181B] dark:border-white shadow-2xs'
-                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200/70 dark:hover:bg-gray-800 border border-transparent'
+                  ? 'bg-[#D97736] text-white border border-[#D97736] shadow-2xs'
+                  : 'text-[#736B63] hover:text-[#1F1E1B] dark:hover:text-[#F0ECE1] hover:bg-[#F3EFE6] dark:hover:bg-[#2E2B27] border border-transparent'
               }`}
               title="Toggle Deep Reasoning (CoT)"
             >
@@ -325,8 +325,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
               onClick={toggleRecording}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                 isRecording
-                  ? 'bg-red-500 text-white animate-pulse'
-                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200/70 dark:hover:bg-gray-800'
+                  ? 'bg-rose-500 text-white animate-pulse'
+                  : 'text-[#736B63] hover:text-[#1F1E1B] dark:hover:text-[#F0ECE1] hover:bg-[#F3EFE6] dark:hover:bg-[#2E2B27]'
               }`}
               title={isRecording ? 'Stop voice recording' : 'Dictate voice into chat'}
             >
@@ -338,7 +338,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
               <button
                 type="button"
                 onClick={onOpenVoiceMode}
-                className="w-8 h-8 rounded-full bg-[#ECECEE] hover:bg-[#E2E2E6] dark:bg-[#2A2A30] dark:hover:bg-[#34343C] text-[#18181B] dark:text-white border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0"
+                className="w-8 h-8 rounded-full bg-[#F3EFE6] hover:bg-[#EAE4D8] dark:bg-[#2E2B27] dark:hover:bg-[#38352F] text-[#D97736] dark:text-[#E07A5F] border border-[#EAE4D9] dark:border-[#38352F] flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0"
                 title="Start Hands-Free Voice Conversation"
               >
                 <div className="flex items-center gap-[2px] h-3.5">
@@ -356,8 +356,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, 
               disabled={(!input.trim() && !attachment) || isLoading}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                 (input.trim() || attachment) && !isLoading
-                  ? 'bg-[#0D0D0D] dark:bg-white text-white dark:text-black hover:bg-black active:scale-95'
-                  : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                  ? 'bg-[#D97736] hover:bg-[#C26224] text-white shadow-xs active:scale-95'
+                  : 'bg-[#EAE4D8] dark:bg-[#322F2A] text-[#A39E93] dark:text-[#666056] cursor-not-allowed'
               }`}
               title="Send prompt"
             >

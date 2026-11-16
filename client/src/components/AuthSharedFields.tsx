@@ -166,7 +166,7 @@ export const GoogleAuthSection: React.FC<GoogleAuthSectionProps> = ({
           type="button"
           onClick={handleGoogleClick}
           disabled={disabled}
-          className="w-full h-9.5 rounded-xl bg-white hover:bg-[#F9FAFB] border border-[#E5E5E5] hover:border-gray-300 text-xs font-semibold text-[#0D0D0D] shadow-2xs transition-all duration-150 active:scale-[0.99] flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60"
+          className="w-full h-9.5 rounded-xl bg-white hover:bg-[#FAF8F5] border border-[#EAE4D9] hover:border-[#D97736]/40 text-xs font-semibold text-[#1F1E1B] shadow-2xs transition-all duration-150 active:scale-[0.99] flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60"
         >
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
             <path
@@ -190,10 +190,10 @@ export const GoogleAuthSection: React.FC<GoogleAuthSectionProps> = ({
         </button>
       </div>
 
-      <div className="flex items-center gap-2.5 text-[9.5px] text-gray-400 font-medium tracking-wider uppercase select-none">
-        <div className="flex-1 h-[1px] bg-[#E5E5E5]" />
+      <div className="flex items-center gap-2.5 text-[9.5px] text-[#8C827A] font-medium tracking-wider uppercase select-none">
+        <div className="flex-1 h-[1px] bg-[#EAE4D9]" />
         <span>or with email</span>
-        <div className="flex-1 h-[1px] bg-[#E5E5E5]" />
+        <div className="flex-1 h-[1px] bg-[#EAE4D9]" />
       </div>
     </>
   );

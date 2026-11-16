@@ -65,15 +65,15 @@ export const ForgotPasswordPage: React.FC = () => {
           <AuthRouteLink
             to="login"
             href={backToLoginHref}
-            className="text-[#0D0D0D] font-semibold hover:underline transition-colors no-underline"
+            className="text-[#D97736] font-semibold hover:text-[#C26224] hover:underline transition-colors no-underline"
           >
             Sign in here →
           </AuthRouteLink>
         </span>
       }
     >
-      <div className="flex items-center justify-between text-[10px] font-semibold text-gray-400 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5 mb-3">
-        <span className="text-[#0D0D0D]">1. Request OTP</span>
+      <div className="flex items-center justify-between text-[10px] font-semibold text-[#8C827A] bg-[#FAF8F5] border border-[#EAE4D9] rounded-xl px-3 py-1.5 mb-3">
+        <span className="text-[#D97736] font-bold">1. Request OTP</span>
         <span>→</span>
         <span>2. Verify OTP</span>
         <span>→</span>
@@ -82,11 +82,11 @@ export const ForgotPasswordPage: React.FC = () => {
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3 text-xs">
         <div className="flex flex-col gap-1">
-          <label htmlFor="forgot-email" className="text-[11px] font-semibold text-gray-700">
+          <label htmlFor="forgot-email" className="text-[11px] font-semibold text-[#1F1E1B]">
             Account Email Address
           </label>
           <div className="relative flex items-center">
-            <Mail size={13} className="absolute left-3.5 text-gray-400" />
+            <Mail size={13} className="absolute left-3.5 text-[#8C827A]" />
             <input
               id="forgot-email"
               type="email"
@@ -94,7 +94,7 @@ export const ForgotPasswordPage: React.FC = () => {
               placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-9.5 pl-9.5 pr-3 rounded-xl bg-[#FBFBFB] hover:bg-white focus:bg-white border border-[#E5E5E5] text-[#0D0D0D] placeholder-gray-400 text-xs focus:outline-none focus:border-black focus:ring-1 focus:ring-black/10 transition-all"
+              className="w-full h-9.5 pl-9.5 pr-3 rounded-xl bg-[#FDFCFB] hover:bg-white focus:bg-white border border-[#E5DFD3] text-[#1F1E1B] placeholder-[#A39E93] text-xs focus:outline-none focus:border-[#D97736] focus:ring-1 focus:ring-[#D97736]/20 transition-all"
             />
           </div>
         </div>
@@ -102,7 +102,7 @@ export const ForgotPasswordPage: React.FC = () => {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full h-10 mt-1 rounded-xl text-xs font-semibold text-white bg-[#0D0D0D] hover:bg-[#262626] shadow-xs transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+          className="w-full h-10 mt-1 rounded-xl text-xs font-semibold text-white bg-[#D97736] hover:bg-[#C26224] shadow-xs transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
         >
           {isSubmitting ? (
             <>

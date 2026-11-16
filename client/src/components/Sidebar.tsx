@@ -299,8 +299,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }}
         className={`group relative flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[13px] cursor-pointer transition-colors ${
           isActive
-            ? 'bg-[#ECECEC] dark:bg-[#262626] text-[#0D0D0D] dark:text-white font-medium'
-            : 'text-[#383838] dark:text-[#B8B8B8] hover:text-[#0D0D0D] dark:hover:text-white hover:bg-[#ECECEC]/65 dark:hover:bg-[#212121]'
+            ? 'bg-[#E8E2D5] dark:bg-[#282622] text-[#1F1E1B] dark:text-white font-medium'
+            : 'text-[#554E46] dark:text-[#B8B8B8] hover:text-[#1F1E1B] dark:hover:text-white hover:bg-[#E8E2D5]/65 dark:hover:bg-[#212121]'
         }`}
       >
         {isEditing ? (
@@ -317,7 +317,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onKeyDown={(e) => {
                 if (e.key === 'Escape') setEditingSessionId(null);
               }}
-              className="w-full px-1.5 py-0.5 text-xs rounded bg-white dark:bg-[#141414] border border-blue-500 text-[#0D0D0D] dark:text-white outline-none"
+              className="w-full px-1.5 py-0.5 text-xs rounded bg-white dark:bg-[#141414] border border-blue-500 text-[#1F1E1B] dark:text-white outline-none"
             />
             <button
               type="submit"
@@ -382,7 +382,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {assigningSessionId === item.id && projects.length > 0 && (
           <div
             onClick={(e) => e.stopPropagation()}
-            className="absolute right-2 top-full mt-1 z-50 w-44 rounded-xl bg-white dark:bg-[#1F1F1F] border border-[#E5E5E5] dark:border-[#333] shadow-xl p-1 text-xs"
+            className="absolute right-2 top-full mt-1 z-50 w-44 rounded-xl bg-white dark:bg-[#1F1F1F] border border-[#E5DFD3] dark:border-[#333] shadow-xl p-1 text-xs"
           >
             <div className="px-2 py-1 text-[10px] font-semibold text-gray-400 uppercase">
               Add to Project
@@ -418,12 +418,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Desktop Collapsed Mini Icon Rail (In-Flow — Zero Overlap with TopBar) */}
       {isCollapsedDesktop && (
-        <aside className="hidden md:flex md:static w-[60px] shrink-0 h-full bg-[#F9F9F9] dark:bg-[#171717] border-r border-[#E5E5E5] dark:border-[#262626] flex-col items-center justify-between py-3 select-none z-30">
+        <aside className="hidden md:flex md:static w-[60px] shrink-0 h-full bg-[#F3EFE6] dark:bg-[#181715] border-r border-[#E5DFD3] dark:border-[#2D2A26] flex-col items-center justify-between py-3 select-none z-30">
           <div className="flex flex-col items-center gap-2">
             {/* Expand Sidebar Button */}
             <button
               onClick={() => setIsCollapsedDesktop(false)}
-              className="p-2 rounded-xl text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] hover:text-[#0D0D0D] dark:hover:text-white transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-[#736B63] dark:text-[#B4B4B4] hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] hover:text-[#1F1E1B] dark:hover:text-white transition-colors cursor-pointer"
               title="Expand sidebar"
             >
               <PanelLeftOpen size={18} />
@@ -432,7 +432,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* New Chat Button */}
             <button
               onClick={onNewChat}
-              className="p-2 rounded-xl text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] hover:text-[#0D0D0D] dark:hover:text-white transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-[#736B63] dark:text-[#B4B4B4] hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] hover:text-[#1F1E1B] dark:hover:text-white transition-colors cursor-pointer"
               title="New chat"
             >
               <SquarePen size={18} />
@@ -444,19 +444,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 setIsCollapsedDesktop(false);
                 setShowSearch(true);
               }}
-              className="p-2 rounded-xl text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] hover:text-[#0D0D0D] dark:hover:text-white transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-[#736B63] dark:text-[#B4B4B4] hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] hover:text-[#1F1E1B] dark:hover:text-white transition-colors cursor-pointer"
               title="Search conversations"
             >
               <Search size={18} />
             </button>
 
-            <div className="w-6 border-t border-[#E5E5E5] dark:border-[#2C2C2C] my-0.5" />
+            <div className="w-6 border-t border-[#E5DFD3] dark:border-[#2C2C2C] my-0.5" />
 
             {/* FLUX.1 Visual Studio */}
             {onOpenFluxStudio && (
               <button
                 onClick={onOpenFluxStudio}
-                className="p-2 rounded-xl text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] hover:text-[#0D0D0D] dark:hover:text-white transition-colors cursor-pointer"
+                className="p-2 rounded-xl text-[#736B63] dark:text-[#B4B4B4] hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] hover:text-[#1F1E1B] dark:hover:text-white transition-colors cursor-pointer"
                 title="FLUX.1 Visual Studio"
               >
                 <Sparkles size={18} />
@@ -466,7 +466,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Canvas & Artifacts */}
             <button
               onClick={onOpenCodex}
-              className="p-2 rounded-xl text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] hover:text-[#0D0D0D] dark:hover:text-white transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-[#736B63] dark:text-[#B4B4B4] hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] hover:text-[#1F1E1B] dark:hover:text-white transition-colors cursor-pointer"
               title="Canvas & Artifacts"
             >
               <Code size={18} />
@@ -475,7 +475,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Explore Agents */}
             <button
               onClick={onOpenExplore}
-              className="p-2 rounded-xl text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-[#736B63] dark:text-[#B4B4B4] hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] transition-colors cursor-pointer"
               title="Explore Agents"
             >
               <Compass size={18} />
@@ -484,7 +484,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Prompt Library */}
             <button
               onClick={onOpenLibrary}
-              className="p-2 rounded-xl text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-[#736B63] dark:text-[#B4B4B4] hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] transition-colors cursor-pointer"
               title="Prompt Library"
             >
               <Library size={18} />
@@ -497,7 +497,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               setIsCollapsedDesktop(false);
               setIsUserMenuOpen(true);
             }}
-            className="p-1.5 rounded-xl hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] transition-colors cursor-pointer"
             title={`${displayName} (${displayEmail})`}
           >
             {avatarUrl && !avatarError ? (
@@ -520,8 +520,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside
         className={`
           fixed md:static top-0 left-0 bottom-0 z-50
-          ${isCollapsedDesktop ? 'md:hidden' : 'w-[260px] shrink-0 border-r border-[#E5E5E5] dark:border-[#262626]'}
-          bg-[#F9F9F9] dark:bg-[#171717] flex flex-col justify-between
+          ${isCollapsedDesktop ? 'md:hidden' : 'w-[260px] shrink-0 border-r border-[#E5DFD3] dark:border-[#2D2A26]'}
+          bg-[#F3EFE6] dark:bg-[#181715] flex flex-col justify-between
           transition-all duration-200 ease-in-out
           ${isOpenMobile ? 'translate-x-0 w-[260px]' : '-translate-x-full md:translate-x-0'}
           h-full select-none
@@ -532,7 +532,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setIsCollapsedDesktop(true)}
-              className="hidden md:flex p-2 rounded-lg text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer"
+              className="hidden md:flex p-2 rounded-lg text-[#736B63] dark:text-[#B4B4B4] hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] transition-colors cursor-pointer"
               title="Collapse sidebar"
             >
               <PanelLeftClose size={18} />
@@ -551,7 +551,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 alt="Nebula AI"
                 className="w-6 h-6 object-contain shrink-0 drop-shadow-[0_1px_3px_rgba(0,0,0,0.16)] dark:brightness-125 dark:drop-shadow-[0_0_8px_rgba(196,181,253,0.4)]"
               />
-              <span className="font-bold text-sm text-[#0D0D0D] dark:text-white tracking-tight">
+              <span className="font-bold text-sm text-[#1F1E1B] dark:text-white tracking-tight">
                 Nebula AI
               </span>
             </div>
@@ -562,8 +562,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => setShowSearch((prev) => !prev)}
               className={`p-2 rounded-lg transition-colors cursor-pointer ${
                 showSearch
-                  ? 'bg-[#ECECEC] dark:bg-[#262626] text-[#0D0D0D] dark:text-white'
-                  : 'text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424]'
+                  ? 'bg-[#E8E2D5] dark:bg-[#282622] text-[#1F1E1B] dark:text-white'
+                  : 'text-[#736B63] dark:text-[#B4B4B4] hover:bg-[#E8E2D5] dark:hover:bg-[#24221E]'
               }`}
               title="Search conversations"
             >
@@ -574,14 +574,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onNewChat();
                 onCloseMobile();
               }}
-              className="p-2 rounded-lg text-[#5D5D5D] dark:text-[#B4B4B4] hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer"
+              className="p-2 rounded-lg text-[#736B63] dark:text-[#B4B4B4] hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] transition-colors cursor-pointer"
               title="New chat"
             >
               <SquarePen size={17} />
             </button>
             <button
               onClick={onCloseMobile}
-              className="md:hidden p-2 rounded-lg text-gray-500 hover:bg-[#ECECEC] dark:hover:bg-[#242424]"
+              className="md:hidden p-2 rounded-lg text-gray-500 hover:bg-[#E8E2D5] dark:hover:bg-[#24221E]"
             >
               <X size={17} />
             </button>
@@ -601,7 +601,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoFocus
                   placeholder="Search chats..."
-                  className="w-full pl-8 pr-6 py-1.5 rounded-lg bg-white dark:bg-[#222222] text-xs text-[#0D0D0D] dark:text-[#ECECEC] placeholder-gray-400 border border-[#E5E5E5] dark:border-[#333] outline-hidden transition-all"
+                  className="w-full pl-8 pr-6 py-1.5 rounded-lg bg-white dark:bg-[#222222] text-xs text-[#1F1E1B] dark:text-[#F0ECE1] placeholder-gray-400 border border-[#E5DFD3] dark:border-[#333] outline-hidden transition-all"
                 />
                 {searchQuery && (
                   <button
@@ -623,10 +623,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onNewChat();
                 onCloseMobile();
               }}
-              className="group w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer text-left"
+              className="group w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] transition-colors cursor-pointer text-left"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#262626] text-[#1F1F1F] dark:text-[#E3E3E3] flex items-center justify-center shrink-0">
+                <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#282622] text-[#1F1F1F] dark:text-[#E3E3E3] flex items-center justify-center shrink-0">
                   <SquarePen size={13} />
                 </div>
                 <span className="font-semibold truncate">New chat</span>
@@ -643,10 +643,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onOpenFluxStudio();
                   onCloseMobile();
                 }}
-                className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer text-left"
+                className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] transition-colors cursor-pointer text-left"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#262626] text-[#1F1F1F] dark:text-[#E3E3E3] flex items-center justify-center shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#282622] text-[#1F1F1F] dark:text-[#E3E3E3] flex items-center justify-center shrink-0">
                     <Sparkles size={13} />
                   </div>
                   <span className="truncate">FLUX.1 Visual Studio</span>
@@ -659,7 +659,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Canvas & Artifacts Studio + Expandable Saved Artifacts */}
             <div className="flex flex-col">
-              <div className="flex items-center justify-between rounded-lg hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors">
+              <div className="flex items-center justify-between rounded-lg hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] transition-colors">
                 <button
                   onClick={() => {
                     onOpenCodex();
@@ -667,7 +667,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }}
                   className="flex-1 flex items-center gap-2.5 px-2 py-2 cursor-pointer text-left min-w-0"
                 >
-                  <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#262626] text-[#1F1F1F] dark:text-[#E3E3E3] flex items-center justify-center shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#282622] text-[#1F1F1F] dark:text-[#E3E3E3] flex items-center justify-center shrink-0">
                     <Code size={13} />
                   </div>
                   <span className="truncate">Canvas & Artifacts</span>
@@ -699,7 +699,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         }
                         onCloseMobile();
                       }}
-                      className="w-full flex items-center gap-2 px-2 py-1 rounded-md text-xs text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-[#ECECEC]/70 dark:hover:bg-[#242424] transition-colors text-left cursor-pointer"
+                      className="w-full flex items-center gap-2 px-2 py-1 rounded-md text-xs text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-[#E8E2D5]/70 dark:hover:bg-[#24221E] transition-colors text-left cursor-pointer"
                     >
                       <FileCode size={12} className="text-gray-500 dark:text-gray-400 shrink-0" />
                       <span className="truncate">{art.title}</span>
@@ -715,9 +715,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onOpenExplore();
                 onCloseMobile();
               }}
-              className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer text-left"
+              className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] transition-colors cursor-pointer text-left"
             >
-              <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#262626] text-[#424242] dark:text-[#B4B4B4] flex items-center justify-center shrink-0">
+              <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#282622] text-[#424242] dark:text-[#B4B4B4] flex items-center justify-center shrink-0">
                 <Compass size={13} />
               </div>
               <span>Explore Agents</span>
@@ -729,9 +729,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onOpenLibrary();
                 onCloseMobile();
               }}
-              className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer text-left"
+              className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] transition-colors cursor-pointer text-left"
             >
-              <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#262626] text-[#424242] dark:text-[#B4B4B4] flex items-center justify-center shrink-0">
+              <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#282622] text-[#424242] dark:text-[#B4B4B4] flex items-center justify-center shrink-0">
                 <Library size={13} />
               </div>
               <span>Prompt Library</span>
@@ -743,9 +743,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onOpenSettings();
                 onCloseMobile();
               }}
-              className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer text-left"
+              className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] transition-colors cursor-pointer text-left"
             >
-              <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#262626] text-[#424242] dark:text-[#B4B4B4] flex items-center justify-center shrink-0">
+              <div className="w-6 h-6 rounded-full bg-gray-200/70 dark:bg-[#282622] text-[#424242] dark:text-[#B4B4B4] flex items-center justify-center shrink-0">
                 <Brain size={13} />
               </div>
               <span>Memory Core</span>
@@ -753,7 +753,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* ChatGPT Projects (Custom Folders) Section */}
-          <div className="mt-3 pt-2 border-t border-[#E5E5E5]/70 dark:border-[#262626]">
+          <div className="mt-3 pt-2 border-t border-[#E5DFD3]/70 dark:border-[#2D2A26]">
             <div className="flex items-center justify-between px-2.5 py-1 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
               <span>Projects</span>
               <button
@@ -773,7 +773,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onChange={(e) => setNewProjectName(e.target.value)}
                   placeholder="Project name..."
                   autoFocus
-                  className="w-full px-2 py-1 text-xs rounded-lg bg-white dark:bg-[#222222] border border-[#E5E5E5] dark:border-[#333] text-[#0D0D0D] dark:text-white outline-none"
+                  className="w-full px-2 py-1 text-xs rounded-lg bg-white dark:bg-[#222222] border border-[#E5DFD3] dark:border-[#333] text-[#1F1E1B] dark:text-white outline-none"
                 />
                 <button
                   type="submit"
@@ -797,7 +797,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           : [...prev, proj.id]
                       )
                     }
-                    className="group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[13px] text-[#383838] dark:text-[#C0C0C0] hover:bg-[#ECECEC]/70 dark:hover:bg-[#222222] cursor-pointer transition-colors"
+                    className="group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[13px] text-[#554E46] dark:text-[#C0C0C0] hover:bg-[#E8E2D5]/70 dark:hover:bg-[#222222] cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       {isExpanded ? (
@@ -817,7 +817,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </button>
                   </div>
                   {isExpanded && (
-                    <div className="ml-4 pl-2 border-l border-[#E5E5E5] dark:border-[#2A2A2A] flex flex-col gap-0.5 my-0.5">
+                    <div className="ml-4 pl-2 border-l border-[#E5DFD3] dark:border-[#2A2A2A] flex flex-col gap-0.5 my-0.5">
                       {folderSessions.length === 0 ? (
                         <span className="px-2 py-1 text-[11px] text-gray-400 italic">
                           Hover any chat and click the folder icon to add
@@ -882,13 +882,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Bottom User Profile Section */}
-        <div className="relative p-2.5 border-t border-[#E5E5E5] dark:border-[#262626] flex flex-col gap-1.5 bg-[#F9F9F9] dark:bg-[#171717] shrink-0">
+        <div className="relative p-2.5 border-t border-[#E5DFD3] dark:border-[#2D2A26] flex flex-col gap-1.5 bg-[#F3EFE6] dark:bg-[#181715] shrink-0">
           {/* Popover Menu */}
           {isUserMenuOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setIsUserMenuOpen(false)} />
 
-              <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 bg-white dark:bg-[#202020] rounded-2xl border border-[#E5E5E5] dark:border-[#2E2E2E] shadow-2xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-2 duration-150 text-[#0D0D0D] dark:text-[#ECECEC]">
+              <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 bg-white dark:bg-[#202020] rounded-2xl border border-[#E5DFD3] dark:border-[#2E2E2E] shadow-2xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-2 duration-150 text-[#1F1E1B] dark:text-[#F0ECE1]">
                 <div
                   onClick={() => {
                     setIsUserMenuOpen(false);
@@ -911,7 +911,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       </div>
                     )}
                     <div className="flex flex-col min-w-0">
-                      <span className="text-[13px] font-semibold text-[#0D0D0D] dark:text-[#ECECEC] truncate leading-tight">
+                      <span className="text-[13px] font-semibold text-[#1F1E1B] dark:text-[#F0ECE1] truncate leading-tight">
                         {displayName}
                       </span>
                       <span className="text-[11px] text-gray-500 truncate leading-tight">
@@ -922,16 +922,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <ChevronRight size={15} className="text-gray-400 shrink-0" />
                 </div>
 
-                <div className="my-1 border-t border-[#E5E5E5] dark:border-[#2E2E2E]" />
+                <div className="my-1 border-t border-[#E5DFD3] dark:border-[#2E2E2E]" />
 
                 <button
                   onClick={() => {
                     setIsUserMenuOpen(false);
                     onOpenUpgrade();
                   }}
-                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] dark:hover:bg-[#2A2A2A] transition-colors text-left text-[13px] font-medium text-[#0D0D0D] dark:text-[#ECECEC] cursor-pointer"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] dark:hover:bg-[#2A2A2A] transition-colors text-left text-[13px] font-medium text-[#1F1E1B] dark:text-[#F0ECE1] cursor-pointer"
                 >
-                  <Sparkles size={16} className="text-[#0D0D0D] dark:text-white shrink-0" />
+                  <Sparkles size={16} className="text-[#1F1E1B] dark:text-white shrink-0" />
                   <span>Upgrade plan</span>
                 </button>
 
@@ -940,7 +940,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     setIsUserMenuOpen(false);
                     onOpenSettings();
                   }}
-                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] dark:hover:bg-[#2A2A2A] transition-colors text-left text-[13px] font-medium text-[#0D0D0D] dark:text-[#ECECEC] cursor-pointer"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] dark:hover:bg-[#2A2A2A] transition-colors text-left text-[13px] font-medium text-[#1F1E1B] dark:text-[#F0ECE1] cursor-pointer"
                 >
                   <Sliders size={16} className="text-gray-500 shrink-0" />
                   <span>Customize Nebula</span>
@@ -951,13 +951,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     setIsUserMenuOpen(false);
                     onOpenSettings();
                   }}
-                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] dark:hover:bg-[#2A2A2A] transition-colors text-left text-[13px] font-medium text-[#0D0D0D] dark:text-[#ECECEC] cursor-pointer"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-[#F4F4F4] dark:hover:bg-[#2A2A2A] transition-colors text-left text-[13px] font-medium text-[#1F1E1B] dark:text-[#F0ECE1] cursor-pointer"
                 >
                   <SettingsIcon size={16} className="text-gray-500 shrink-0" />
                   <span>Settings</span>
                 </button>
 
-                <div className="my-1 border-t border-[#E5E5E5] dark:border-[#2E2E2E]" />
+                <div className="my-1 border-t border-[#E5DFD3] dark:border-[#2E2E2E]" />
 
                 {isAuthenticated ? (
                   <button
@@ -989,7 +989,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Profile Trigger Button */}
           <div
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className="flex items-center justify-between p-2 rounded-xl hover:bg-[#ECECEC] dark:hover:bg-[#242424] transition-colors cursor-pointer text-[#0D0D0D] dark:text-[#ECECEC]"
+            className="flex items-center justify-between p-2 rounded-xl hover:bg-[#E8E2D5] dark:hover:bg-[#24221E] transition-colors cursor-pointer text-[#1F1E1B] dark:text-[#F0ECE1]"
           >
             <div className="flex items-center gap-2.5 min-w-0">
               {avatarUrl && !avatarError ? (
@@ -1006,7 +1006,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               )}
               <div className="flex flex-col min-w-0">
-                <span className="text-[13px] font-semibold truncate leading-tight text-[#0D0D0D] dark:text-[#ECECEC]">
+                <span className="text-[13px] font-semibold truncate leading-tight text-[#1F1E1B] dark:text-[#F0ECE1]">
                   {displayName}
                 </span>
                 <span className="text-[11px] text-gray-500 truncate leading-tight">

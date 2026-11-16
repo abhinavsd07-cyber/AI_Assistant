@@ -99,20 +99,20 @@ export const ResetPasswordPage: React.FC = () => {
         <span className="text-[#0D0D0D]">3. New Password</span>
       </div>
 
-      <div className="flex items-center gap-2 bg-emerald-50/70 border border-emerald-200 rounded-xl px-3 py-2 mb-3 text-[11px] text-emerald-800">
-        <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+      <div className="flex items-center gap-2 bg-[#FDFCFB] border border-[#E5DFD3] rounded-xl px-3 py-2 mb-3 text-[11px] text-[#736B63]">
+        <ShieldCheck size={14} className="text-[#D97736] shrink-0" />
         <span className="truncate">
-          OTP verified for <strong>{verifiedEmail}</strong>
+          OTP verified for <strong className="text-[#1F1E1B]">{verifiedEmail}</strong>
         </span>
       </div>
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-2.5 text-xs">
         <div className="flex flex-col gap-1">
-          <label htmlFor="reset-new-password" className="text-[11px] font-semibold text-gray-700">
+          <label htmlFor="reset-new-password" className="text-[11px] font-semibold text-[#1F1E1B]">
             New Password
           </label>
           <div className="relative flex items-center">
-            <Lock size={13} className="absolute left-3.5 text-gray-400" />
+            <Lock size={13} className="absolute left-3.5 text-[#8C827A]" />
             <input
               id="reset-new-password"
               type={showPassword ? 'text' : 'password'}
@@ -120,13 +120,13 @@ export const ResetPasswordPage: React.FC = () => {
               placeholder="Minimum 6 characters"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full h-9.5 pl-9.5 pr-9.5 rounded-xl bg-[#FBFBFB] hover:bg-white focus:bg-white border border-[#E5E5E5] text-[#0D0D0D] placeholder-gray-400 text-xs focus:outline-none focus:border-black focus:ring-1 focus:ring-black/10 transition-all"
+              className="w-full h-9.5 pl-9.5 pr-9.5 rounded-xl bg-[#FDFCFB] hover:bg-white focus:bg-white border border-[#E5DFD3] text-[#1F1E1B] placeholder-[#A39E93] text-xs focus:outline-none focus:border-[#D97736] focus:ring-1 focus:ring-[#D97736]/20 transition-all"
             />
             <button
               type="button"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+              className="absolute right-3 text-[#8C827A] hover:text-[#1F1E1B] transition-colors cursor-pointer"
             >
               {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
             </button>
@@ -137,12 +137,12 @@ export const ResetPasswordPage: React.FC = () => {
         <div className="flex flex-col gap-1">
           <label
             htmlFor="reset-confirm-password"
-            className="text-[11px] font-semibold text-gray-700"
+            className="text-[11px] font-semibold text-[#1F1E1B]"
           >
             Confirm New Password
           </label>
           <div className="relative flex items-center">
-            <Lock size={13} className="absolute left-3.5 text-gray-400" />
+            <Lock size={13} className="absolute left-3.5 text-[#8C827A]" />
             <input
               id="reset-confirm-password"
               type={showConfirmPassword ? 'text' : 'password'}
@@ -150,17 +150,17 @@ export const ResetPasswordPage: React.FC = () => {
               placeholder="Re-enter new password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className={`w-full h-9.5 pl-9.5 pr-9.5 rounded-xl bg-[#FBFBFB] hover:bg-white focus:bg-white border text-[#0D0D0D] placeholder-gray-400 text-xs focus:outline-none focus:ring-1 transition-all ${
+              className={`w-full h-9.5 pl-9.5 pr-9.5 rounded-xl bg-[#FDFCFB] hover:bg-white focus:bg-white border text-[#1F1E1B] placeholder-[#A39E93] text-xs focus:outline-none focus:ring-1 transition-all ${
                 passwordsMismatch
                   ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200'
-                  : 'border-[#E5E5E5] focus:border-black focus:ring-black/10'
+                  : 'border-[#E5DFD3] focus:border-[#D97736] focus:ring-[#D97736]/20'
               }`}
             />
             <button
               type="button"
               aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
               onClick={() => setShowConfirmPassword((v) => !v)}
-              className="absolute right-3 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+              className="absolute right-3 text-[#8C827A] hover:text-[#1F1E1B] transition-colors cursor-pointer"
             >
               {showConfirmPassword ? <EyeOff size={13} /> : <Eye size={13} />}
             </button>
@@ -173,7 +173,7 @@ export const ResetPasswordPage: React.FC = () => {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full h-10 mt-1 rounded-xl text-xs font-semibold text-white bg-[#0D0D0D] hover:bg-[#262626] shadow-xs transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+          className="w-full h-10 mt-1 rounded-xl text-xs font-semibold text-white bg-[#D97736] hover:bg-[#C26224] shadow-xs transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
         >
           {isSubmitting ? (
             <>

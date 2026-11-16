@@ -86,7 +86,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   }, []);
 
   return (
-    <div className="relative z-30 flex items-center justify-between px-3 md:px-6 h-13 border-b border-[#E5E5E5] dark:border-[#282828] bg-[#FCFCFC] dark:bg-[#141414] text-[#0D0D0D] dark:text-[#ECECEC]">
+    <div className="relative z-30 flex items-center justify-between px-3 md:px-6 h-13 border-b border-[#EAE4D9] dark:border-[#2D2A26] bg-[#FAF8F5] dark:bg-[#1A1916] text-[#1F1E1B] dark:text-[#F0ECE1]">
       {/* Left Model Selector & Mobile Trigger */}
       <div className="flex items-center gap-2">
         <button
@@ -122,9 +122,9 @@ export const TopBar: React.FC<TopBarProps> = ({
             return (
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-[#ECECEC]/70 dark:hover:bg-[#252525] text-sm font-semibold text-[#0D0D0D] dark:text-[#ECECEC] transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-[#EAE4D8]/70 dark:hover:bg-[#252525] text-sm font-semibold text-[#1F1E1B] dark:text-[#F0ECE1] transition-colors cursor-pointer"
               >
-                <span className="text-[15px] font-bold tracking-tight text-[#0D0D0D] dark:text-white">
+                <span className="text-[15px] font-bold tracking-tight text-[#1F1E1B] dark:text-white">
                   {primaryLabel}
                 </span>
                 <span className="text-[14px] font-semibold text-gray-500 dark:text-gray-400 truncate max-w-[140px]">
@@ -147,7 +147,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 onClick={() => setIsDropdownOpen(false)} 
               />
               
-              <div className="absolute left-0 mt-2 w-72 rounded-2xl bg-white dark:bg-[#1E1E1E] border border-[#E5E5E5] dark:border-[#2E2E2E] shadow-xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute left-0 mt-2 w-72 rounded-2xl bg-white dark:bg-[#252320] border border-[#EAE4D9] dark:border-[#38352F] shadow-xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100">
                 <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider flex items-center justify-between">
                   <span>Model Engine</span>
                   <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold lowercase text-[10px]">
@@ -163,8 +163,8 @@ export const TopBar: React.FC<TopBarProps> = ({
                     }}
                     className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs text-left transition-colors cursor-pointer ${
                       selectedModel === m.id
-                        ? 'bg-[#F4F4F4] dark:bg-[#2A2A2A] text-[#0D0D0D] dark:text-white font-semibold'
-                        : 'text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-[#F9F9F9] dark:hover:bg-[#252525]'
+                        ? 'bg-[#E8E2D5] dark:bg-[#2A2723] text-[#1F1E1B] dark:text-white font-semibold'
+                        : 'text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-[#EAE4D8] dark:hover:bg-[#24221E]'
                     }`}
                   >
                     <div className="flex flex-col">
@@ -182,7 +182,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                       </div>
                       <span className="text-[11px] text-gray-500 dark:text-gray-400">{m.tag}</span>
                     </div>
-                    {selectedModel === m.id && <Check size={14} className="text-[#0D0D0D] dark:text-white shrink-0" />}
+                    {selectedModel === m.id && <Check size={14} className="text-[#1F1E1B] dark:text-white shrink-0" />}
                   </button>
                 ))}
               </div>
@@ -222,7 +222,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         {onOpenVoiceMode && (
           <button
             onClick={onOpenVoiceMode}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F4F4F5] dark:bg-[#222226] text-[#0D0D0D] dark:text-[#ECECEC] hover:bg-[#EAEAEF] dark:hover:bg-[#2C2C32] border border-[#E4E4E7] dark:border-[#323238] text-xs font-semibold transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F4F4F5] dark:bg-[#222226] text-[#1F1E1B] dark:text-[#F0ECE1] hover:bg-[#EAEAEF] dark:hover:bg-[#2C2C32] border border-[#E4E4E7] dark:border-[#323238] text-xs font-semibold transition-colors cursor-pointer"
             title="Open Hands-Free Voice Conversation"
           >
             <Mic size={13.5} className="text-zinc-600 dark:text-zinc-300" />
@@ -243,7 +243,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         <div className="relative">
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="flex items-center justify-center w-8 h-8 rounded-xl hover:bg-[#ECECEC]/70 dark:hover:bg-[#252525] text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+            className="flex items-center justify-center w-8 h-8 rounded-xl hover:bg-[#EAE4D8]/70 dark:hover:bg-[#252525] text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
             title="Options & Export"
           >
             <MoreHorizontal size={17} />
@@ -256,7 +256,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 onClick={() => setIsMenuOpen(false)} 
               />
               
-              <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-[#1E1E1E] border border-[#E5E5E5] dark:border-[#2E2E2E] shadow-xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100 text-xs text-[#0D0D0D] dark:text-[#ECECEC]">
+              <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-[#252320] border border-[#EAE4D9] dark:border-[#38352F] shadow-xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100 text-xs text-[#1F1E1B] dark:text-[#F0ECE1]">
                 <div className="px-3 py-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
                   Export Conversation
                 </div>

@@ -194,14 +194,14 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                         <Pencil size={13} />
                       </button>
                     )}
-                    <div className="rounded-[24px] px-5 py-2.5 text-[15px] leading-relaxed bg-[#F4F4F4] dark:bg-[#252525] text-[#0D0D0D] dark:text-[#ECECEC] border border-[#E5E5E5]/60 dark:border-[#383838] shadow-2xs">
+                    <div className="rounded-[24px] px-5 py-2.5 text-[15px] leading-relaxed bg-[#F3EFE6] dark:bg-[#2A2723] text-[#1F1E1B] dark:text-[#F0ECE1] border border-[#E5DFD3] dark:border-[#3E3A33] shadow-2xs">
                       {message.imageUrl ? (
                         <div className="mb-2 rounded-xl overflow-hidden max-w-sm">
                           <img src={message.imageUrl} alt="Attached" className="w-full max-h-60 object-cover" />
                         </div>
                       ) : message.fileName ? (
-                        <div className="mb-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/90 dark:bg-black/40 border border-gray-200 dark:border-gray-750 text-xs text-gray-800 dark:text-gray-200">
-                          <FileText size={16} className="text-blue-600" />
+                        <div className="mb-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/90 dark:bg-black/40 border border-[#EAE4D9] dark:border-[#3E3A33] text-xs text-[#1F1E1B] dark:text-[#F0ECE1]">
+                          <FileText size={16} className="text-[#D97736]" />
                           <span className="font-semibold truncate max-w-[200px]">{message.fileName}</span>
                         </div>
                       ) : null}
@@ -212,7 +212,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
               </div>
             ) : (
               /* Assistant message with rich Markdown rendering */
-              <div className="w-full text-[#0D0D0D] dark:text-[#ECECEC] leading-relaxed group">
+              <div className="w-full text-[#1F1E1B] dark:text-[#F0ECE1] leading-relaxed group">
                 <div className="text-[15px] leading-relaxed markdown-content">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}

@@ -51,16 +51,16 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   const [legalModal, setLegalModal] = useState<'terms' | 'privacy' | null>(null);
 
   return (
-    <div className="min-h-screen w-full flex flex-col justify-between bg-[#FCFCFC] text-[#0D0D0D] relative overflow-x-hidden selection:bg-[#E5E5E5] selection:text-[#0D0D0D]">
+    <div className="min-h-screen w-full flex flex-col justify-between bg-[#FAF8F5] text-[#1F1E1B] relative overflow-x-hidden selection:bg-[#F6D7C3] selection:text-[#7A2E14]">
       <div
-        className="fixed inset-0 pointer-events-none opacity-40 select-none"
+        className="fixed inset-0 pointer-events-none opacity-60 select-none"
         style={{
-          backgroundImage: `radial-gradient(circle at 50% 25%, rgba(15, 23, 42, 0.04) 0%, transparent 65%)`,
+          backgroundImage: `radial-gradient(circle at 50% 20%, rgba(217, 119, 54, 0.07) 0%, transparent 65%)`,
         }}
       />
 
       {/* Top Navigation Bar */}
-      <header className="relative z-20 w-full px-6 py-2.5 md:px-10 flex items-center justify-between border-b border-[#E5E5E5]/60 bg-white/70 backdrop-blur-md">
+      <header className="relative z-20 w-full px-6 py-2.5 md:px-10 flex items-center justify-between border-b border-[#EAE4D9]/80 bg-[#FAF8F5]/85 backdrop-blur-md">
         <a
           href={isAuthenticated ? '/' : '/login'}
           onClick={(e) => {
@@ -68,22 +68,22 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             e.preventDefault();
             navigateTo(isAuthenticated ? 'chat' : 'login');
           }}
-          className="flex items-center gap-2.5 select-none no-underline text-[#0D0D0D]"
+          className="flex items-center gap-2.5 select-none no-underline text-[#1F1E1B]"
         >
           <div className="w-7 h-7 flex items-center justify-center shrink-0">
             <img
               src="/nebula-logo.png"
               alt="Nebula Logo"
-              className="w-full h-full object-contain drop-shadow-[0_1px_4px_rgba(15,23,42,0.16)]"
+              className="w-full h-full object-contain drop-shadow-[0_2px_6px_rgba(217,119,54,0.22)]"
             />
           </div>
-          <span className="font-bold text-base tracking-tight text-[#0D0D0D]">Nebula AI</span>
+          <span className="font-bold text-base tracking-tight text-[#1F1E1B]">Nebula AI</span>
         </a>
 
         <AuthRouteLink
           to={headerAction.view}
           href={headerAction.href}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-black py-1.5 px-3.5 rounded-full bg-white border border-[#E5E5E5] hover:border-gray-400 hover:bg-gray-50 active:scale-95 transition-all cursor-pointer shadow-2xs no-underline"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#736B63] hover:text-[#1F1E1B] py-1.5 px-3.5 rounded-full bg-white border border-[#EAE4D9] hover:border-[#D97736]/40 hover:bg-[#FAF8F5] active:scale-95 transition-all cursor-pointer shadow-2xs no-underline"
         >
           <span>{headerAction.label}</span>
           <ArrowRight size={13} />
@@ -93,11 +93,11 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       {/* Main Centered Auth Studio */}
       <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-4 sm:py-6">
         <div className="w-full max-w-[410px] mx-auto flex flex-col items-center">
-          <div className="w-full bg-white rounded-3xl border border-[#E5E5E5] shadow-xl shadow-black/[0.03] p-5 sm:p-7 flex flex-col gap-3.5">
+          <div className="w-full bg-white/95 rounded-3xl border border-[#EAE4D9] shadow-xl shadow-amber-950/[0.04] p-5 sm:p-7 flex flex-col gap-3.5">
             {/* Brand Orb & Page Heading */}
             <div className="flex flex-col items-center text-center">
               <div className="relative mb-2">
-                <div className="absolute -inset-3 bg-radial from-slate-200/50 via-transparent to-transparent rounded-full blur-xl opacity-75" />
+                <div className="absolute -inset-3 bg-radial from-[#D97736]/20 via-amber-200/10 to-transparent rounded-full blur-xl opacity-80" />
                 <div className="relative w-14 h-14 flex items-center justify-center">
                   <img
                     src="/nebula-logo.png"
@@ -106,8 +106,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                   />
                 </div>
               </div>
-              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-[#0D0D0D]">{title}</h1>
-              <p className="text-[11.5px] text-gray-500 mt-0.5 max-w-[320px]">{subtitle}</p>
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-[#1F1E1B]">{title}</h1>
+              <p className="text-[11.5px] text-[#736B63] mt-0.5 max-w-[320px]">{subtitle}</p>
             </div>
 
             {errorMessage && (
@@ -132,22 +132,22 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
 
             {children}
 
-            <div className="text-center text-xs text-gray-500 pt-2 border-t border-[#E5E5E5]/60">
+            <div className="text-center text-xs text-[#736B63] pt-2 border-t border-[#EAE4D9]">
               {footer}
             </div>
           </div>
 
           <div className="flex flex-col items-center gap-1.5 mt-4 text-center">
-            <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
-              <ShieldCheck size={13} className="text-emerald-600" />
+            <div className="flex items-center gap-1.5 text-[11px] text-[#736B63]">
+              <ShieldCheck size={13} className="text-[#D97736]" />
               <span>256-bit TLS Encryption • Cloud Synced with MongoDB Atlas</span>
             </div>
-            <p className="text-[10px] text-gray-400 max-w-xs">
+            <p className="text-[10px] text-[#8C827A] max-w-xs">
               By continuing, you agree to Nebula&apos;s{' '}
               <button
                 type="button"
                 onClick={() => setLegalModal('terms')}
-                className="underline hover:text-gray-600 cursor-pointer"
+                className="underline hover:text-[#1F1E1B] cursor-pointer"
               >
                 Terms
               </button>{' '}
@@ -155,7 +155,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               <button
                 type="button"
                 onClick={() => setLegalModal('privacy')}
-                className="underline hover:text-gray-600 cursor-pointer"
+                className="underline hover:text-[#1F1E1B] cursor-pointer"
               >
                 Privacy Policy
               </button>
@@ -172,16 +172,16 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-2xl bg-white border border-[#E5E5E5] p-5 shadow-2xl text-xs text-gray-700 flex flex-col gap-3"
+            className="w-full max-w-md rounded-2xl bg-[#FAF8F5] border border-[#EAE4D9] p-5 shadow-2xl text-xs text-[#1F1E1B] flex flex-col gap-3"
           >
-            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-              <h3 className="text-sm font-bold text-[#0D0D0D]">
+            <div className="flex items-center justify-between border-b border-[#EAE4D9] pb-2">
+              <h3 className="text-sm font-bold text-[#1F1E1B]">
                 {legalModal === 'terms' ? 'Nebula AI Terms of Service' : 'Nebula AI Privacy Policy'}
               </h3>
               <button
                 type="button"
                 onClick={() => setLegalModal(null)}
-                className="text-gray-400 hover:text-black font-semibold cursor-pointer"
+                className="text-[#736B63] hover:text-[#1F1E1B] font-semibold cursor-pointer"
               >
                 Close
               </button>
@@ -199,7 +199,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
         </div>
       )}
 
-      <footer className="relative z-10 w-full py-2.5 text-center text-[10.5px] text-gray-400 border-t border-[#E5E5E5]/50">
+      <footer className="relative z-10 w-full py-2.5 text-center text-[10.5px] text-[#8C827A] border-t border-[#EAE4D9]/60">
         © 2026 Nebula AI • Powered by Google Gemini 3.8 Flash
       </footer>
     </div>
