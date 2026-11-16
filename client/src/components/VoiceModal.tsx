@@ -1,138 +1,8 @@
-import React, { useState, useEffect, useRef, useId } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Mic, MicOff, AlertCircle, Square, Globe } from 'lucide-react';
-
-type EmblemStatus = 'idle' | 'listening' | 'thinking' | 'speaking';
-
-const EMBLEM_ACCENTS: Record<EmblemStatus, { ringGlow: string; glint: string; nClass: string; ringClass: string }> = {
-  idle: { ringGlow: '#D97736', glint: '#FDEEE2', nClass: 'nebula-n-idle', ringClass: 'nebula-ring-idle' },
-  listening: { ringGlow: '#E07A5F', glint: '#FFF1E8', nClass: 'nebula-n-listening', ringClass: 'nebula-ring-listening' },
-  thinking: { ringGlow: '#F59E0B', glint: '#FEF3C7', nClass: 'nebula-n-thinking', ringClass: 'nebula-ring-thinking' },
-  speaking: { ringGlow: '#D97736', glint: '#FFFFFF', nClass: 'nebula-n-speaking', ringClass: 'nebula-ring-speaking' },
-};
-
-const NebulaAnimatedEmblem: React.FC<{ status: EmblemStatus }> = ({ status }) => {
-  const uid = useId().replace(/:/g, '');
-  const backClipId = `${uid}-back`;
-  const frontClipId = `${uid}-front`;
-  const metalGradId = `${uid}-metal`;
-  const diagonalGradId = `${uid}-diag`;
-  const darkBevelId = `${uid}-bevel`;
-  const ringTrackId = `${uid}-track`;
-  const ringSweepId = `${uid}-sweep`;
-  const accent = EMBLEM_ACCENTS[status];
-
-  const renderOrbitGroup = () => (
-    <g className={accent.ringClass}>
-      <circle cx="0" cy="0" r="112" fill="none" stroke="none" />
-      <circle cx="0" cy="0" r="102" fill="none" stroke={`url(#${ringTrackId})`} strokeWidth="13" />
-      <circle cx="0" cy="0" r="97.5" fill="none" stroke="#1E293B" strokeWidth="3.5" strokeOpacity="0.85" />
-      <circle
-        cx="0"
-        cy="0"
-        r="102"
-        fill="none"
-        stroke={`url(#${ringSweepId})`}
-        strokeWidth="8"
-        strokeDasharray="128 192 88 232"
-        strokeLinecap="round"
-      />
-      <circle
-        cx="0"
-        cy="0"
-        r="105.5"
-        fill="none"
-        stroke="rgba(255,255,255,0.9)"
-        strokeWidth="2"
-        strokeDasharray="105 215 70 250"
-        strokeLinecap="round"
-      />
-      <circle cx="102" cy="0" r="4" fill={accent.glint} opacity="0.95" />
-      <circle cx="-102" cy="0" r="2.8" fill="#E2E8F0" opacity="0.75" />
-    </g>
-  );
-
-  return (
-    <svg
-      viewBox="-145 -135 290 270"
-      className="w-48 h-48 overflow-visible select-none pointer-events-none drop-shadow-[0_12px_28px_rgba(0,0,0,0.65)]"
-      aria-hidden="true"
-    >
-      <defs>
-        <clipPath id={backClipId}>
-          <rect x="-150" y="-150" width="300" height="150" />
-        </clipPath>
-        <clipPath id={frontClipId}>
-          <rect x="-150" y="0" width="300" height="150" />
-        </clipPath>
-        <linearGradient id={metalGradId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="28%" stopColor="#CBD5E1" />
-          <stop offset="72%" stopColor="#64748B" />
-          <stop offset="100%" stopColor="#E2E8F0" />
-        </linearGradient>
-        <linearGradient id={diagonalGradId} x1="15%" y1="0%" x2="85%" y2="100%">
-          <stop offset="0%" stopColor="#F8FAFC" />
-          <stop offset="45%" stopColor="#94A3B8" />
-          <stop offset="100%" stopColor="#475569" />
-        </linearGradient>
-        <linearGradient id={darkBevelId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#090D16" />
-          <stop offset="55%" stopColor="#283548" />
-          <stop offset="100%" stopColor="#1E293B" />
-        </linearGradient>
-        <linearGradient id={ringTrackId} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#475569" />
-          <stop offset="35%" stopColor="#94A3B8" />
-          <stop offset="70%" stopColor="#334155" />
-          <stop offset="100%" stopColor="#CBD5E1" />
-        </linearGradient>
-        <linearGradient id={ringSweepId} x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.96" />
-          <stop offset="50%" stopColor={accent.ringGlow} stopOpacity="0.92" />
-          <stop offset="100%" stopColor="#E2E8F0" stopOpacity="0.45" />
-        </linearGradient>
-      </defs>
-
-      {/* Rear half of tilted orbital ring passing smoothly behind the 'N' */}
-      <g transform="translate(0, 10) rotate(-22) scale(1, 0.36)">
-        <g clipPath={`url(#${backClipId})`}>{renderOrbitGroup()}</g>
-      </g>
-
-      {/* Sculpted metallic 3D 'N' moving strictly up and down */}
-      <g className={accent.nClass}>
-        <path
-          d="M -22 -64 L -12 -30 Q -26 24 -44 68 Q -32 6 -22 -64 Z"
-          fill={`url(#${darkBevelId})`}
-        />
-        <path
-          d="M -21 -44 Q -6 -10 18 52 L 28 62 Q 4 12 -22 -30 Z"
-          fill={`url(#${darkBevelId})`}
-        />
-        <path
-          d="M -56 76 Q -42 10 -24 -70 L -14 -70 Q -28 8 -44 70 Q -50 75 -56 76 Z"
-          fill={`url(#${metalGradId})`}
-        />
-        <path
-          d="M -24 -70 C -10 -70 4 -40 28 40 L 22 64 C 2 8 -14 -40 -24 -70 Z"
-          fill={`url(#${diagonalGradId})`}
-        />
-        <path
-          d="M 22 64 Q 30 -32 62 -76 Q 48 -14 34 62 L 22 64 Z"
-          fill={`url(#${darkBevelId})`}
-        />
-        <path
-          d="M 32 60 Q 44 -20 62 -76 Q 42 -44 26 42 Q 24 54 22 64 Z"
-          fill={`url(#${metalGradId})`}
-        />
-      </g>
-
-      {/* Front half of tilted orbital ring sweeping in front of the 'N' */}
-      <g transform="translate(0, 10) rotate(-22) scale(1, 0.36)">
-        <g clipPath={`url(#${frontClipId})`}>{renderOrbitGroup()}</g>
-      </g>
-    </svg>
-  );
-};
+import { NebulaAnimatedEmblem } from './NebulaAnimatedEmblem';
+export { NebulaAnimatedEmblem } from './NebulaAnimatedEmblem';
+export type { EmblemStatus } from './NebulaAnimatedEmblem';
 
 const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
@@ -584,27 +454,32 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[460px] rounded-[28px] bg-gradient-to-b from-[#16171E] via-[#101116] to-[#0B0C10] border border-white/[0.08] shadow-[0_32px_80px_-16px_rgba(0,0,0,0.9)] p-6 sm:p-7 text-white flex flex-col items-center justify-between min-h-[510px] relative overflow-hidden"
+        className="w-full max-w-[460px] rounded-[28px] bg-[#FAF8F5] dark:bg-[#1F1E1B] border border-[#EAE4D9] dark:border-[#38352F] shadow-[0_28px_70px_-16px_rgba(31,30,27,0.35)] p-6 sm:p-7 text-[#1F1E1B] dark:text-[#F0ECE1] flex flex-col items-center justify-between min-h-[520px] relative overflow-hidden"
       >
         {/* Top Header */}
         <div className="w-full flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center shrink-0 p-1">
+            <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#2A2723] border border-[#EAE4D9] dark:border-[#38352F] flex items-center justify-center shrink-0 p-1 shadow-2xs">
               <img
                 src="/nebula-logo.png"
                 alt="Nebula AI"
-                className="w-full h-full object-contain brightness-125 drop-shadow-[0_0_6px_rgba(255,255,255,0.22)]"
+                className="w-full h-full object-contain dark:hidden"
+              />
+              <img
+                src="/nebula-logo-dark.png"
+                alt="Nebula AI"
+                className="w-full h-full object-contain hidden dark:block"
               />
             </div>
             <div className="flex flex-col text-left min-w-0">
-              <span className="text-[14px] font-semibold tracking-tight text-white/95 truncate">
+              <span className="text-[14px] font-bold tracking-tight text-[#1F1E1B] dark:text-[#F0ECE1] truncate">
                 Nebula Voice
               </span>
-              <span className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 truncate">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+              <span className="flex items-center gap-1.5 text-[11px] font-medium text-[#736B63] dark:text-[#A39E93] truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D97736] shrink-0" />
                 <span className="truncate">{detectedLangLabel}</span>
               </span>
             </div>
@@ -616,7 +491,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
               onClose();
             }}
             aria-label="Close voice mode"
-            className="w-8 h-8 rounded-full bg-white/[0.05] hover:bg-white/[0.12] border border-white/[0.08] flex items-center justify-center text-gray-400 hover:text-white transition-all cursor-pointer shrink-0"
+            className="w-8 h-8 rounded-full bg-[#F3EFE6] hover:bg-[#EAE4D8] dark:bg-[#2A2723] dark:hover:bg-[#34302B] border border-[#E5DFD3] dark:border-[#38352F] flex items-center justify-center text-[#736B63] dark:text-[#A39E93] hover:text-[#1F1E1B] dark:hover:text-white transition-all cursor-pointer shrink-0"
           >
             <X size={15} />
           </button>
@@ -626,7 +501,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         <div
           role="tablist"
           aria-label="Voice language"
-          className="inline-flex flex-wrap items-center justify-center gap-0.5 p-1 mt-5 rounded-2xl sm:rounded-full bg-white/[0.04] border border-white/[0.07]"
+          className="inline-flex flex-wrap items-center justify-center gap-0.5 p-1 mt-5 rounded-2xl sm:rounded-full bg-[#F3EFE6] dark:bg-[#282622] border border-[#E5DFD3] dark:border-[#38352F]"
         >
           {VOICE_LANGUAGES.map((l) => {
             const isSelected = selectedLang === l.code;
@@ -639,29 +514,29 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
                 onClick={() => handleLanguageSelect(l)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-white text-[#0B0C10] font-semibold shadow-sm'
-                    : 'text-gray-400 hover:text-white hover:bg-white/[0.06] font-medium'
+                    ? 'bg-[#D97736] text-white font-semibold shadow-2xs'
+                    : 'text-[#736B63] dark:text-[#A39E93] hover:text-[#1F1E1B] dark:hover:text-white hover:bg-[#EAE4D8]/70 dark:hover:bg-[#322F2A] font-medium'
                 }`}
               >
-                {l.code === 'auto' && <Globe size={11} className={isSelected ? 'text-[#0B0C10]/75' : 'text-gray-400'} />}
+                {l.code === 'auto' && <Globe size={11} className={isSelected ? 'text-white' : 'text-[#8C827A]'} />}
                 <span>{l.label}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Central Open-Stage Living Nebula Emblem (No Outer Circle Ring) */}
-        <div className="relative flex items-center justify-center my-6 h-52 w-52">
-          {/* Subtle atmospheric ambient backlight (soft glow only, zero ring border) */}
+        {/* Central Open-Stage Living Nebula NB Emblem & Dual Generative Orbits */}
+        <div className="relative flex items-center justify-center my-5 h-60 w-60">
+          {/* Subtle atmospheric warm Claude terracotta backlight */}
           <div
             className={`absolute inset-4 rounded-full blur-3xl transition-all duration-700 pointer-events-none ${
               status === 'listening'
-                ? 'bg-sky-400/20 scale-110'
+                ? 'bg-[#D97736]/20 scale-110'
                 : status === 'thinking'
-                  ? 'bg-amber-400/20 scale-115'
+                  ? 'bg-amber-500/25 scale-115'
                   : status === 'speaking'
-                    ? 'bg-slate-200/25 scale-120'
-                    : 'bg-slate-400/10 scale-100'
+                    ? 'bg-[#E07A5F]/25 scale-120'
+                    : 'bg-[#D97736]/12 scale-100'
             }`}
           />
 
@@ -681,28 +556,28 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
                   ? 'Tap emblem to start talking'
                   : 'Nebula Voice Emblem'
             }
-            className="relative flex items-center justify-center w-48 h-48 bg-transparent border-0 p-0 cursor-pointer focus:outline-none"
+            className="relative flex items-center justify-center w-56 h-56 bg-transparent border-0 p-0 cursor-pointer focus:outline-none"
           >
-            <NebulaAnimatedEmblem status={status} />
+            <NebulaAnimatedEmblem status={status} className="w-56 h-56" />
           </button>
         </div>
 
         {/* Status Indicator & Transcript Subtitles */}
         <div className="w-full flex flex-col items-center text-center px-4 gap-2">
-          <div className="px-3.5 py-1.5 rounded-full bg-white/10 text-xs font-semibold uppercase tracking-wider text-gray-300 inline-flex items-center justify-center gap-2">
+          <div className="px-3.5 py-1.5 rounded-full bg-[#FBF3EC] dark:bg-[#2E2620] border border-[#F3D8C6] dark:border-[#4B3A2C] text-xs font-semibold uppercase tracking-wider text-[#D97736] dark:text-[#E07A5F] inline-flex items-center justify-center gap-2">
             <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
               {status === 'listening' && (
-                <span className="absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75 animate-ping" />
+                <span className="absolute inline-flex h-full w-full rounded-full bg-[#D97736] opacity-75 animate-ping" />
               )}
               <span
                 className={`relative inline-flex rounded-full h-2 w-2 ${
                   status === 'listening'
-                    ? 'bg-sky-400'
+                    ? 'bg-[#D97736]'
                     : status === 'thinking'
-                      ? 'bg-amber-400 animate-spin'
+                      ? 'bg-amber-500 animate-spin'
                       : status === 'speaking'
-                        ? 'bg-white animate-pulse'
-                        : 'bg-gray-500'
+                        ? 'bg-[#C26224] animate-pulse'
+                        : 'bg-[#8C827A]'
                 }`}
               />
             </span>
@@ -714,12 +589,12 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
             </span>
           </div>
 
-          <p className="text-[14px] font-medium text-gray-200 line-clamp-3 min-h-[44px] leading-relaxed max-w-sm">
+          <p className="text-[14px] font-medium text-[#554E46] dark:text-[#D5CFC4] line-clamp-3 min-h-[44px] leading-relaxed max-w-sm">
             {transcript || lastAiReply.slice(0, 160) || 'Start speaking naturally — Nebula will reply automatically...'}
           </p>
 
           {errorMessage && (
-            <div className="flex items-center gap-1.5 text-xs text-rose-400 bg-rose-950/40 px-3 py-1.5 rounded-lg border border-rose-800/40">
+            <div className="flex items-center gap-1.5 text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 px-3 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800/40">
               <AlertCircle size={13} />
               <span>{errorMessage}</span>
             </div>
@@ -727,13 +602,13 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         </div>
 
         {/* Bottom Control Bar */}
-        <div className="w-full flex items-center justify-center gap-3 mt-5 pt-4 border-t border-white/[0.08]">
+        <div className="w-full flex items-center justify-center gap-3 mt-5 pt-4 border-t border-[#EAE4D9] dark:border-[#38352F]">
           {status === 'speaking' && (
             <button
               onClick={interruptSpeech}
-              className="px-4 py-2.5 rounded-full flex items-center gap-1.5 text-xs font-semibold bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.08] text-white transition-all cursor-pointer"
+              className="px-4 py-2.5 rounded-full flex items-center gap-1.5 text-xs font-semibold bg-[#F3EFE6] hover:bg-[#EAE4D8] dark:bg-[#2A2723] dark:hover:bg-[#34302B] border border-[#E5DFD3] dark:border-[#38352F] text-[#1F1E1B] dark:text-white transition-all cursor-pointer"
             >
-              <Square size={12} className="text-amber-400 fill-amber-400" />
+              <Square size={12} className="text-[#D97736] fill-[#D97736]" />
               <span>Interrupt AI</span>
             </button>
           )}
@@ -752,8 +627,8 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
             }}
             className={`px-5 py-2.5 rounded-full flex items-center gap-2 text-xs font-semibold transition-all cursor-pointer ${
               status === 'listening'
-                ? 'bg-rose-500/90 hover:bg-rose-500 text-white shadow-lg shadow-rose-950/50 border border-rose-400/30'
-                : 'bg-white text-[#0B0C10] hover:bg-gray-100 shadow-lg'
+                ? 'bg-[#D97736] hover:bg-[#C26224] text-white shadow-md shadow-orange-950/15'
+                : 'bg-[#1F1E1B] dark:bg-[#F0ECE1] text-white dark:text-[#1F1E1B] hover:opacity-90 shadow-md'
             }`}
           >
             {status === 'listening' ? (

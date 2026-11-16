@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { Hero } from './components/Hero';
+import { NebulaAnimatedEmblem } from './components/NebulaAnimatedEmblem';
 import { ChatThread } from './components/ChatThread';
 import { ChatInput, type FileAttachment } from './components/ChatInput';
 import { LoginPage } from './pages/LoginPage';
@@ -760,13 +761,8 @@ export const App: React.FC = () => {
 
   if (isAuthLoading) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#1F1E1B] dark:text-[#F0ECE1] gap-4">
-        <div className="relative w-16 h-16 flex items-center justify-center">
-          <div className="absolute inset-0 rounded-full border-2 border-[#D97736]/25 border-t-[#D97736] animate-spin" />
-          <div className="w-10 h-10 flex items-center justify-center animate-cosmic-orb">
-            <img src="/nebula-logo.png" alt="Nebula AI" className="w-full h-full object-contain drop-shadow-[0_4px_12px_rgba(217,119,54,0.3)]" />
-          </div>
-        </div>
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#1F1E1B] dark:text-[#F0ECE1] gap-3">
+        <NebulaAnimatedEmblem status="thinking" className="w-24 h-24" />
         <span className="text-xs font-semibold text-[#736B63] dark:text-[#A39E93] tracking-tight">Verifying Nebula session...</span>
       </div>
     );

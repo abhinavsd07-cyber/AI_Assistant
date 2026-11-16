@@ -96,68 +96,17 @@
   }
 }
 
-/* Living Nebula Voice Emblem: vertical float + smooth pendulum swing ('N') & rotating inner ring */
-@keyframes nebulaNFloatIdle {
+/* Living Nebula NB Emblem: gentle central float + Circle 1 primary orbit + Circle 2 spawning from Circle 1 into outer orbit */
+@keyframes nebulaNbFloat {
   0%, 100% {
-    transform: translate(0px, 1px) rotate(0deg);
-  }
-  25% {
-    transform: translate(-3px, -5px) rotate(2deg);
+    transform: translateY(0px) scale(1);
   }
   50% {
-    transform: translate(0px, -2px) rotate(0deg);
-  }
-  75% {
-    transform: translate(3px, -5px) rotate(-2deg);
+    transform: translateY(-3px) scale(1.015);
   }
 }
 
-@keyframes nebulaNFloatListen {
-  0%, 100% {
-    transform: translate(0px, 4px) rotate(0deg);
-  }
-  25% {
-    transform: translate(-10px, -12px) rotate(5.5deg);
-  }
-  50% {
-    transform: translate(0px, 2px) rotate(0deg);
-  }
-  75% {
-    transform: translate(10px, -12px) rotate(-5.5deg);
-  }
-}
-
-@keyframes nebulaNFloatThink {
-  0%, 100% {
-    transform: translate(0px, 2px) rotate(0deg);
-  }
-  25% {
-    transform: translate(-5px, -10px) rotate(3deg);
-  }
-  50% {
-    transform: translate(0px, 0px) rotate(0deg);
-  }
-  75% {
-    transform: translate(5px, -10px) rotate(-3deg);
-  }
-}
-
-@keyframes nebulaNFloatSpeak {
-  0%, 100% {
-    transform: translate(0px, 3px) rotate(0deg);
-  }
-  25% {
-    transform: translate(-7px, -15px) rotate(4deg);
-  }
-  50% {
-    transform: translate(0px, 2px) rotate(0deg);
-  }
-  75% {
-    transform: translate(7px, -14px) rotate(-4deg);
-  }
-}
-
-@keyframes nebulaInnerRingOrbit {
+@keyframes nebulaPrimaryOrbit {
   from {
     transform: rotate(0deg);
   }
@@ -166,42 +115,110 @@
   }
 }
 
-.nebula-n-idle {
-  transform-origin: 0px -24px;
-  animation: nebulaNFloatIdle 4.4s ease-in-out infinite;
+@keyframes nebulaSpawnAngle {
+  0% {
+    transform: rotate(0deg);
+  }
+  12% {
+    transform: rotate(22deg);
+  }
+  88% {
+    transform: rotate(342deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
-.nebula-n-listening {
-  transform-origin: 0px -24px;
-  animation: nebulaNFloatListen 2.6s ease-in-out infinite;
+@keyframes nebulaSpawnRadius {
+  0% {
+    transform: translateY(-84px) scale(0.42);
+    opacity: 0.35;
+  }
+  16% {
+    transform: translateY(-110px) scale(1);
+    opacity: 1;
+  }
+  84% {
+    transform: translateY(-110px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-84px) scale(0.42);
+    opacity: 0.35;
+  }
 }
 
-.nebula-n-thinking {
-  transform-origin: 0px -24px;
-  animation: nebulaNFloatThink 1.8s ease-in-out infinite;
+@keyframes nebulaSpawnRingWave {
+  0% {
+    transform: scale(0.764) rotate(0deg);
+    opacity: 0.15;
+  }
+  16% {
+    transform: scale(1) rotate(40deg);
+    opacity: 0.95;
+  }
+  84% {
+    transform: scale(1) rotate(320deg);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(0.764) rotate(360deg);
+    opacity: 0.15;
+  }
 }
 
-.nebula-n-speaking {
-  transform-origin: 0px -24px;
-  animation: nebulaNFloatSpeak 1.6s ease-in-out infinite;
+.nebula-nb-center {
+  transform-origin: 0px 0px;
+  animation: nebulaNbFloat 3.8s ease-in-out infinite;
 }
 
 .nebula-ring-idle {
   transform-origin: 0px 0px;
-  animation: nebulaInnerRingOrbit 11s linear infinite;
+  animation: nebulaPrimaryOrbit 7.5s linear infinite;
 }
 
 .nebula-ring-listening {
   transform-origin: 0px 0px;
-  animation: nebulaInnerRingOrbit 5.2s linear infinite;
+  animation: nebulaPrimaryOrbit 4.2s linear infinite;
 }
 
 .nebula-ring-thinking {
   transform-origin: 0px 0px;
-  animation: nebulaInnerRingOrbit 2.2s linear infinite;
+  animation: nebulaPrimaryOrbit 2.4s linear infinite;
 }
 
 .nebula-ring-speaking {
   transform-origin: 0px 0px;
-  animation: nebulaInnerRingOrbit 3.2s linear infinite;
+  animation: nebulaPrimaryOrbit 3.2s linear infinite;
+}
+
+.nebula-spawn-angle-idle {
+  transform-origin: 0px 0px;
+  animation: nebulaSpawnAngle 5.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.nebula-spawn-angle-active {
+  transform-origin: 0px 0px;
+  animation: nebulaSpawnAngle 3.0s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.nebula-spawn-radius-idle {
+  transform-origin: 0px -84px;
+  animation: nebulaSpawnRadius 5.2s ease-in-out infinite;
+}
+
+.nebula-spawn-radius-active {
+  transform-origin: 0px -84px;
+  animation: nebulaSpawnRadius 3.0s ease-in-out infinite;
+}
+
+.nebula-spawn-ring-idle {
+  transform-origin: 0px 0px;
+  animation: nebulaSpawnRingWave 5.2s ease-in-out infinite;
+}
+
+.nebula-spawn-ring-active {
+  transform-origin: 0px 0px;
+  animation: nebulaSpawnRingWave 3.0s ease-in-out infinite;
 }

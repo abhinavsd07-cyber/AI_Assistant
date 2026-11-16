@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertCircle, CheckCircle2, ArrowRight, ShieldCheck } from 'lucide-react';
+import { NebulaAnimatedEmblem } from './NebulaAnimatedEmblem';
 import { useAuth, type ViewType } from '../context/useAuth';
 
 interface AuthLayoutProps {
@@ -96,15 +97,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           <div className="w-full bg-white/95 rounded-3xl border border-[#EAE4D9] shadow-xl shadow-amber-950/[0.04] p-5 sm:p-7 flex flex-col gap-3.5">
             {/* Brand Orb & Page Heading */}
             <div className="flex flex-col items-center text-center">
-              <div className="relative mb-2">
-                <div className="absolute -inset-3 bg-radial from-[#D97736]/20 via-amber-200/10 to-transparent rounded-full blur-xl opacity-80" />
-                <div className="relative w-14 h-14 flex items-center justify-center">
-                  <img
-                    src="/nebula-logo.png"
-                    alt="Nebula AI Logo"
-                    className="w-full h-full object-contain animate-cosmic-orb"
-                  />
-                </div>
+              <div className="relative mb-1.5 flex items-center justify-center">
+                <NebulaAnimatedEmblem status="idle" className="w-24 h-24" />
               </div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight text-[#1F1E1B]">{title}</h1>
               <p className="text-[11.5px] text-[#736B63] mt-0.5 max-w-[320px]">{subtitle}</p>
