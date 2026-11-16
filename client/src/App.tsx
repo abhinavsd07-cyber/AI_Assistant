@@ -9,7 +9,7 @@ import { SignupPage } from './pages/SignupPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { VerifyOtpPage } from './pages/VerifyOtpPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { useAuth } from './context/useAuth';
+import { useAuth, getStoredToken } from './context/useAuth';
 import type { VerifiedPaymentReceipt } from './components/UpgradeModal';
 import type { Message, ChatSession, PersonaType } from './types';
 
@@ -110,6 +110,12 @@ export const App: React.FC = () => {
       setSessions([]);
       setMessages([]);
       setCurrentSessionId(null);
+      setIsSettingsOpen(false);
+      setIsUpgradeOpen(false);
+      setIsVoiceModalOpen(false);
+      setHubView(null);
+      setIsFluxStudioOpen(false);
+      setIsCanvasOpen(false);
     }
   }, [isAuthenticated, userId]);
 
@@ -208,6 +214,7 @@ export const App: React.FC = () => {
     setIsVoiceModalOpen(false);
     setHubView(null);
     setIsFluxStudioOpen(false);
+    if (!getStoredToken()) return;
     pushRoute(currentSessionId ? `/c/${currentSessionId}` : '/');
   };
 
