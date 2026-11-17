@@ -332,28 +332,28 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#F8FAFC] text-[#0F172A] flex flex-col overflow-hidden select-none"
+      className="fixed inset-0 z-50 bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#1F1E1B] dark:text-[#F0ECE1] flex flex-col overflow-hidden select-none transition-colors duration-200"
       style={{
         fontFamily:
-          "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+          "'Söhne', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       }}
     >
       {/* Top Clean Light Studio Header Bar (100% Responsive, Zero Wrapping) */}
-      <div className="min-h-[56px] bg-white border-b border-slate-200 px-3 sm:px-6 py-2 flex items-center justify-between gap-2 shrink-0 z-30 shadow-2xs">
+      <div className="min-h-[56px] bg-[#FAF8F5]/95 dark:bg-[#1F1E1B]/95 backdrop-blur-md border-b border-[#EAE4D9] dark:border-[#38352F] px-3 sm:px-6 py-2 flex items-center justify-between gap-2 shrink-0 z-30 shadow-2xs">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs min-w-0">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#25221E] border border-[#EAE4D9] dark:border-[#38352F] shadow-2xs min-w-0">
             <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shrink-0">
               <img
                 src="/nebula-logo.png"
                 alt="Nebula AI Logo"
-                className="w-full h-full object-contain drop-shadow-[0_2px_6px_rgba(15,23,42,0.16)]"
+                className="w-full h-full object-contain drop-shadow-[0_2px_6px_rgba(31,30,27,0.12)]"
               />
             </div>
             <div className="flex items-center gap-2 min-w-0">
-              <span className="text-sm sm:text-[15px] font-extrabold tracking-tight text-slate-900 truncate">
+              <span className="text-sm sm:text-[15px] font-extrabold tracking-tight text-[#1F1E1B] dark:text-[#F0ECE1] truncate">
                 Nebula FLUX.1 Studio
               </span>
-              <span className="hidden sm:inline-block text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-slate-900 text-white font-semibold whitespace-nowrap shrink-0">
+              <span className="hidden sm:inline-block text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-[#2D2A26] dark:bg-[#EAE4D9] text-[#FAF8F5] dark:text-[#1F1E1B] font-semibold whitespace-nowrap shrink-0">
                 Visual Node Pipeline
               </span>
             </div>
@@ -361,11 +361,11 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
         </div>
 
         {/* Center Pipeline Flow Status Badge (No-Wrap) */}
-        <div className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-medium whitespace-nowrap shrink-0">
+        <div className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F3EFE6] dark:bg-[#2A2723] border border-[#E5DFD3] dark:border-[#38352F] text-xs font-medium whitespace-nowrap shrink-0">
           {isRunning ? (
             <>
-              <span className="w-2.5 h-2.5 rounded-full bg-[#D9383A] animate-ping shrink-0" />
-              <span className="text-slate-800 font-semibold">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#D97736] animate-ping shrink-0" />
+              <span className="text-[#1F1E1B] dark:text-[#F0ECE1] font-semibold">
                 {activeStep === 1 && 'Step 1/4: Loading FLUX.1 & DualCLIP Models...'}
                 {activeStep === 2 && 'Step 2/4: Enhancing Prompt with Gemini NLP...'}
                 {activeStep === 3 && `Step 3/4: Generating ${width}×${height} HD Image...`}
@@ -375,13 +375,13 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           ) : (
             <>
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-slate-700">
+              <span className="text-[#554E46] dark:text-[#C5BFB5]">
                 Last Render:{' '}
-                <strong className="text-emerald-600 font-bold">
+                <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
                   {(lastLatencyMs / 1000).toFixed(2)}s
                 </strong>{' '}
-                <span className="text-slate-300">|</span>{' '}
-                <span className="text-slate-700 font-bold">
+                <span className="text-[#D4CCC0] dark:text-[#4A453D]">|</span>{' '}
+                <span className="text-[#1F1E1B] dark:text-[#F0ECE1] font-bold">
                   Cloud GPU Pipeline • Cloudinary CDN
                 </span>
               </span>
@@ -396,8 +396,8 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
             disabled={isRunning}
             className={`flex items-center gap-1.5 px-3.5 sm:px-5 py-2 rounded-xl font-bold text-xs whitespace-nowrap transition-all cursor-pointer shrink-0 ${
               isRunning
-                ? 'bg-red-50 text-[#B92B2D] cursor-wait border border-red-200'
-                : 'bg-[#D9383A] hover:bg-[#B92B2D] text-white shadow-md shadow-red-600/15 active:scale-95'
+                ? 'bg-[#FAF0E6] dark:bg-[#34241B] text-[#D97736] cursor-wait border border-[#EAC4A8] dark:border-[#5C3822]'
+                : 'bg-[#D97736] hover:bg-[#C26224] text-white shadow-md shadow-orange-950/15 active:scale-95'
             }`}
           >
             <Play size={13} fill="currentColor" className="shrink-0" />
@@ -406,7 +406,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 border border-slate-200 text-slate-600 transition-colors cursor-pointer shrink-0"
+            className="p-2 rounded-xl bg-[#F3EFE6] hover:bg-[#EAE4D8] dark:bg-[#2A2723] dark:hover:bg-[#34302A] border border-[#E5DFD3] dark:border-[#38352F] text-[#736B63] dark:text-[#C5BFB5] hover:text-[#1F1E1B] dark:hover:text-white transition-colors cursor-pointer shrink-0"
             title="Close Studio (Back to Chat)"
           >
             <X size={18} />
@@ -415,17 +415,17 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
       </div>
 
       {/* Sub-Header: Presets + 4-Step Pipeline Progress Bar (Horizontally Scrollable on Smaller Screens) */}
-      <div className="bg-white/95 backdrop-blur-xs border-b border-slate-200/80 px-3 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0">
+      <div className="bg-[#FAF8F5]/90 dark:bg-[#1F1E1B]/90 backdrop-blur-xs border-b border-[#EAE4D9] dark:border-[#38352F] px-3 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0">
         {/* Preset Quick Switchers */}
         <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-0.5 sm:pb-0">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1 shrink-0 hidden sm:inline">
+          <span className="text-[11px] font-bold text-[#8C827A] dark:text-[#9E958C] uppercase tracking-wider mr-1 shrink-0 hidden sm:inline">
             Presets:
           </span>
           {presetPrompts.map((preset, i) => (
             <button
               key={i}
               onClick={() => setPrompt(preset.text)}
-              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 hover:text-slate-900 border border-slate-200 hover:border-slate-300 text-[11px] font-semibold text-slate-700 whitespace-nowrap transition-all cursor-pointer shrink-0"
+              className="px-2.5 py-1 rounded-lg bg-[#F3EFE6] hover:bg-[#EAE4D8] dark:bg-[#2A2723] dark:hover:bg-[#34302A] hover:text-[#1F1E1B] dark:hover:text-white border border-[#E5DFD3] dark:border-[#38352F] text-[11px] font-semibold text-[#554E46] dark:text-[#C5BFB5] whitespace-nowrap transition-all cursor-pointer shrink-0"
             >
               {preset.label}
             </button>
@@ -441,19 +441,19 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                 <div
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] whitespace-nowrap transition-all ${
                     isStageActive
-                      ? 'bg-slate-100 border-slate-400 text-slate-900 shadow-xs font-bold'
-                      : 'bg-slate-50 border-slate-200/90 text-slate-700 font-semibold'
+                      ? 'bg-white dark:bg-[#2D2A25] border-[#D97736] text-[#D97736] dark:text-[#E88848] shadow-xs font-bold'
+                      : 'bg-[#F3EFE6] dark:bg-[#262420] border-[#E5DFD3] dark:border-[#38352F] text-[#736B63] dark:text-[#A39B91] font-semibold'
                   }`}
                 >
                   <span
                     className={`w-2 h-2 rounded-full shrink-0 ${
-                      isStageActive ? 'bg-[#D9383A] animate-pulse' : 'bg-emerald-500'
+                      isStageActive ? 'bg-[#D97736] animate-pulse' : 'bg-emerald-500'
                     }`}
                   />
                   <span>{s.title}</span>
                 </div>
                 {idx < pipelineStages.length - 1 && (
-                  <ArrowRight size={13} className="text-slate-400 shrink-0" />
+                  <ArrowRight size={13} className="text-[#B5ACA0] dark:text-[#555047] shrink-0" />
                 )}
               </React.Fragment>
             );
@@ -464,8 +464,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
       {/* Main Responsive 12-Column Node-Graph Workspace (Mobile 1-Col -> Tablet 2-Col -> Desktop 4-Col) */}
       <div
         onScroll={computeWires}
-        className="flex-1 relative overflow-y-auto overflow-x-hidden p-4 sm:p-6"
-        style={{ backgroundColor: '#F3F5F9' }}
+        className="flex-1 relative overflow-y-auto overflow-x-hidden p-4 sm:p-6 bg-[#F5F1E9] dark:bg-[#181715]"
       >
         <div
           ref={gridContainerRef}
@@ -475,7 +474,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           <svg className="hidden xl:block absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible">
             {wires.map((w) => {
               const isActive = isRunning && activeStep === w.targetStep;
-              const strokeColor = isActive ? '#D9383A' : '#64748B';
+              const strokeColor = isActive ? '#D97736' : '#9C9388';
               const chevronPath =
                 w.dir === 'down'
                   ? `M ${w.x2 - 4} ${w.y2 - 5} L ${w.x2} ${w.y2} L ${w.x2 + 4} ${w.y2 - 5}`
@@ -485,8 +484,9 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                   <path
                     d={w.d}
                     fill="none"
-                    stroke="#F3F5F9"
-                    strokeWidth={3.5}
+                    stroke="#F5F1E9"
+                    className="dark:stroke-[#181715]"
+                    strokeWidth={4}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
@@ -494,7 +494,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                     d={w.d}
                     fill="none"
                     stroke={strokeColor}
-                    strokeWidth={isActive ? 2 : 1.5}
+                    strokeWidth={isActive ? 2.2 : 1.5}
                     strokeDasharray={isActive ? '5 4' : undefined}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -504,14 +504,15 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                     cy={w.y1}
                     r={2.75}
                     fill={strokeColor}
-                    stroke="#FFFFFF"
+                    stroke="#FAF8F5"
+                    className="dark:stroke-[#1F1E1B]"
                     strokeWidth={1.25}
                   />
                   <path
                     d={chevronPath}
                     fill="none"
                     stroke={strokeColor}
-                    strokeWidth={isActive ? 2 : 1.6}
+                    strokeWidth={isActive ? 2.2 : 1.6}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
@@ -524,48 +525,50 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           <div className="relative z-10 md:col-span-1 xl:col-span-3 flex flex-col gap-6 w-full min-w-0">
             {/* NODE 1: Load AI Models */}
             <div
-              className={`flux-node-card rounded-2xl bg-white border-2 transition-all shadow-[0_4px_16px_-4px_rgba(15,23,42,0.06)] ${
-                activeStep === 1 ? 'border-slate-800 ring-4 ring-slate-500/10' : 'border-slate-200/90'
+              className={`flux-node-card rounded-2xl bg-white dark:bg-[#25221E] border-2 transition-all shadow-[0_4px_20px_-4px_rgba(31,30,27,0.06)] ${
+                activeStep === 1
+                  ? 'border-[#D97736] ring-4 ring-[#D97736]/15'
+                  : 'border-[#EAE4D9] dark:border-[#38352F]'
               }`}
             >
-              <div className="px-4 py-3.5 bg-slate-100/90 rounded-t-2xl border-b border-slate-200 flex items-center justify-between">
+              <div className="px-4 py-3.5 bg-[#F8F5EE] dark:bg-[#2A2723] rounded-t-2xl border-b border-[#EAE4D9] dark:border-[#38352F] flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-white shadow-2xs">
+                  <div className="w-7 h-7 rounded-lg bg-[#2D2A26] dark:bg-[#3E3A33] flex items-center justify-center text-[#FAF8F5] shadow-2xs">
                     <Cpu size={15} />
                   </div>
                   <div>
-                    <h4 className="text-[13.5px] font-extrabold text-slate-900">
+                    <h4 className="text-[13.5px] font-extrabold text-[#1F1E1B] dark:text-[#F0ECE1]">
                       1. Load AI Models
                     </h4>
-                    <p className="text-[11px] font-medium text-slate-500">
+                    <p className="text-[11px] font-medium text-[#736B63] dark:text-[#A39B91]">
                       Selects the AI brain & text reader
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-slate-200/80 text-slate-700">
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-[#EFEAE0] dark:bg-[#34302A] text-[#554E46] dark:text-[#C5BFB5]">
                   GGUF / FP8
                 </span>
               </div>
 
               <div className="p-4 space-y-3.5">
                 {/* UNet Backbone */}
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/90">
+                <div className="p-3 rounded-xl bg-[#FAF8F5] dark:bg-[#1F1D1A] border border-[#EAE4D9] dark:border-[#38352F]">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-slate-800">
+                    <span className="text-xs font-bold text-[#1F1E1B] dark:text-[#F0ECE1]">
                       Image Generator Model (UNet)
                     </span>
-                    <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-700">
+                    <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#736B63] dark:text-[#A39B91]">
                       MODEL{' '}
                       <span
                         ref={modelOutRef}
-                        className="w-3 h-3 rounded-full bg-slate-700 inline-block ring-4 ring-slate-200"
+                        className="w-3 h-3 rounded-full bg-[#554E46] dark:bg-[#A39B91] inline-block ring-4 ring-[#EAE4D9] dark:ring-[#38352F]"
                       />
                     </span>
                   </div>
                   <select
                     value={unetModel}
                     onChange={(e) => setUnetModel(e.target.value)}
-                    className="w-full bg-white text-xs font-semibold text-slate-900 px-3 py-2 rounded-lg border border-slate-300 focus:border-slate-700 outline-hidden cursor-pointer"
+                    className="w-full bg-white dark:bg-[#2A2723] text-xs font-semibold text-[#1F1E1B] dark:text-[#F0ECE1] px-3 py-2 rounded-lg border border-[#E5DFD3] dark:border-[#38352F] focus:border-[#D97736] outline-hidden cursor-pointer"
                   >
                     <option value="FLUX.1-Schnell (Q4_K_S GGUF)">
                       FLUX.1-Schnell (Q4_K_S GGUF)
@@ -577,42 +580,42 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                 </div>
 
                 {/* DualCLIP Text Encoder */}
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/90">
+                <div className="p-3 rounded-xl bg-[#FAF8F5] dark:bg-[#1F1D1A] border border-[#EAE4D9] dark:border-[#38352F]">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-slate-800">
+                    <span className="text-xs font-bold text-[#1F1E1B] dark:text-[#F0ECE1]">
                       Text Reader (DualCLIP)
                     </span>
-                    <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-600">
+                    <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#D97736]">
                       CLIP{' '}
                       <span
                         ref={clipOutRef}
-                        className="w-3 h-3 rounded-full bg-amber-500 inline-block ring-4 ring-amber-200"
+                        className="w-3 h-3 rounded-full bg-[#D97736] inline-block ring-4 ring-[#FBE5D5] dark:ring-[#472E1E]"
                       />
                     </span>
                   </div>
-                  <div className="text-xs font-semibold text-slate-800 bg-white px-3 py-2 rounded-lg border border-slate-200 flex items-center justify-between">
+                  <div className="text-xs font-semibold text-[#1F1E1B] dark:text-[#F0ECE1] bg-white dark:bg-[#2A2723] px-3 py-2 rounded-lg border border-[#E5DFD3] dark:border-[#38352F] flex items-center justify-between">
                     <span className="truncate">{clipModel}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold">
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold">
                       Ready
                     </span>
                   </div>
                 </div>
 
                 {/* VAE Decoder */}
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/90">
+                <div className="p-3 rounded-xl bg-[#FAF8F5] dark:bg-[#1F1D1A] border border-[#EAE4D9] dark:border-[#38352F]">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-slate-800">
+                    <span className="text-xs font-bold text-[#1F1E1B] dark:text-[#F0ECE1]">
                       HD Image Decoder (VAE)
                     </span>
-                    <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-rose-600">
+                    <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#C05621] dark:text-[#E2804E]">
                       VAE{' '}
                       <span
                         ref={vaeOutRef}
-                        className="w-3 h-3 rounded-full bg-rose-500 inline-block ring-4 ring-rose-200"
+                        className="w-3 h-3 rounded-full bg-[#C05621] inline-block ring-4 ring-[#FADAC7] dark:ring-[#442B1F]"
                       />
                     </span>
                   </div>
-                  <div className="text-xs font-semibold text-slate-700 bg-white px-3 py-2 rounded-lg border border-slate-200">
+                  <div className="text-xs font-semibold text-[#554E46] dark:text-[#C5BFB5] bg-white dark:bg-[#2A2723] px-3 py-2 rounded-lg border border-[#E5DFD3] dark:border-[#38352F]">
                     {vaeModel}
                   </div>
                 </div>
@@ -620,39 +623,39 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
             </div>
 
             {/* Image Resolution Node */}
-            <div className="flux-node-card rounded-2xl bg-white border-2 border-slate-200/90 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.06)]">
-              <div className="px-4 py-3 bg-pink-50/70 rounded-t-2xl border-b border-pink-100 flex items-center justify-between">
+            <div className="flux-node-card rounded-2xl bg-white dark:bg-[#25221E] border-2 border-[#EAE4D9] dark:border-[#38352F] shadow-[0_4px_20px_-4px_rgba(31,30,27,0.06)]">
+              <div className="px-4 py-3 bg-[#FAF3F5] dark:bg-[#2D2126] rounded-t-2xl border-b border-[#F0DCE4] dark:border-[#422B35] flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-pink-600 flex items-center justify-center text-white">
+                  <div className="w-7 h-7 rounded-lg bg-[#C05621] dark:bg-[#A8481A] flex items-center justify-center text-white">
                     <Layers size={14} />
                   </div>
                   <div>
-                    <h4 className="text-[13.5px] font-extrabold text-slate-900">
+                    <h4 className="text-[13.5px] font-extrabold text-[#1F1E1B] dark:text-[#F0ECE1]">
                       Image Resolution
                     </h4>
-                    <p className="text-[11px] font-medium text-slate-500">
+                    <p className="text-[11px] font-medium text-[#736B63] dark:text-[#A39B91]">
                       Sets output width & height
                     </p>
                   </div>
                 </div>
-                <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-pink-600">
+                <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#C05621] dark:text-[#E2804E]">
                   SIZE{' '}
                   <span
                     ref={sizeOutRef}
-                    className="w-3 h-3 rounded-full bg-pink-500 inline-block ring-4 ring-pink-200"
+                    className="w-3 h-3 rounded-full bg-[#C05621] inline-block ring-4 ring-[#FADAC7] dark:ring-[#442B1F]"
                   />
                 </span>
               </div>
 
               <div className="p-4 grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-[#554E46] dark:text-[#C5BFB5] mb-1">
                     Width
                   </label>
                   <select
                     value={width}
                     onChange={(e) => setWidth(Number(e.target.value))}
-                    className="w-full bg-slate-50 text-xs font-bold text-slate-900 px-3 py-2 rounded-lg border border-slate-300 outline-hidden cursor-pointer"
+                    className="w-full bg-[#FAF8F5] dark:bg-[#1F1D1A] text-xs font-bold text-[#1F1E1B] dark:text-[#F0ECE1] px-3 py-2 rounded-lg border border-[#E5DFD3] dark:border-[#38352F] focus:border-[#D97736] outline-hidden cursor-pointer"
                   >
                     <option value={1024}>1024 px (HD)</option>
                     <option value={768}>768 px</option>
@@ -660,13 +663,13 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-[#554E46] dark:text-[#C5BFB5] mb-1">
                     Height
                   </label>
                   <select
                     value={height}
                     onChange={(e) => setHeight(Number(e.target.value))}
-                    className="w-full bg-slate-50 text-xs font-bold text-slate-900 px-3 py-2 rounded-lg border border-slate-300 outline-hidden cursor-pointer"
+                    className="w-full bg-[#FAF8F5] dark:bg-[#1F1D1A] text-xs font-bold text-[#1F1E1B] dark:text-[#F0ECE1] px-3 py-2 rounded-lg border border-[#E5DFD3] dark:border-[#38352F] focus:border-[#D97736] outline-hidden cursor-pointer"
                   >
                     <option value={1024}>1024 px (HD)</option>
                     <option value={768}>768 px</option>
@@ -681,64 +684,66 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           <div className="relative z-10 md:col-span-1 xl:col-span-3 flex flex-col gap-6 w-full min-w-0">
             {/* NODE 2: Prompt & NLP Conditioning */}
             <div
-              className={`flux-node-card rounded-2xl bg-white border-2 transition-all shadow-[0_4px_16px_-4px_rgba(15,23,42,0.06)] ${
-                activeStep === 2 ? 'border-amber-500 ring-4 ring-amber-500/15' : 'border-slate-200/90'
+              className={`flux-node-card rounded-2xl bg-white dark:bg-[#25221E] border-2 transition-all shadow-[0_4px_20px_-4px_rgba(31,30,27,0.06)] ${
+                activeStep === 2
+                  ? 'border-[#D97736] ring-4 ring-[#D97736]/15'
+                  : 'border-[#EAE4D9] dark:border-[#38352F]'
               }`}
             >
-              <div className="px-4 py-3.5 bg-amber-50/80 rounded-t-2xl border-b border-amber-100 flex items-center justify-between">
+              <div className="px-4 py-3.5 bg-[#FDF6EE] dark:bg-[#2E2822] rounded-t-2xl border-b border-[#F2DECE] dark:border-[#42352B] flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center text-white shadow-2xs">
+                  <div className="w-7 h-7 rounded-lg bg-[#D97736] flex items-center justify-center text-white shadow-2xs">
                     <Sparkles size={15} />
                   </div>
                   <div>
-                    <h4 className="text-[13.5px] font-extrabold text-slate-900">
+                    <h4 className="text-[13.5px] font-extrabold text-[#1F1E1B] dark:text-[#F0ECE1]">
                       2. Smart Prompt Input
                     </h4>
-                    <p className="text-[11px] font-medium text-slate-500">
+                    <p className="text-[11px] font-medium text-[#736B63] dark:text-[#A39B91]">
                       Describe what you want to create
                     </p>
                   </div>
                 </div>
-                <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-emerald-600">
+                <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#D97736]">
                   PROMPT{' '}
                   <span
                     ref={promptOutRef}
-                    className="w-3 h-3 rounded-full bg-emerald-500 inline-block ring-4 ring-emerald-200"
+                    className="w-3 h-3 rounded-full bg-[#D97736] inline-block ring-4 ring-[#FBE5D5] dark:ring-[#472E1E]"
                   />
                 </span>
               </div>
 
               <div className="p-4 space-y-3.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-1.5 text-amber-700 font-bold">
-                    <span ref={clipInRef} className="w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-amber-200" />{' '}
+                  <span className="flex items-center gap-1.5 text-[#D97736] font-bold">
+                    <span ref={clipInRef} className="w-2.5 h-2.5 rounded-full bg-[#D97736] ring-2 ring-[#FBE5D5] dark:ring-[#472E1E]" />{' '}
                     Connected to Text Reader
                   </span>
-                  <span className="text-slate-500 font-semibold">Editable</span>
+                  <span className="text-[#8C827A] dark:text-[#9E958C] font-semibold">Editable</span>
                 </div>
 
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   rows={4}
-                  className="w-full rounded-xl bg-slate-50 border border-slate-300 focus:border-slate-700 focus:bg-white p-3 text-[13px] font-medium text-slate-900 leading-relaxed outline-hidden resize-none transition-all"
+                  className="w-full rounded-xl bg-[#FAF8F5] dark:bg-[#1F1D1A] border border-[#E5DFD3] dark:border-[#38352F] focus:border-[#D97736] focus:bg-white dark:focus:bg-[#25221E] p-3 text-[13px] font-medium text-[#1F1E1B] dark:text-[#F0ECE1] leading-relaxed outline-hidden resize-none transition-all placeholder-[#8C827A]"
                   placeholder="Type any image description here..."
                 />
 
                 {expandedPrompt && (
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
-                    <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
-                      <Sparkles size={13} className="text-amber-600" />
+                  <div className="p-3 rounded-xl bg-[#FAF8F5] dark:bg-[#1F1D1A] border border-[#EAE4D9] dark:border-[#38352F] text-xs space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-[#1F1E1B] dark:text-[#F0ECE1] text-xs">
+                      <Sparkles size={13} className="text-[#D97736]" />
                       <span>AI Logical Prompt Conditioning:</span>
                     </div>
-                    <p className="text-xs text-slate-700 line-clamp-2 leading-relaxed font-medium">
+                    <p className="text-xs text-[#554E46] dark:text-[#C5BFB5] line-clamp-2 leading-relaxed font-medium">
                       {expandedPrompt}
                     </p>
                     {(reasoningSummary || detectedIssues.length > 0) && (
-                      <div className="pt-1.5 border-t border-slate-200 space-y-1">
+                      <div className="pt-1.5 border-t border-[#EAE4D9] dark:border-[#38352F] space-y-1">
                         {reasoningSummary && (
-                          <p className="text-[11px] text-slate-600 leading-snug">
-                            <span className="font-bold text-slate-800">Intent Logic:</span> {reasoningSummary}
+                          <p className="text-[11px] text-[#736B63] dark:text-[#A39B91] leading-snug">
+                            <span className="font-bold text-[#1F1E1B] dark:text-[#F0ECE1]">Intent Logic:</span> {reasoningSummary}
                           </p>
                         )}
                         {detectedIssues.length > 0 && (
@@ -746,7 +751,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                             {detectedIssues.map((issue, idx) => (
                               <span
                                 key={idx}
-                                className="inline-block text-[10px] px-2 py-0.5 rounded-md bg-emerald-100/90 text-emerald-800 font-semibold"
+                                className="inline-block text-[10px] px-2 py-0.5 rounded-md bg-emerald-100/90 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-semibold"
                               >
                                 ✓ {issue}
                               </span>
@@ -758,8 +763,8 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                   </div>
                 )}
 
-                <div className="flex items-center justify-between bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs">
-                  <span className="text-slate-700 font-bold">Prompt Guidance Strength</span>
+                <div className="flex items-center justify-between bg-[#FAF8F5] dark:bg-[#1F1D1A] px-3.5 py-2.5 rounded-xl border border-[#EAE4D9] dark:border-[#38352F] text-xs">
+                  <span className="text-[#554E46] dark:text-[#C5BFB5] font-bold">Prompt Guidance Strength</span>
                   <input
                     type="number"
                     step="0.5"
@@ -767,7 +772,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                     max="10"
                     value={guidance}
                     onChange={(e) => setGuidance(Number(e.target.value))}
-                    className="w-16 text-right bg-white px-2 py-1 rounded border border-slate-300 font-extrabold text-slate-900 outline-hidden"
+                    className="w-16 text-right bg-white dark:bg-[#25221E] px-2 py-1 rounded border border-[#E5DFD3] dark:border-[#38352F] font-extrabold text-[#1F1E1B] dark:text-[#F0ECE1] outline-hidden focus:border-[#D97736]"
                   />
                 </div>
               </div>
@@ -775,92 +780,92 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
 
             {/* NODE 3: KSampler & FlowMatch Scheduler */}
             <div
-              className={`flux-node-card rounded-2xl bg-white border-2 transition-all shadow-[0_4px_16px_-4px_rgba(15,23,42,0.06)] ${
+              className={`flux-node-card rounded-2xl bg-white dark:bg-[#25221E] border-2 transition-all shadow-[0_4px_20px_-4px_rgba(31,30,27,0.06)] ${
                 activeStep === 3
-                  ? 'border-emerald-500 ring-4 ring-emerald-500/15'
-                  : 'border-slate-200/90'
+                  ? 'border-emerald-600 ring-4 ring-emerald-500/15'
+                  : 'border-[#EAE4D9] dark:border-[#38352F]'
               }`}
             >
-              <div className="px-4 py-3.5 bg-emerald-50/80 rounded-t-2xl border-b border-emerald-100 flex items-center justify-between">
+              <div className="px-4 py-3.5 bg-[#F4F8F4] dark:bg-[#222B24] rounded-t-2xl border-b border-[#D5E6D7] dark:border-[#2D3F31] flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center text-white shadow-2xs">
                     <Sliders size={15} />
                   </div>
                   <div>
-                    <h4 className="text-[13.5px] font-extrabold text-slate-900">
+                    <h4 className="text-[13.5px] font-extrabold text-[#1F1E1B] dark:text-[#F0ECE1]">
                       3. Image Sampler Engine
                     </h4>
-                    <p className="text-[11px] font-medium text-slate-500">
+                    <p className="text-[11px] font-medium text-[#736B63] dark:text-[#A39B91]">
                       Combines Model + Prompt + Size
                     </p>
                   </div>
                 </div>
-                <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-sky-600">
+                <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-sky-600 dark:text-sky-400">
                   RENDER{' '}
                   <span
                     ref={samplerOutRef}
-                    className="w-3 h-3 rounded-full bg-sky-500 inline-block ring-4 ring-sky-200"
+                    className="w-3 h-3 rounded-full bg-sky-500 inline-block ring-4 ring-sky-200 dark:ring-sky-900"
                   />
                 </span>
               </div>
 
               <div className="p-4 space-y-3 text-xs">
-                <div className="flex items-center gap-3 pb-1 text-xs font-bold text-slate-600">
+                <div className="flex items-center gap-3 pb-1 text-xs font-bold text-[#736B63] dark:text-[#A39B91]">
                   <span className="flex items-center gap-1.5">
-                    <span ref={samplerModelInRef} className="w-2.5 h-2.5 rounded-full bg-slate-700 ring-2 ring-slate-200" />{' '}
+                    <span ref={samplerModelInRef} className="w-2.5 h-2.5 rounded-full bg-[#554E46] dark:bg-[#A39B91] ring-2 ring-[#EAE4D9] dark:ring-[#38352F]" />{' '}
                     Model
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span ref={samplerPromptInRef} className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200" />{' '}
+                    <span ref={samplerPromptInRef} className="w-2.5 h-2.5 rounded-full bg-[#D97736] ring-2 ring-[#FBE5D5] dark:ring-[#472E1E]" />{' '}
                     Prompt
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span ref={samplerSizeInRef} className="w-2.5 h-2.5 rounded-full bg-pink-500 ring-2 ring-pink-200" />{' '}
+                    <span ref={samplerSizeInRef} className="w-2.5 h-2.5 rounded-full bg-[#C05621] ring-2 ring-[#FADAC7] dark:ring-[#442B1F]" />{' '}
                     Size
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                    <span className="text-[11px] font-bold text-slate-500 block mb-1">
+                  <div className="bg-[#FAF8F5] dark:bg-[#1F1D1A] p-2.5 rounded-xl border border-[#EAE4D9] dark:border-[#38352F]">
+                    <span className="text-[11px] font-bold text-[#8C827A] dark:text-[#9E958C] block mb-1">
                       Sampling Method
                     </span>
                     <select
                       value={sampler}
                       onChange={(e) => setSampler(e.target.value)}
-                      className="w-full bg-transparent font-extrabold text-slate-900 outline-hidden cursor-pointer text-xs"
+                      className="w-full bg-transparent font-extrabold text-[#1F1E1B] dark:text-[#F0ECE1] outline-hidden cursor-pointer text-xs"
                     >
-                      <option value="Euler FlowMatch">Euler FlowMatch</option>
-                      <option value="DPM++ 2M SDE">DPM++ 2M SDE</option>
-                      <option value="Heun">Heun</option>
+                      <option value="Euler FlowMatch" className="dark:bg-[#25221E]">Euler FlowMatch</option>
+                      <option value="DPM++ 2M SDE" className="dark:bg-[#25221E]">DPM++ 2M SDE</option>
+                      <option value="Heun" className="dark:bg-[#25221E]">Heun</option>
                     </select>
                   </div>
 
-                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                    <span className="text-[11px] font-bold text-slate-500 block mb-1">
+                  <div className="bg-[#FAF8F5] dark:bg-[#1F1D1A] p-2.5 rounded-xl border border-[#EAE4D9] dark:border-[#38352F]">
+                    <span className="text-[11px] font-bold text-[#8C827A] dark:text-[#9E958C] block mb-1">
                       Scheduler
                     </span>
                     <select
                       value={scheduler}
                       onChange={(e) => setScheduler(e.target.value)}
-                      className="w-full bg-transparent font-extrabold text-slate-900 outline-hidden cursor-pointer text-xs"
+                      className="w-full bg-transparent font-extrabold text-[#1F1E1B] dark:text-[#F0ECE1] outline-hidden cursor-pointer text-xs"
                     >
-                      <option value="Simple">Simple</option>
-                      <option value="SGM Uniform">SGM Uniform</option>
-                      <option value="Beta">Beta</option>
+                      <option value="Simple" className="dark:bg-[#25221E]">Simple</option>
+                      <option value="SGM Uniform" className="dark:bg-[#25221E]">SGM Uniform</option>
+                      <option value="Beta" className="dark:bg-[#25221E]">Beta</option>
                     </select>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200">
-                  <span className="text-slate-700 font-bold">Generation Steps (Speed)</span>
+                <div className="flex items-center justify-between bg-[#FAF8F5] dark:bg-[#1F1D1A] px-3.5 py-2.5 rounded-xl border border-[#EAE4D9] dark:border-[#38352F]">
+                  <span className="text-[#554E46] dark:text-[#C5BFB5] font-bold">Generation Steps (Speed)</span>
                   <input
                     type="number"
                     min={1}
                     max={50}
                     value={steps}
                     onChange={(e) => setSteps(Number(e.target.value))}
-                    className="w-16 text-right bg-white px-2 py-1 rounded border border-slate-300 font-extrabold text-emerald-700 outline-hidden"
+                    className="w-16 text-right bg-white dark:bg-[#25221E] px-2 py-1 rounded border border-[#E5DFD3] dark:border-[#38352F] font-extrabold text-emerald-700 dark:text-emerald-400 outline-hidden focus:border-[#D97736]"
                   />
                 </div>
               </div>
@@ -870,25 +875,27 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           {/* COLUMN 3: Step 4 (Final HD Image Output Node) */}
           <div className="relative z-10 md:col-span-1 xl:col-span-3 flex flex-col gap-6 w-full min-w-0">
             <div
-              className={`flux-node-card rounded-2xl bg-white border-2 transition-all shadow-[0_4px_16px_-4px_rgba(15,23,42,0.06)] ${
-                activeStep === 4 ? 'border-sky-500 ring-4 ring-sky-500/15' : 'border-slate-200/90'
+              className={`flux-node-card rounded-2xl bg-white dark:bg-[#25221E] border-2 transition-all shadow-[0_4px_20px_-4px_rgba(31,30,27,0.06)] ${
+                activeStep === 4
+                  ? 'border-sky-500 ring-4 ring-sky-500/15'
+                  : 'border-[#EAE4D9] dark:border-[#38352F]'
               }`}
             >
-              <div className="px-4 py-3.5 bg-sky-50/80 rounded-t-2xl border-b border-sky-100 flex items-center justify-between">
+              <div className="px-4 py-3.5 bg-[#F3F7FA] dark:bg-[#202830] rounded-t-2xl border-b border-[#D6E3EE] dark:border-[#2B3B4A] flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="w-7 h-7 rounded-lg bg-sky-600 flex items-center justify-center text-white shadow-2xs">
                     <ImageIcon size={15} />
                   </div>
                   <div>
-                    <h4 className="text-[13.5px] font-extrabold text-slate-900">
+                    <h4 className="text-[13.5px] font-extrabold text-[#1F1E1B] dark:text-[#F0ECE1]">
                       4. Final HD Image Output
                     </h4>
-                    <p className="text-[11px] font-medium text-slate-500">
+                    <p className="text-[11px] font-medium text-[#736B63] dark:text-[#A39B91]">
                       Live Preview & Cloudinary CDN
                     </p>
                   </div>
                 </div>
-                <span className="text-xs font-extrabold text-sky-700 bg-sky-100 px-2.5 py-1 rounded-full">
+                <span className="text-xs font-extrabold text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-950/60 px-2.5 py-1 rounded-full">
                   {width}×{height} HD
                 </span>
               </div>
@@ -896,17 +903,17 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
               <div className="p-4 space-y-3">
                 {/* Input Connection Port Row for Output Node */}
                 <div className="flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-2 font-bold text-sky-700">
+                  <span className="flex items-center gap-2 font-bold text-sky-700 dark:text-sky-300">
                     <span
                       ref={outputInRef}
-                      className="w-2.5 h-2.5 rounded-full bg-sky-500 ring-2 ring-sky-200"
+                      className="w-2.5 h-2.5 rounded-full bg-sky-500 ring-2 ring-sky-200 dark:ring-sky-900"
                     />
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-200" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#C05621] ring-2 ring-[#FADAC7] dark:ring-[#442B1F]" />
                     <span>Connected: Sampler + VAE Decoder</span>
                   </span>
                 </div>
                 {/* Image Preview Frame */}
-                <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center group shadow-inner">
+                <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-[#FAF8F5] dark:bg-[#181715] border border-[#EAE4D9] dark:border-[#38352F] flex items-center justify-center group shadow-inner">
                   <img
                     src={currentImage}
                     alt="FLUX Workflow Output"
@@ -918,10 +925,10 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                   {isRunning && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-xs p-4 text-center">
                       <RotateCcw size={30} className="text-[#D9383A] animate-spin mb-2.5" />
-                      <span className="text-sm font-extrabold text-slate-900">
+                      <span className="text-sm font-extrabold text-[#1F1E1B] dark:text-[#F0ECE1]">
                         Generating {width}×{height} HD Image...
                       </span>
-                      <span className="text-xs font-bold text-slate-600 mt-1">
+                      <span className="text-xs font-bold text-[#736B63] dark:text-[#A39B91] mt-1">
                         Step {activeStep} of 4 • Hybrid Cloud Acceleration
                       </span>
                     </div>
@@ -929,11 +936,11 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
 
                   {/* Bottom Resolution & Verification Overlay */}
                   {!isRunning && (
-                    <div className="absolute bottom-3 left-3 right-3 px-3.5 py-2 rounded-xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-md flex items-center justify-between gap-2 text-xs">
+                    <div className="absolute bottom-3 left-3 right-3 px-3.5 py-2 rounded-xl bg-white/95 dark:bg-[#25221E]/95 backdrop-blur-md border border-[#EAE4D9] dark:border-[#38352F] shadow-md flex items-center justify-between gap-2 text-xs">
                       <span className="text-emerald-700 font-extrabold flex items-center gap-1.5 whitespace-nowrap">
                         <Zap size={14} className="text-emerald-600" /> {(lastLatencyMs / 1000).toFixed(2)}s ({width}×{height})
                       </span>
-                      <span className="text-slate-700 font-bold truncate">
+                      <span className="text-[#554E46] dark:text-[#C5BFB5] font-bold truncate">
                         {generationSource === 'curated-fallback-photo'
                           ? 'Photo Fallback • CDN ✓'
                           : generationSource === 'offline-svg-card'
@@ -952,7 +959,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                     href={currentImage}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold transition-colors"
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#F3EFE6] hover:bg-[#EAE4D8] dark:bg-[#2A2723] dark:hover:bg-[#34302A] border border-[#E5DFD3] dark:border-[#38352F] text-[#1F1E1B] dark:text-[#F0ECE1] text-xs font-bold transition-colors"
                   >
                     <ExternalLink size={14} />
                     <span>Open HD</span>
@@ -962,7 +969,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                     download="Nebula_FLUX_1024.jpg"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold transition-colors"
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#F3EFE6] hover:bg-[#EAE4D8] dark:bg-[#2A2723] dark:hover:bg-[#34302A] border border-[#E5DFD3] dark:border-[#38352F] text-[#1F1E1B] dark:text-[#F0ECE1] text-xs font-bold transition-colors"
                   >
                     <Download size={14} />
                     <span>Download</span>
@@ -976,7 +983,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                         onSendToChat(md, currentImage);
                         onClose();
                       }}
-                      className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer shadow-sm"
+                      className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#1F1E1B] hover:bg-black dark:bg-[#FAF8F5] dark:hover:bg-white text-white dark:text-[#1F1E1B] text-xs font-bold transition-colors cursor-pointer shadow-sm"
                     >
                       <Send size={14} />
                       <span>To Chat</span>
@@ -1001,10 +1008,10 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           {/* COLUMN 4: Completed Renders & Style Enhancers */}
           <div className="relative z-10 md:col-span-1 xl:col-span-3 flex flex-col gap-6 w-full min-w-0">
             {/* Job Queue Panel */}
-          <div className="rounded-2xl bg-white border-2 border-slate-200/90 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.06)] p-4">
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
-              <span className="text-[13px] font-extrabold text-slate-900 flex items-center gap-2">
-                <Clock size={15} className="text-slate-700" />
+          <div className="rounded-2xl bg-white dark:bg-[#25221E] border-2 border-[#EAE4D9] dark:border-[#38352F] shadow-[0_4px_20px_-4px_rgba(31,30,27,0.06)] p-4">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#EAE4D9] dark:border-[#38352F]">
+              <span className="text-[13px] font-extrabold text-[#1F1E1B] dark:text-[#F0ECE1] flex items-center gap-2">
+                <Clock size={15} className="text-[#736B63] dark:text-[#A39B91]" />
                 Completed Renders
               </span>
               <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">
@@ -1017,21 +1024,21 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                 <div
                   key={job.id}
                   onClick={() => setCurrentImage(job.imageUrl)}
-                  className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 cursor-pointer transition-all"
+                  className="flex items-center gap-3 p-2.5 rounded-xl bg-[#FAF8F5] hover:bg-[#F3EFE6] dark:bg-[#1F1D1A] dark:hover:bg-[#2A2723] border border-[#EAE4D9] dark:border-[#38352F] cursor-pointer transition-all"
                 >
                   <img
                     src={job.imageUrl}
                     alt={job.filename}
-                    className="w-11 h-11 rounded-lg object-cover shrink-0 border border-slate-300"
+                    className="w-11 h-11 rounded-lg object-cover shrink-0 border border-[#E5DFD3] dark:border-[#38352F]"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
-                      <p className="text-xs font-bold text-slate-900 truncate">
+                      <p className="text-xs font-bold text-[#1F1E1B] dark:text-[#F0ECE1] truncate">
                         {job.filename}
                       </p>
                     </div>
-                    <p className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                    <p className="text-[11px] font-semibold text-[#736B63] dark:text-[#A39B91] mt-0.5">
                       {(job.latencyMs / 1000).toFixed(2)}s • {job.resolution}
                     </p>
                   </div>
@@ -1041,18 +1048,18 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           </div>
 
           {/* Creative Style Enhancers & Studio Ideas Card */}
-          <div className="rounded-2xl bg-white border-2 border-slate-200/90 p-4 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.06)] space-y-3.5">
+          <div className="rounded-2xl bg-white dark:bg-[#25221E] border-2 border-[#EAE4D9] dark:border-[#38352F] p-4 shadow-[0_4px_20px_-4px_rgba(31,30,27,0.06)] space-y-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-[13px] font-extrabold text-slate-900 flex items-center gap-1.5">
-                <Sparkles size={15} className="text-slate-700" />
+              <span className="text-[13px] font-extrabold text-[#1F1E1B] dark:text-[#F0ECE1] flex items-center gap-1.5">
+                <Sparkles size={15} className="text-[#D97736]" />
                 Style & Idea Enhancers
               </span>
-              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-extrabold">
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#F3EFE6] dark:bg-[#2A2723] text-[#554E46] dark:text-[#C5BFB5] border border-[#E5DFD3] dark:border-[#38352F] font-extrabold">
                 1-Click Boost
               </span>
             </div>
 
-            <p className="text-[11px] font-medium text-slate-500 leading-relaxed">
+            <p className="text-[11px] font-medium text-[#736B63] dark:text-[#A39B91] leading-relaxed">
               Click any modifier below to instantly enrich your active prompt with studio lighting and render styles:
             </p>
 
@@ -1065,7 +1072,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                       setPrompt((prev) => `${prev.trim()}${item.tag}`);
                     }
                   }}
-                  className="px-2.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 hover:border-slate-300 text-[11px] font-bold text-slate-700 text-left transition-all cursor-pointer truncate"
+                  className="px-2.5 py-2 rounded-xl bg-[#FAF8F5] hover:bg-[#F3EFE6] dark:bg-[#1F1D1A] dark:hover:bg-[#2A2723] hover:text-[#1F1E1B] dark:hover:text-[#F0ECE1] border border-[#EAE4D9] dark:border-[#38352F] text-[11px] font-bold text-[#554E46] dark:text-[#C5BFB5] text-left transition-all cursor-pointer truncate"
                   title={`Add "${item.tag}"`}
                 >
                   {item.label}
@@ -1074,7 +1081,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
             </div>
 
             <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200">
-              <div className="flex justify-between text-xs text-slate-900 mb-1">
+              <div className="flex justify-between text-xs text-[#1F1E1B] dark:text-[#F0ECE1] mb-1">
                 <span className="font-extrabold">Nebula Cloud FLUX.1</span>
                 <span className="text-emerald-700 font-extrabold">
                   {(lastLatencyMs / 1000).toFixed(1)}s Render

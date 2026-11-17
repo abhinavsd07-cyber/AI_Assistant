@@ -1212,7 +1212,7 @@ json.dumps(__nebula_plots__)
       </div>
 
       {/* Main Workspace Stage */}
-      <div className="flex-1 flex flex-col min-h-0 relative bg-[#F8F9FA] dark:bg-[#0F0F0F] overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 relative bg-[#FAF8F5] dark:bg-[#1F1E1B] overflow-hidden">
         <div
           ref={splitStageRef}
           style={
