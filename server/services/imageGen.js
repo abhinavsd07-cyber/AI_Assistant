@@ -164,13 +164,17 @@ function getImageEngineStatus() {
 }
 
 /**
- * Removes noisy buzzword clutter while preserving every user-requested subject, color, and attribute.
+ * Removes noisy buzzword clutter AND negative "pink-elephant" phrases (e.g. "no sails", "without masts")
+ * that cause diffusion models to accidentally draw the negated noun.
  */
 function normalizeVisualPrompt(rawText = "") {
   return String(rawText)
     .replace(/\b(8k|4k|uhd|hdr|hyperrealistic|masterpiece|best quality|award[- ]winning|trending on artstation|octane render|unreal engine\s*\d*)\b/gi, "")
+    .replace(/(?:,\s*)?\b(?:no|without|avoid|free\s+of)\s+[a-z0-9\s-]{1,28}(?=[,.;]|$)/gi, "")
     .replace(/\s*,\s*,+/g, ", ")
+    .replace(/,\s*\./g, ".")
     .replace(/\s+/g, " ")
+    .replace(/^[,\s]+|[,\s]+$/g, "")
     .trim();
 }
 
@@ -283,27 +287,30 @@ async function classifyUserIntent(userText, options = {}) {
 
     const styleDirective = STYLE_PRESET_GUIDES[stylePresetKey];
 
-    const systemPrompt = `You are a Strict Context-Aware & Prompt-Faithful Visual Conditioner for Nebula AI.
-Your #1 rule is LOGICAL FIDELITY: understand WHO or WHAT the user wants drawn (including from prior chat turns!) and depict EXACTLY that — never drop requested details and never hallucinate an unrelated subject!
+    const systemPrompt = `You are a Strict Context-Aware, Physically Grounded & Prompt-Faithful Visual Conditioner for Nebula AI.
+Your #1 rule is LOGICAL & PHYSICAL FIDELITY: understand WHO or WHAT the user wants drawn (including from prior chat turns!), spell out its true real-world physical anatomy so the diffusion model NEVER makes logical mistakes (like drawing sailing sails on the Titanic, or drawing a front view when asked for a side view!), and preserve 100% of requested style/medium/details!
 - Translate Malayalam/Manglish or broken grammar accurately into plain, literal English.
-- Fix typos and shorthand abbreviations (e.g., "drinkng cofe" -> "drinking coffee", "lptop" -> "laptop", "mhnlal" -> "Mohanlal", "cypbpunk cr in nyt" -> "cyberpunk car at night").
-- Put the resolved subject, colors, accessories, and action FIRST in expandedPrompt with concrete visual clarity.
-- Keep expandedPrompt CONCISE and LITERAL: **14 to 26 words total**. Do NOT write long cinematography essays or invent unrequested objects/people/backgrounds.
-- Style cue (${stylePresetKey}): ${styleDirective} Only add 3 to 6 subtle lighting/sharpness words at the end.
-- Avoid buzzwords ("8k", "4k", "uhd", "masterpiece", "octane render"). NEVER add unrequested sci-fi, neon, or fantasy elements.
+- Fix typos and shorthand abbreviations (e.g., "coluerd pencil drwaing piccture" -> "colored pencil drawing", "drinkng cofe" -> "drinking coffee", "mhnlal" -> "Mohanlal").
+- PHYSICAL ANATOMY GROUNDING (CRITICAL): Whenever the user mentions an iconic real-world or historical object, vehicle, vessel, landmark, or animal, ALWAYS spell out its 2 to 3 unmistakable positive physical features right inside expandedPrompt so diffusion models cannot hallucinate wrong parts (e.g., "Titanic" -> "historic RMS Titanic ocean liner steamship with four tall yellow-and-black cylindrical smokestack chimneys, long black hull, white upper decks"; "auto-rickshaw" -> "three-wheeled yellow-and-black Indian auto-rickshaw"; "Eiffel Tower" -> "iron lattice Eiffel Tower in Paris").
+- POSITIVE-ONLY RULE (CRITICAL): NEVER write negative words like "no sails", "without masts", or "avoid X" inside expandedPrompt! Diffusion models ignore "no" and accidentally draw the forbidden word. Put ONLY positive visible elements in expandedPrompt, and put forbidden things strictly in negativePrompt!
+- VIEWPOINT PRECISION: If the user asks for a specific camera angle ("side view", "top view", "back view", "close-up"), state it geometrically and unambiguously (e.g., "side view" -> "full horizontal side profile view from bow to stern").
+- MEDIUM FIRST: If the user asks for a specific art medium ("colored pencil drawing", "watercolor painting", "charcoal sketch", "anime", "oil painting"), put that exact medium at the VERY START of expandedPrompt (e.g., "Hand-drawn colored pencil drawing on textured white paper of...").
+- Keep expandedPrompt CONCISE and LITERAL: **18 to 32 words total**. Do NOT add unrequested objects, people, or buzzwords ("8k", "4k", "uhd", "masterpiece", "octane render").
+- Style cue (${stylePresetKey}): ${styleDirective}
 
 ${modeRules}
-5. didAutoCorrect: boolean — true if you fixed typos, translated Malayalam/Manglish, expanded shorthand, resolved context from history, or fixed a physical contradiction.
+5. didAutoCorrect: boolean — true if you fixed typos, translated Malayalam/Manglish, expanded shorthand, resolved context from history, or added physical/logical grounding.
 6. detectedIssues: array of 0 to 3 ultra-short phrases of what was fixed/resolved (empty [] if input was already clear).
-7. reasoningSummary: 1 short sentence confirming the exact visual subject and setting to render.
-8. expandedPrompt: Crisp, literal, subject-first visual prompt (14 to 26 words) preserving 100% of user-requested objects, colors, accessories, actions, and location, ending with 3–6 words of lighting/focus.
-9. negativePrompt: 5 to 8 comma-separated defects to avoid for this scene.
+7. reasoningSummary: 1 short sentence confirming the exact visual subject, physical traits, viewpoint, and medium to render.
+8. expandedPrompt: Crisp, literal, physically grounded visual prompt (18 to 32 words) placing medium + exact physical anatomy + exact viewpoint + setting up front.
+9. negativePrompt: 6 to 10 comma-separated defects & logical mistakes to avoid for this specific scene (e.g., for Titanic side view: "sails, sailing ship, mast sails, front view, bow view, modern cruise ship, blurry, watermark").
 10. resolvedFromHistory: boolean — true if the subject came from Recent Conversation History.
 11. needsClarification: boolean — true ONLY when isImage is true yet neither the prompt nor history specifies what to draw.
 12. clarificationQuestion: string — short polite question asking what to generate when needsClarification is true, else "".
+13. isStylizedArt: boolean — true if the user asked for a drawing, pencil sketch, painting, watercolor, illustration, anime, cartoon, vector, or 3D artwork rather than a real photograph.
 
 Output ONLY valid JSON matching this schema:
-{"isImage": boolean, "cleanSubject": string, "isRealEntity": boolean, "didAutoCorrect": boolean, "detectedIssues": string[], "reasoningSummary": string, "expandedPrompt": string, "negativePrompt": string, "resolvedFromHistory": boolean, "needsClarification": boolean, "clarificationQuestion": string}`;
+{"isImage": boolean, "cleanSubject": string, "isRealEntity": boolean, "didAutoCorrect": boolean, "detectedIssues": string[], "reasoningSummary": string, "expandedPrompt": string, "negativePrompt": string, "resolvedFromHistory": boolean, "needsClarification": boolean, "clarificationQuestion": string, "isStylizedArt": boolean}`;
 
     const res = await ai.models.generateContent({
       model: "gemini-3.5-flash-lite",
@@ -328,6 +335,13 @@ Output ONLY valid JSON matching this schema:
     const needsClarification = !studioMode && Boolean(parsed.needsClarification);
     const clarificationQuestion =
       typeof parsed.clarificationQuestion === "string" ? parsed.clarificationQuestion.trim() : "";
+    const stylizedRegex = /\b(pencil|draw|drawing|drwaing|sketch|watercolor|painting|oil\s+paint|illustration|anime|cartoon|comic|charcoal|pastel|vector|pixel\s+art|concept\s+art|3d\s+render)\b/i;
+    const isStylizedArt =
+      Boolean(parsed.isStylizedArt) ||
+      stylePresetKey === "concept-art" ||
+      stylePresetKey === "minimal-illustration" ||
+      stylizedRegex.test(trimmed) ||
+      stylizedRegex.test(groundedExpanded);
 
     return {
       isImage: explicit || studioMode || Boolean(parsed.isImage),
@@ -342,6 +356,7 @@ Output ONLY valid JSON matching this schema:
       resolvedFromHistory: Boolean(parsed.resolvedFromHistory),
       needsClarification,
       clarificationQuestion,
+      isStylizedArt,
     };
   } catch (err) {
     console.warn("⚠️ ML Intent Classification fallback:", err.message);
@@ -350,8 +365,8 @@ Output ONLY valid JSON matching this schema:
 }
 
 /**
- * Uses Gemini Vision multimodal inspection to strictly verify EVERY requested subject, accessory,
- * color, and action from the user's prompt actually appears in the rendered image.
+ * Uses Gemini Vision multimodal inspection to strictly verify physical logic, viewpoint, medium,
+ * and EVERY requested subject, accessory, color, and action in the rendered image.
  */
 async function inspectGeneratedImage(imgBuffer, mimeType, targetPrompt, cleanSubject) {
   const ai = getAi();
@@ -376,21 +391,21 @@ async function inspectGeneratedImage(imgBuffer, mimeType, targetPrompt, cleanSub
             data: imgBuffer.toString("base64"),
           },
         },
-        `Strictly audit whether this image accurately depicts EVERY key element requested in the user's prompt.
+        `Strictly audit whether this image accurately and logically depicts EVERY key element requested in the user's prompt.
 Intended subject: "${cleanSubject}"
 Full prompt: "${targetPrompt}"
 
 Rules:
 - Set "isErrorOrCorrupted": true if it is an error banner, rate-limit message, blank/garbled image, or heavily broken anatomy.
-- Set "matchesPrompt": false if ANY major requested object, person, animal, accessory (e.g. sunglasses, hat), color, action, or location is MISSING or replaced by something different.
+- Set "matchesPrompt": false if ANY major requested object, physical anatomy (e.g., sails drawn on the Titanic instead of 4 smokestacks), camera angle/viewpoint (e.g., front view when side view was asked), art medium (e.g., photo instead of pencil drawing), accessory, color, or action is missing or logically wrong.
 - Set "qualityScore": integer 1 to 10 (must be <= 5 if matchesPrompt is false).
 - Return ONLY valid JSON:
 {
   "isErrorOrCorrupted": boolean,
   "matchesPrompt": boolean,
   "qualityScore": integer 1 to 10,
-  "issues": "short summary of any missing prompt element, mismatch, distortion, or 'none'",
-  "refinedPrompt": "if matchesPrompt is false or qualityScore < 7, write an ultra-literal 14-20 word visual prompt placing the missing elements first; otherwise empty string"
+  "issues": "short summary of any logical, anatomical, angle, medium, or subject mismatch, or 'none'",
+  "refinedPrompt": "if matchesPrompt is false or qualityScore < 7, write a crisp 18-28 word POSITIVE-ONLY physically grounded prompt explicitly fixing the logical error (e.g. 'four tall yellow-and-black cylindrical smokestack chimneys, long black steel hull, full horizontal side profile' — NEVER use words like 'no sails' in positive prompts); otherwise empty string"
 }`,
       ],
     });
@@ -767,10 +782,10 @@ async function searchHighResVisual(query) {
 }
 
 async function uploadFirstCandidate(candidates, folder = "nebula_ai/generated", targetPrompt = "", cleanSubject = "") {
-  for (const cand of (candidates || []).slice(0, 5)) {
+  for (const cand of (candidates || []).slice(0, 3)) {
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 6500);
+      const timer = setTimeout(() => controller.abort(), 4500);
       const r = await fetch(cand.imageUrl, {
         signal: controller.signal,
         headers: { "User-Agent": "Mozilla/5.0", Accept: "image/*" },
@@ -808,13 +823,14 @@ async function uploadFirstCandidate(candidates, folder = "nebula_ai/generated", 
 
 function toQualityCheckSummary(check, retried = false) {
   if (!check || !check.checked) {
-    return { checked: false, matchesPrompt: true, score: null, issues: "", retried };
+    return { checked: false, matchesPrompt: true, score: null, issues: "", refinedPrompt: "", retried };
   }
   return {
     checked: true,
     matchesPrompt: check.matchesPrompt,
     score: check.qualityScore,
     issues: check.issues === "none" ? "" : check.issues || "",
+    refinedPrompt: check.refinedPrompt || "",
     retried,
   };
 }
@@ -837,6 +853,7 @@ async function generateAndUploadImage(input, options = {}) {
   let expandedPrompt = intentData.expandedPrompt || cleanSubject;
   const negativePrompt = options.negativePrompt || intentData.negativePrompt || DEFAULT_NEGATIVE_PROMPT;
   const isRealEntity = Boolean(intentData.isRealEntity);
+  const isStylizedArt = Boolean(intentData.isStylizedArt);
   const didAutoCorrect = Boolean(intentData.didAutoCorrect);
   const detectedIssues = Array.isArray(intentData.detectedIssues) ? intentData.detectedIssues : [];
   const reasoningSummary = intentData.reasoningSummary || "";
@@ -967,8 +984,8 @@ async function generateAndUploadImage(input, options = {}) {
     };
   }
 
-  // Strategy 3: Strict Vision-verified real-photo fallback (only accepted if matchesPrompt===true & score>=6)
-  if (!cdnUrl && !rateLimited) {
+  // Strategy 3: Strict Vision-verified real-photo fallback (skip for drawings/paintings/illustrations so we don't waste 50s checking real photos)
+  if (!cdnUrl && !rateLimited && !isStylizedArt) {
     try {
       const photoQuery = isRealEntity ? cleanSubject : toCleanPhotoQuery(cleanSubject);
       const fallbackCandidates = await searchHighResCandidates(photoQuery);

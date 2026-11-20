@@ -69,6 +69,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
     matchesPrompt: boolean;
     score: number | null;
     issues: string;
+    refinedPrompt?: string;
     retried: boolean;
   } | null>(null);
   const [workflowError, setWorkflowError] = useState<string | null>(null);
@@ -228,8 +229,12 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
 
   if (!isOpen) return null;
 
-  const handleRunWorkflow = async () => {
-    if (isRunning || !prompt.trim()) return;
+  const handleRunWorkflow = async (promptOverride?: string) => {
+    const activePrompt = (typeof promptOverride === 'string' ? promptOverride : prompt).trim();
+    if (isRunning || !activePrompt) return;
+    if (typeof promptOverride === 'string') {
+      setPrompt(promptOverride);
+    }
     setIsRunning(true);
     setWorkflowError(null);
     setActiveStep(1);
@@ -246,7 +251,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
         method: 'POST',
         headers,
         body: JSON.stringify({
-          prompt,
+          prompt: activePrompt,
           unetModel,
           clipModel,
           steps,
@@ -363,7 +368,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
         </div>
 
         {/* Center Pipeline Flow Status Badge (No-Wrap) */}
-        <div className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-medium whitespace-nowrap shrink-0">
+        <div className="hidden xl:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-medium whitespace-nowrap shrink-0">
           {isRunning ? (
             <>
               <span className="w-2.5 h-2.5 rounded-full bg-[#D9383A] animate-ping shrink-0" />
@@ -394,7 +399,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
         {/* Right Action Buttons (No-Wrap) */}
         <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={handleRunWorkflow}
+            onClick={() => handleRunWorkflow()}
             disabled={isRunning}
             className={`flex items-center gap-1.5 px-3.5 sm:px-5 py-2 rounded-xl font-bold text-xs whitespace-nowrap transition-all cursor-pointer shrink-0 ${
               isRunning
@@ -1082,11 +1087,32 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                   </div>
                 )}
 
-                {!isRunning && qualityCheck?.checked && !qualityCheck.matchesPrompt && qualityCheck.issues && (
-                  <div className="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-medium text-amber-800 leading-snug">
-                    <span className="font-bold">AI Vision Note:</span> {qualityCheck.issues}
-                  </div>
-                )}
+                {!isRunning &&
+                  qualityCheck?.checked &&
+                  (!qualityCheck.matchesPrompt ||
+                    (typeof qualityCheck.score === 'number' && qualityCheck.score < 7)) &&
+                  qualityCheck.issues && (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-medium text-amber-900 leading-snug space-y-2">
+                      <div>
+                        <span className="font-bold">AI Vision Logical Audit:</span> {qualityCheck.issues}
+                      </div>
+                      {qualityCheck.refinedPrompt && (
+                        <button
+                          type="button"
+                          onClick={() => handleRunWorkflow(qualityCheck.refinedPrompt)}
+                          className="w-full py-1.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Sparkles size={12} />
+                          <span>Apply Logically Corrected Prompt &amp; Re-Render</span>
+                        </button>
+                      )}
+                      {generationSource === 'pollinations-classic-free' && (
+                        <p className="text-[10.5px] text-amber-700 leading-snug">
+                          Tip: Currently using the free legacy model. Add a free <code>HF_TOKEN</code> in <code>server/.env</code> for watermark-free official FLUX.1 accuracy.
+                        </p>
+                      )}
+                    </div>
+                  )}
               </div>
             </div>
           </div>
