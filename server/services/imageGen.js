@@ -115,19 +115,78 @@ function parseJsonObject(rawText = "") {
 }
 
 /**
- * Removes diffusion hype words that destabilize small/fast image models.
+ * Style preset art-direction profiles for FLUX / Diffusion studio conditioning.
+ */
+const STYLE_PRESET_GUIDES = {
+  auto: "Match the natural artistic medium implied by the user's request with crisp composition, lifelike textures, and balanced lighting.",
+  photorealistic: "Documentary editorial photograph captured on a full-frame 50mm lens, authentic natural textures, realistic skin/material micro-detail, balanced dynamic range, subtle shallow depth of field.",
+  cinematic: "Anamorphic widescreen cinema still, atmospheric volumetric depth, motivated key and rim lighting, subtle filmic color grading, dramatic framing.",
+  "product-studio": "Commercial studio product photography on clean architectural stone or matte backdrop, crisp softbox specular highlights, precision reflections, zero clutter.",
+  architecture: "Architectural Digest editorial photography, straight vertical perspective lines, warm natural sunlight casting crisp shadows across glass, timber, and stone.",
+  "concept-art": "High-craft digital concept art painting with rich environmental storytelling, cohesive color palette, crisp silhouette readability, atmospheric perspective.",
+  "minimal-illustration": "Clean contemporary editorial illustration with refined geometric forms, harmonious muted palette, crisp negative space, gallery poster feel.",
+};
+
+const DEFAULT_NEGATIVE_PROMPT =
+  "blurry, out of focus, distorted anatomy, deformed hands, extra fingers, text overlay, watermark, signature, logo, low resolution, jpeg artifacts, oversaturated, plastic artificial skin, cluttered background";
+
+let geminiImageQuotaBlockedUntil = 0;
+
+function getImageEngineStatus() {
+  const hasHuggingFace = Boolean(process.env.HF_TOKEN);
+  const hasCloudflare = Boolean(process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ACCOUNT_ID);
+  const hasTogether = Boolean(process.env.TOGETHER_API_KEY);
+  const hasPollinationsPro = Boolean(process.env.POLLINATIONS_API_KEY);
+  const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY);
+  const hasDedicatedFlux = hasHuggingFace || hasCloudflare || hasTogether || hasPollinationsPro;
+
+  const activeEngine = hasHuggingFace
+    ? "huggingface-flux"
+    : hasCloudflare
+      ? "cloudflare-flux"
+      : hasTogether
+        ? "together-flux"
+        : hasPollinationsPro
+          ? "pollinations-pro-flux"
+          : "pollinations-classic-free";
+
+  return {
+    activeEngine,
+    hasDedicatedFlux,
+    providers: {
+      huggingface: hasHuggingFace,
+      cloudflare: hasCloudflare,
+      together: hasTogether,
+      pollinationsPro: hasPollinationsPro,
+      geminiImage: hasGeminiKey && Date.now() >= geminiImageQuotaBlockedUntil,
+    },
+  };
+}
+
+/**
+ * Removes noisy buzzword clutter while preserving authentic photographic & art-direction descriptors.
  */
 function normalizeVisualPrompt(rawText = "") {
   return String(rawText)
-    .replace(/\b(8k|4k|uhd|hdr|hyperrealistic|masterpiece|octane render|unreal engine\s*\d*)\b/gi, "")
+    .replace(/\b(8k|4k|uhd|hdr|hyperrealistic|masterpiece|best quality|award[- ]winning|trending on artstation|octane render|unreal engine\s*\d*)\b/gi, "")
+    .replace(/\s*,\s*,+/g, ", ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
+function toGeminiAspectRatio(width, height) {
+  const ratio = (Number(width) || 1024) / (Number(height) || 1024);
+  if (ratio > 1.55) return "16:9";
+  if (ratio > 1.2) return "4:3";
+  if (ratio < 0.65) return "9:16";
+  if (ratio < 0.85) return "3:4";
+  return "1:1";
+}
+
 /**
- * ML Logical Intent Reasoner, Auto-Mistake Detector & Prompt Conditioning Engine
+ * ML Logical Intent Reasoner, Auto-Mistake Detector & Art-Director Prompt Conditioning Engine
  * Fixes spelling mistakes, Manglish/Malayalam, abbreviations, and physical/spatial contradictions
- * without injecting unrequested sci-fi or cosmic imagery.
+ * while elevating prompts into vivid, studio-grade diffusion descriptions.
  */
 async function classifyUserIntent(userText, options = {}) {
   if (!userText || typeof userText !== "string") {
@@ -137,6 +196,7 @@ async function classifyUserIntent(userText, options = {}) {
       cleanPrompt: "",
       isRealEntity: false,
       expandedPrompt: "",
+      negativePrompt: DEFAULT_NEGATIVE_PROMPT,
       didAutoCorrect: false,
       detectedIssues: [],
       reasoningSummary: "",
@@ -147,6 +207,7 @@ async function classifyUserIntent(userText, options = {}) {
   const explicit = /^\/(?:image|img)\b/i.test(trimmed);
   const rawClean = trimmed.replace(/^\/(?:image|img)\s*/i, "").trim();
   const studioMode = Boolean(options.studioMode);
+  const stylePresetKey = STYLE_PRESET_GUIDES[options.stylePreset] ? options.stylePreset : "auto";
   const wordCount = rawClean.split(/\s+/).filter(Boolean).length;
 
   const fallbackResult = {
@@ -155,6 +216,7 @@ async function classifyUserIntent(userText, options = {}) {
     cleanPrompt: rawClean,
     isRealEntity: false,
     expandedPrompt: rawClean,
+    negativePrompt: DEFAULT_NEGATIVE_PROMPT,
     didAutoCorrect: false,
     detectedIssues: [],
     reasoningSummary: "",
@@ -172,22 +234,26 @@ async function classifyUserIntent(userText, options = {}) {
 2. cleanSubject: Corrected, normalized subject/entity (fixing spelling mistakes and Manglish/phonetic typos).
 3. isRealEntity: true if asking for a photo/portrait of a real living celebrity, politician, famous landmark, or real car model WITHOUT bespoke creative scene instructions. False otherwise.`;
 
-    const systemPrompt = `You are a Logical Visual Reasoning & Prompt Auto-Correction Engine for Nebula AI.
-Your job is to think logically about what the user truly wants to see and fix mistakes automatically before image generation:
-- Translate Malayalam/Manglish or broken grammar cleanly into clear English.
-- Fix all typos and shorthand abbreviations accurately (e.g., "drinkng cofe" -> "drinking coffee", "lptop" -> "laptop", "ofice" -> "office", "mdy" -> "moody lighting", "bicyle" -> "bicycle", "mhnlal" -> "Mohanlal"). Preserve EVERY intentional mood/style word once expanded!
-- Resolve logical/physical contradictions naturally unless explicitly surreal (e.g., "drinking coffee on laptop" -> seated at a wooden desk holding a coffee mug beside an open laptop, never pouring coffee onto the laptop; "car driving on ocean road" -> sleek car driving along an oceanfront coastal highway or underwater glass tunnel; vague one-word input -> give clear foreground subject, natural setting, and coherent lighting).
-- Keep anatomy and composition realistic (clear focal subject, natural posture/hands, clean foreground/background separation).
-- Strip diffusion jargon ("8k", "4k", "uhd", "masterpiece", "octane render"). NEVER inject cosmic, neon, sci-fi, cyberpunk, glowing, or fantasy elements unless the user explicitly asks for them.
+    const styleDirective = STYLE_PRESET_GUIDES[stylePresetKey];
+
+    const systemPrompt = `You are a Master Visual Art-Director & Diffusion Prompt Architect for Nebula AI (FLUX.1 / Gemini Image Studio).
+Your job is to understand what the user truly wants to see, fix any mistakes automatically, and craft a studio-grade visual prompt that produces crisp, coherent, gallery-quality renders:
+- Translate Malayalam/Manglish or broken grammar cleanly into precise English.
+- Fix all typos and shorthand abbreviations accurately (e.g., "drinkng cofe" -> "drinking coffee", "lptop" -> "laptop", "ofice" -> "office", "mdy" -> "moody lighting", "bicyle" -> "bicycle", "mhnlal" -> "Mohanlal"). Preserve EVERY intentional mood, color, clothing, or setting detail!
+- Resolve logical/physical contradictions naturally unless explicitly surreal (e.g., "drinking coffee on laptop" -> seated at a warm wooden desk holding a ceramic coffee mug beside an open laptop; vague one-word input -> compose a striking, natural foreground subject with rich context and motivated lighting).
+- Structure expandedPrompt with 4 clear visual layers: (1) concrete focal subject, posture & surface materials, (2) framing & camera angle (e.g., eye-level medium shot, 50mm/85mm shallow depth of field), (3) specific directional lighting & shadows/reflections, (4) cohesive environment & natural color harmony.
+- Style direction to follow: ${styleDirective}
+- Avoid empty buzzword soup ("8k", "4k", "uhd", "masterpiece", "octane render", "trending on artstation"). NEVER inject unrequested sci-fi, neon, or fantasy elements unless asked.
 
 ${modeRules}
 4. didAutoCorrect: boolean — true if you fixed typos, expanded abbreviations/shorthand, translated Malayalam/Manglish, or logically resolved an unclear/contradictory scene.
 5. detectedIssues: array of 0 to 3 ultra-short phrases describing what mistake/unclear logic was corrected (empty [] if input was already clear and error-free).
-6. reasoningSummary: 1 crisp sentence explaining the coherent visual scene inferred from the user's intent.
-7. expandedPrompt: Crisp, unambiguous visual description (12 to 24 words) ready for FLUX rendering: concrete visible subjects, logical action, materials, lighting, and setting.
+6. reasoningSummary: 1 crisp sentence explaining the coherent visual scene and photographic direction inferred.
+7. expandedPrompt: Rich, vivid, unambiguous art-directed visual description (28 to 52 words) optimized for FLUX/Diffusion: exact visible subject, materials, camera framing, directional lighting, atmosphere, and background depth.
+8. negativePrompt: 6 to 12 comma-separated defect terms to avoid specifically for this scene (e.g., blurry, extra fingers, text overlay, watermark, distorted reflections).
 
 Output ONLY valid JSON matching this schema:
-{"isImage": boolean, "cleanSubject": string, "isRealEntity": boolean, "didAutoCorrect": boolean, "detectedIssues": string[], "reasoningSummary": string, "expandedPrompt": string}`;
+{"isImage": boolean, "cleanSubject": string, "isRealEntity": boolean, "didAutoCorrect": boolean, "detectedIssues": string[], "reasoningSummary": string, "expandedPrompt": string, "negativePrompt": string}`;
 
     const res = await ai.models.generateContent({
       model: "gemini-3.5-flash-lite",
@@ -202,6 +268,10 @@ Output ONLY valid JSON matching this schema:
     const issuesList = Array.isArray(parsed.detectedIssues)
       ? parsed.detectedIssues.filter((x) => typeof x === "string" && x.trim()).slice(0, 3)
       : [];
+    const customNeg =
+      typeof parsed.negativePrompt === "string" && parsed.negativePrompt.trim()
+        ? `${parsed.negativePrompt.trim()}, watermark, text overlay, logo`
+        : DEFAULT_NEGATIVE_PROMPT;
 
     return {
       isImage: explicit || studioMode || Boolean(parsed.isImage),
@@ -209,6 +279,7 @@ Output ONLY valid JSON matching this schema:
       cleanPrompt: subject,
       isRealEntity: studioMode && wordCount >= 5 ? false : Boolean(parsed.isRealEntity),
       expandedPrompt: groundedExpanded,
+      negativePrompt: customNeg,
       didAutoCorrect: Boolean(parsed.didAutoCorrect || issuesList.length > 0),
       detectedIssues: issuesList,
       reasoningSummary: typeof parsed.reasoningSummary === "string" ? parsed.reasoningSummary.trim() : "",
@@ -292,25 +363,31 @@ Return ONLY valid JSON:
 }
 
 /**
- * Generates raw image bytes via the best configured official diffusion backend:
- * 1) Hugging Face Inference Router (if HF_TOKEN set)
- * 2) Pollinations authenticated gateway gen.pollinations.ai (if POLLINATIONS_API_KEY set)
- * 3) Pollinations legacy public endpoint image.pollinations.ai
+ * Generates raw image bytes via the best configured official diffusion / native image backend:
+ * 1) Hugging Face Official Inference Router — FLUX.1-dev / FLUX.1-schnell (HF_TOKEN, watermark-free)
+ * 2) Cloudflare Workers AI — @cf/black-forest-labs/flux-1-schnell (CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID)
+ * 3) Together AI — FLUX.1-schnell / FLUX.1.1-pro (TOGETHER_API_KEY)
+ * 4) Google Native Gemini Image Generation — gemini-3.1-flash-image / gemini-2.5-flash-image (GEMINI_API_KEY, cached 429 cooldown)
+ * 5) Pollinations Pro Authenticated Gateway — gen.pollinations.ai FLUX / Z-Image (POLLINATIONS_API_KEY)
+ * 6) Pollinations Classic Free Public Fallback — image.pollinations.ai with enhance=true + clean 503 backoff
  */
 async function renderImageBuffer(prompt, options = {}) {
-  const width = Number(options.width) || 1024;
-  const height = Number(options.height) || 1024;
-  const steps = Math.min(Math.max(Number(options.steps) || 4, 1), 28);
+  const width = Math.min(Math.max(Number(options.width) || 1024, 512), 1536);
+  const height = Math.min(Math.max(Number(options.height) || 1024, 512), 1536);
+  const steps = Math.min(Math.max(Number(options.steps) || 4, 1), 32);
   const cfg = Math.min(Math.max(Number(options.cfg) || 3.5, 1), 10);
   const unetModel = String(options.unetModel || options.model || "");
+  const negativePrompt = String(options.negativePrompt || DEFAULT_NEGATIVE_PROMPT);
   const seed = Number.isInteger(options.seed) ? options.seed : Math.floor(Math.random() * 1000000);
+  const isDevQuality = /dev|pro|ultra|hq/i.test(unetModel);
 
+  // Tier 1: Official Black Forest Labs FLUX.1 via Hugging Face Inference Router (Zero Watermark)
   if (process.env.HF_TOKEN) {
-    const hfModel = /dev/i.test(unetModel)
+    const hfModel = isDevQuality
       ? "black-forest-labs/FLUX.1-dev"
       : "black-forest-labs/FLUX.1-schnell";
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 28000);
+    const timer = setTimeout(() => controller.abort(), 32000);
     try {
       const res = await fetch(`https://router.huggingface.co/hf-inference/models/${hfModel}`, {
         method: "POST",
@@ -325,8 +402,9 @@ async function renderImageBuffer(prompt, options = {}) {
           parameters: {
             width,
             height,
-            num_inference_steps: /dev/i.test(unetModel) ? Math.max(steps, 18) : Math.min(steps, 8),
-            guidance_scale: cfg,
+            num_inference_steps: isDevQuality ? Math.max(steps, 22) : Math.min(Math.max(steps, 4), 8),
+            guidance_scale: isDevQuality ? Math.max(cfg, 3.5) : cfg,
+            ...(isDevQuality ? { negative_prompt: negativePrompt } : {}),
           },
         }),
       });
@@ -349,49 +427,211 @@ async function renderImageBuffer(prompt, options = {}) {
     }
   }
 
-  const encodedPrompt = encodeURIComponent(prompt);
-  const hasPollinationsKey = Boolean(process.env.POLLINATIONS_API_KEY);
-  const pollUrl = hasPollinationsKey
-    ? `https://gen.pollinations.ai/image/${encodedPrompt}?width=${width}&height=${height}&model=flux&nologo=true&enhance=false&seed=${seed}`
-    : `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&model=flux&nologo=true&enhance=false&seed=${seed}`;
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 24000);
-  try {
-    const headers = {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-      Accept: "image/*",
-    };
-    if (hasPollinationsKey) {
-      headers.Authorization = `Bearer ${process.env.POLLINATIONS_API_KEY}`;
-    }
-
-    const res = await fetch(pollUrl, { signal: controller.signal, headers });
-    clearTimeout(timeoutId);
-
-    if (res.status === 402 || res.status === 429) {
-      return { buffer: null, mimeType: "", source: "pollinations-flux", rateLimited: true };
-    }
-    if (res.ok) {
-      const ct = res.headers.get("content-type") || "";
-      if (ct.includes("image")) {
-        const arrBuf = await res.arrayBuffer();
-        if (arrBuf && arrBuf.byteLength > 5000) {
-          return {
-            buffer: Buffer.from(arrBuf),
-            mimeType: ct.split(";")[0],
-            source: "pollinations-flux",
-            rateLimited: false,
-          };
+  // Tier 2: Cloudflare Workers AI Official FLUX.1-schnell (Free daily tier, Zero Watermark)
+  if (process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ACCOUNT_ID) {
+    const cfSteps = Math.min(Math.max(steps, 4), 8);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 28000);
+    try {
+      const res = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
+        {
+          method: "POST",
+          signal: controller.signal,
+          headers: {
+            Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ prompt, steps: cfSteps }),
+        }
+      );
+      clearTimeout(timer);
+      if (res.ok) {
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("application/json")) {
+          const payload = await res.json();
+          const b64 = payload?.result?.image;
+          if (b64) {
+            const buf = Buffer.from(b64, "base64");
+            if (buf.length > 5000) {
+              return { buffer: buf, mimeType: "image/jpeg", source: "cloudflare-flux", rateLimited: false };
+            }
+          }
+        } else if (ct.includes("image")) {
+          const buf = Buffer.from(await res.arrayBuffer());
+          if (buf.length > 5000) {
+            return { buffer: buf, mimeType: ct.split(";")[0], source: "cloudflare-flux", rateLimited: false };
+          }
         }
       }
+    } catch (cfErr) {
+      clearTimeout(timer);
+      console.warn("⚠️ Cloudflare FLUX warning:", cfErr.message);
     }
-  } catch (pollErr) {
-    clearTimeout(timeoutId);
-    console.warn("⚠️ Pollinations engine warning:", pollErr.message);
   }
 
-  return { buffer: null, mimeType: "", source: "pollinations-flux", rateLimited: false };
+  // Tier 3: Together AI Official FLUX.1 Router (Zero Watermark)
+  if (process.env.TOGETHER_API_KEY) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 28000);
+    try {
+      const res = await fetch("https://api.together.xyz/v1/images/generations", {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: isDevQuality ? "black-forest-labs/FLUX.1-dev" : "black-forest-labs/FLUX.1-schnell-Free",
+          prompt,
+          width,
+          height,
+          steps: isDevQuality ? Math.max(steps, 20) : Math.min(Math.max(steps, 4), 4),
+          n: 1,
+          response_format: "b64_json",
+        }),
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        const data = await res.json();
+        const b64 = data?.data?.[0]?.b64_json;
+        if (b64) {
+          const buf = Buffer.from(b64, "base64");
+          if (buf.length > 5000) {
+            return { buffer: buf, mimeType: "image/png", source: "together-flux", rateLimited: false };
+          }
+        }
+      }
+    } catch (tgErr) {
+      clearTimeout(timer);
+      console.warn("⚠️ Together FLUX warning:", tgErr.message);
+    }
+  }
+
+  // Tier 4: Google Native Gemini Image Generation (activates automatically when GEMINI_API_KEY has image quota)
+  const ai = getAi();
+  if (ai && Date.now() >= geminiImageQuotaBlockedUntil) {
+    const geminiImageModels = isDevQuality
+      ? ["gemini-3-pro-image", "gemini-3.1-flash-image", "gemini-2.5-flash-image"]
+      : ["gemini-3.1-flash-image", "gemini-2.5-flash-image"];
+    const aspectRatio = toGeminiAspectRatio(width, height);
+    for (const model of geminiImageModels) {
+      try {
+        const resp = await ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            responseModalities: ["IMAGE"],
+            imageConfig: { aspectRatio },
+          },
+        });
+        const parts = resp?.candidates?.[0]?.content?.parts || [];
+        const imgPart = parts.find((p) => p?.inlineData?.data);
+        if (imgPart) {
+          const buf = Buffer.from(imgPart.inlineData.data, "base64");
+          if (buf.length > 5000) {
+            return {
+              buffer: buf,
+              mimeType: imgPart.inlineData.mimeType || "image/png",
+              source: "gemini-native-image",
+              rateLimited: false,
+            };
+          }
+        }
+      } catch (gemErr) {
+        const msg = String(gemErr?.message || "");
+        if (msg.includes("429") || /quota|rate/i.test(msg)) {
+          // Cache free-tier 429 cooldown for 15 minutes so subsequent renders have 0ms overhead
+          geminiImageQuotaBlockedUntil = Date.now() + 15 * 60 * 1000;
+          break;
+        }
+        console.warn(`⚠️ Gemini Native Image (${model}) warning:`, msg.slice(0, 140));
+      }
+    }
+  }
+
+  // Tier 5: Pollinations Pro Authenticated Gateway (gen.pollinations.ai — Real FLUX / Z-Image, Zero Watermark)
+  const encodedPrompt = encodeURIComponent(prompt);
+  if (process.env.POLLINATIONS_API_KEY) {
+    const proModel = isDevQuality ? "flux" : "zimage";
+    const pollProUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?width=${width}&height=${height}&model=${proModel}&nologo=true&enhance=true&seed=${seed}&negative_prompt=${encodeURIComponent(negativePrompt)}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 28000);
+    try {
+      const res = await fetch(pollProUrl, {
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${process.env.POLLINATIONS_API_KEY}`,
+          Accept: "image/*",
+        },
+      });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("image")) {
+          const arrBuf = await res.arrayBuffer();
+          if (arrBuf && arrBuf.byteLength > 5000) {
+            return {
+              buffer: Buffer.from(arrBuf),
+              mimeType: ct.split(";")[0],
+              source: "pollinations-pro-flux",
+              rateLimited: false,
+            };
+          }
+        }
+      }
+    } catch (proErr) {
+      clearTimeout(timeoutId);
+      console.warn("⚠️ Pollinations Pro warning:", proErr.message);
+    }
+  }
+
+  // Tier 6: Free Classic Public Fallback (enhance=true for higher fidelity + single clean backoff retry on 503)
+  const classicUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&model=flux&nologo=true&enhance=true&seed=${seed}`;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 22000);
+    try {
+      const res = await fetch(classicUrl, {
+        signal: controller.signal,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+          Accept: "image/*",
+        },
+      });
+      clearTimeout(timeoutId);
+
+      if (res.status === 402 || res.status === 429) {
+        return { buffer: null, mimeType: "", source: "pollinations-classic-free", rateLimited: true };
+      }
+      if (res.status === 503 && attempt === 0) {
+        await new Promise((r) => setTimeout(r, 1500));
+        continue;
+      }
+      if (res.ok) {
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("image")) {
+          const arrBuf = await res.arrayBuffer();
+          if (arrBuf && arrBuf.byteLength > 5000) {
+            return {
+              buffer: Buffer.from(arrBuf),
+              mimeType: ct.split(";")[0],
+              source: "pollinations-classic-free",
+              rateLimited: false,
+            };
+          }
+        }
+      }
+      break;
+    } catch (pollErr) {
+      clearTimeout(timeoutId);
+      console.warn("⚠️ Pollinations classic fallback warning:", pollErr.message);
+      break;
+    }
+  }
+
+  return { buffer: null, mimeType: "", source: "pollinations-classic-free", rateLimited: false };
 }
 
 /**
@@ -500,21 +740,24 @@ function toQualityCheckSummary(check, retried = false) {
  */
 async function generateAndUploadImage(input, options = {}) {
   const studioMode = Boolean(options.studioMode);
+  const stylePreset = options.stylePreset || "auto";
   let intentData;
   if (typeof input === "string") {
-    intentData = await classifyUserIntent(input, { studioMode });
+    intentData = await classifyUserIntent(input, { studioMode, stylePreset });
   } else {
     intentData = input || {};
   }
 
   const cleanSubject = intentData.cleanSubject || intentData.cleanPrompt || "artwork";
   let expandedPrompt = intentData.expandedPrompt || cleanSubject;
+  const negativePrompt = options.negativePrompt || intentData.negativePrompt || DEFAULT_NEGATIVE_PROMPT;
   const isRealEntity = Boolean(intentData.isRealEntity);
   const didAutoCorrect = Boolean(intentData.didAutoCorrect);
   const detectedIssues = Array.isArray(intentData.detectedIssues) ? intentData.detectedIssues : [];
   const reasoningSummary = intentData.reasoningSummary || "";
   const targetWidth = Number(options.width) || 1024;
   const targetHeight = Number(options.height) || 1024;
+  const engineStatus = getImageEngineStatus();
 
   let cdnUrl = null;
   let generationSource = "offline-svg-card";
@@ -537,7 +780,8 @@ async function generateAndUploadImage(input, options = {}) {
 
   // Strategy 2: Generative AI Visual Pipeline + Gemini Vision Self-Check & Auto-Retry
   if (!cdnUrl) {
-    const attempt1 = await renderImageBuffer(expandedPrompt, options);
+    const renderOpts = { ...options, negativePrompt };
+    const attempt1 = await renderImageBuffer(expandedPrompt, renderOpts);
     let chosenRender = attempt1;
     let chosenCheck = null;
 
@@ -549,16 +793,22 @@ async function generateAndUploadImage(input, options = {}) {
         cleanSubject
       );
 
+      const retryThreshold = engineStatus.hasDedicatedFlux ? 7 : 6;
       const needsRetry =
         chosenCheck.isErrorOrCorrupted ||
         !chosenCheck.matchesPrompt ||
-        (typeof chosenCheck.qualityScore === "number" && chosenCheck.qualityScore < 6);
+        (typeof chosenCheck.qualityScore === "number" && chosenCheck.qualityScore < retryThreshold);
 
-      const hasPaidOrCustomProvider = Boolean(process.env.HF_TOKEN || process.env.POLLINATIONS_API_KEY);
-      if (needsRetry && (hasPaidOrCustomProvider || !attempt1.rateLimited)) {
-        const retryPrompt = chosenCheck.refinedPrompt || `${cleanSubject}, clear natural photography`;
+      // Avoid double-hitting the 45s IP rate limit on the classic free fallback unless image is actually broken
+      const shouldRetry =
+        needsRetry &&
+        (engineStatus.hasDedicatedFlux ||
+          (!attempt1.rateLimited && chosenRender.source !== "pollinations-classic-free"));
+
+      if (shouldRetry) {
+        const retryPrompt = chosenCheck.refinedPrompt || `${cleanSubject}, editorial photography, natural lighting, crisp detail`;
         const attempt2 = await renderImageBuffer(retryPrompt, {
-          ...options,
+          ...renderOpts,
           seed: Math.floor(Math.random() * 1000000),
         });
 
@@ -648,11 +898,13 @@ async function generateAndUploadImage(input, options = {}) {
     cleanSubject,
     cleanPrompt: cleanSubject,
     expandedPrompt,
+    negativePrompt,
     isRealEntity,
     didAutoCorrect,
     detectedIssues,
     reasoningSummary,
     generationSource,
+    hasDedicatedFlux: engineStatus.hasDedicatedFlux,
     qualityCheck,
   };
 }
@@ -662,4 +914,5 @@ module.exports = {
   classifyUserIntent,
   generateAndUploadImage,
   searchHighResVisual,
+  getImageEngineStatus,
 };

@@ -18,7 +18,12 @@ const {
   buildRagGroundingContext,
 } = require("./services/rag");
 const { applyGuardrails } = require("./services/guardrails");
-const { isImagePrompt, classifyUserIntent, generateAndUploadImage } = require("./services/imageGen");
+const {
+  isImagePrompt,
+  classifyUserIntent,
+  generateAndUploadImage,
+  getImageEngineStatus,
+} = require("./services/imageGen");
 const { checkOllamaStatus, streamOllamaChat, OLLAMA_HOST } = require("./services/ollama");
 const { getUserMemories, extractAndSaveMemories } = require("./services/memory");
 const { securityHeaders, createRateLimiter } = require("./middleware/security");
@@ -960,6 +965,11 @@ app.post("/api/payments/razorpay/verify", requireAuth, async (req, res) => {
   }
 });
 
+// FLUX.1 Image Engine Status Endpoint
+app.get("/api/flux/status", requireAuth, (_req, res) => {
+  return res.json({ success: true, ...getImageEngineStatus() });
+});
+
 // FLUX.1 Visual Node-Graph Workflow Execution Endpoint (ComfyUI-style Hybrid Pipeline)
 app.post("/api/flux/workflow", requireAuth, chatLimiter, async (req, res) => {
   const workflowStart = Date.now();
@@ -976,9 +986,10 @@ app.post("/api/flux/workflow", requireAuth, chatLimiter, async (req, res) => {
       width = 1024,
       height = 1024,
       sampler = "euler",
+      stylePreset = "auto",
     } = req.body;
 
-    const intentData = await classifyUserIntent(prompt, { studioMode: true });
+    const intentData = await classifyUserIntent(prompt, { studioMode: true, stylePreset });
     // Force image generation intent for explicit workflow execution
     intentData.isImage = true;
     if (!intentData.cleanSubject) intentData.cleanSubject = prompt.slice(0, 80);
@@ -992,6 +1003,7 @@ app.post("/api/flux/workflow", requireAuth, chatLimiter, async (req, res) => {
       steps,
       cfg,
       sampler,
+      stylePreset,
       studioMode: true,
     });
     const totalLatencyMs = Date.now() - workflowStart;
@@ -1023,6 +1035,7 @@ app.post("/api/flux/workflow", requireAuth, chatLimiter, async (req, res) => {
       detectedIssues: result.detectedIssues,
       reasoningSummary: result.reasoningSummary,
       generationSource: result.generationSource,
+      hasDedicatedFlux: Boolean(result.hasDedicatedFlux),
       qualityCheck: result.qualityCheck,
       executionTimeMs: totalLatencyMs,
       workflowMeta: {
@@ -1032,6 +1045,7 @@ app.post("/api/flux/workflow", requireAuth, chatLimiter, async (req, res) => {
         cfg,
         resolution: `${width}x${height}`,
         sampler,
+        stylePreset,
         pipeline: "Nebula Cloud GPU + Cloudinary CDN",
       },
     });
