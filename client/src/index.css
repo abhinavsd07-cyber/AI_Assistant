@@ -96,17 +96,32 @@
   }
 }
 
-/* Living Nebula NB Emblem: gentle central float + Circle 1 primary orbit + Circle 2 spawning from Circle 1 into outer orbit */
+/* Living Nebula Voice Emblem: clean NB centerpiece + liquid obsidian black ball split, orbit & merge (zero rings) */
 @keyframes nebulaNbFloat {
   0%, 100% {
     transform: translateY(0px) scale(1);
   }
   50% {
-    transform: translateY(-3px) scale(1.015);
+    transform: translateY(-2.5px) scale(1.012);
   }
 }
 
-@keyframes nebulaPrimaryOrbit {
+@keyframes nebulaNbSpeak {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.032);
+  }
+  50% {
+    transform: scale(0.992);
+  }
+  75% {
+    transform: scale(1.024);
+  }
+}
+
+@keyframes nebulaCarrierDrift {
   from {
     transform: rotate(0deg);
   }
@@ -115,110 +130,221 @@
   }
 }
 
-@keyframes nebulaSpawnAngle {
-  0% {
+/* Clockwise Black Ball: unified -> liquid stretch & split -> orbits right (B side) -> liquid merge at 180° -> second split -> orbits back -> merges at 360° */
+@keyframes nebulaBallSplitCw {
+  0%, 6% {
     transform: rotate(0deg);
   }
   12% {
-    transform: rotate(22deg);
+    transform: rotate(9.5deg);
   }
-  88% {
-    transform: rotate(342deg);
+  18% {
+    transform: rotate(24deg);
+  }
+  42% {
+    transform: rotate(156deg);
+  }
+  48% {
+    transform: rotate(170.5deg);
+  }
+  54%, 60% {
+    transform: rotate(180deg);
+  }
+  66% {
+    transform: rotate(189.5deg);
+  }
+  72% {
+    transform: rotate(204deg);
+  }
+  90% {
+    transform: rotate(336deg);
+  }
+  95% {
+    transform: rotate(350.5deg);
   }
   100% {
     transform: rotate(360deg);
   }
 }
 
-@keyframes nebulaSpawnRadius {
-  0% {
-    transform: translateY(-84px) scale(0.42);
-    opacity: 0.35;
+/* Counter-Clockwise Black Ball: exact mirror sweeping left (N side) to merge cleanly with CW ball */
+@keyframes nebulaBallSplitCcw {
+  0%, 6% {
+    transform: rotate(0deg);
   }
-  16% {
-    transform: translateY(-110px) scale(1);
-    opacity: 1;
+  12% {
+    transform: rotate(-9.5deg);
   }
-  84% {
-    transform: translateY(-110px) scale(1);
-    opacity: 1;
+  18% {
+    transform: rotate(-24deg);
+  }
+  42% {
+    transform: rotate(-156deg);
+  }
+  48% {
+    transform: rotate(-170.5deg);
+  }
+  54%, 60% {
+    transform: rotate(-180deg);
+  }
+  66% {
+    transform: rotate(-189.5deg);
+  }
+  72% {
+    transform: rotate(-204deg);
+  }
+  90% {
+    transform: rotate(-336deg);
+  }
+  95% {
+    transform: rotate(-350.5deg);
   }
   100% {
-    transform: translateY(-84px) scale(0.42);
-    opacity: 0.35;
+    transform: rotate(-360deg);
   }
 }
 
-@keyframes nebulaSpawnRingWave {
-  0% {
-    transform: scale(0.764) rotate(0deg);
-    opacity: 0.15;
+/* Conservation-of-mass droplet breathing: 1 fuller unified black ball -> 2 sleek orbiting black balls -> 1 unified black ball */
+@keyframes nebulaBallMass {
+  0%, 6% {
+    transform: scale(1.16);
   }
-  16% {
-    transform: scale(1) rotate(40deg);
-    opacity: 0.95;
+  14% {
+    transform: scale(1);
   }
-  84% {
-    transform: scale(1) rotate(320deg);
-    opacity: 0.9;
+  20%, 40% {
+    transform: scale(0.9);
+  }
+  48% {
+    transform: scale(1);
+  }
+  54%, 60% {
+    transform: scale(1.16);
+  }
+  68% {
+    transform: scale(1);
+  }
+  74%, 88% {
+    transform: scale(0.9);
+  }
+  95% {
+    transform: scale(1);
   }
   100% {
-    transform: scale(0.764) rotate(360deg);
-    opacity: 0.15;
+    transform: scale(1.16);
+  }
+}
+
+@keyframes nebulaVoiceEqBar {
+  0%, 100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
   }
 }
 
 .nebula-nb-center {
+  transform-box: view-box;
   transform-origin: 0px 0px;
-  animation: nebulaNbFloat 3.8s ease-in-out infinite;
+  animation: nebulaNbFloat 4.2s ease-in-out infinite;
 }
 
-.nebula-ring-idle {
+.nebula-nb-center-speaking {
+  transform-box: view-box;
   transform-origin: 0px 0px;
-  animation: nebulaPrimaryOrbit 7.5s linear infinite;
+  animation: nebulaNbSpeak 1.6s ease-in-out infinite;
 }
 
-.nebula-ring-listening {
+.nebula-carrier-idle {
+  transform-box: view-box;
   transform-origin: 0px 0px;
-  animation: nebulaPrimaryOrbit 4.2s linear infinite;
+  animation: nebulaCarrierDrift 24s linear infinite;
 }
 
-.nebula-ring-thinking {
+.nebula-carrier-listening {
+  transform-box: view-box;
   transform-origin: 0px 0px;
-  animation: nebulaPrimaryOrbit 2.4s linear infinite;
+  animation: nebulaCarrierDrift 14s linear infinite;
 }
 
-.nebula-ring-speaking {
+.nebula-carrier-thinking {
+  transform-box: view-box;
   transform-origin: 0px 0px;
-  animation: nebulaPrimaryOrbit 3.2s linear infinite;
+  animation: nebulaCarrierDrift 8.5s linear infinite;
 }
 
-.nebula-spawn-angle-idle {
+.nebula-carrier-speaking {
+  transform-box: view-box;
   transform-origin: 0px 0px;
-  animation: nebulaSpawnAngle 5.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: nebulaCarrierDrift 11s linear infinite;
 }
 
-.nebula-spawn-angle-active {
+.nebula-ball-cw-idle {
+  transform-box: view-box;
   transform-origin: 0px 0px;
-  animation: nebulaSpawnAngle 3.0s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: nebulaBallSplitCw 6.8s ease-in-out infinite;
 }
-
-.nebula-spawn-radius-idle {
-  transform-origin: 0px -84px;
-  animation: nebulaSpawnRadius 5.2s ease-in-out infinite;
-}
-
-.nebula-spawn-radius-active {
-  transform-origin: 0px -84px;
-  animation: nebulaSpawnRadius 3.0s ease-in-out infinite;
-}
-
-.nebula-spawn-ring-idle {
+.nebula-ball-ccw-idle {
+  transform-box: view-box;
   transform-origin: 0px 0px;
-  animation: nebulaSpawnRingWave 5.2s ease-in-out infinite;
+  animation: nebulaBallSplitCcw 6.8s ease-in-out infinite;
+}
+.nebula-ball-mass-idle {
+  transform-box: view-box;
+  transform-origin: 0px -82px;
+  animation: nebulaBallMass 6.8s ease-in-out infinite;
 }
 
-.nebula-spawn-ring-active {
+.nebula-ball-cw-listening {
+  transform-box: view-box;
   transform-origin: 0px 0px;
-  animation: nebulaSpawnRingWave 3.0s ease-in-out infinite;
+  animation: nebulaBallSplitCw 4.2s ease-in-out infinite;
+}
+.nebula-ball-ccw-listening {
+  transform-box: view-box;
+  transform-origin: 0px 0px;
+  animation: nebulaBallSplitCcw 4.2s ease-in-out infinite;
+}
+.nebula-ball-mass-listening {
+  transform-box: view-box;
+  transform-origin: 0px -82px;
+  animation: nebulaBallMass 4.2s ease-in-out infinite;
+}
+
+.nebula-ball-cw-thinking {
+  transform-box: view-box;
+  transform-origin: 0px 0px;
+  animation: nebulaBallSplitCw 2.6s ease-in-out infinite;
+}
+.nebula-ball-ccw-thinking {
+  transform-box: view-box;
+  transform-origin: 0px 0px;
+  animation: nebulaBallSplitCcw 2.6s ease-in-out infinite;
+}
+.nebula-ball-mass-thinking {
+  transform-box: view-box;
+  transform-origin: 0px -82px;
+  animation: nebulaBallMass 2.6s ease-in-out infinite;
+}
+
+.nebula-ball-cw-speaking {
+  transform-box: view-box;
+  transform-origin: 0px 0px;
+  animation: nebulaBallSplitCw 3.2s ease-in-out infinite;
+}
+.nebula-ball-ccw-speaking {
+  transform-box: view-box;
+  transform-origin: 0px 0px;
+  animation: nebulaBallSplitCcw 3.2s ease-in-out infinite;
+}
+.nebula-ball-mass-speaking {
+  transform-box: view-box;
+  transform-origin: 0px -82px;
+  animation: nebulaBallMass 3.2s ease-in-out infinite;
+}
+
+.nebula-eq-bar {
+  transform-origin: center;
+  animation: nebulaVoiceEqBar 0.85s ease-in-out infinite;
 }

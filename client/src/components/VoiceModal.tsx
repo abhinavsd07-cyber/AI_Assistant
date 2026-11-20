@@ -454,15 +454,15 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#12110F]/45 dark:bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[460px] rounded-[28px] bg-[#FAF8F5] dark:bg-[#1F1E1B] border border-[#EAE4D9] dark:border-[#38352F] shadow-[0_28px_70px_-16px_rgba(31,30,27,0.35)] p-6 sm:p-7 text-[#1F1E1B] dark:text-[#F0ECE1] flex flex-col items-center justify-between min-h-[520px] relative overflow-hidden"
+        className="w-full max-w-[460px] rounded-[30px] bg-[#FAF8F5] dark:bg-[#171614] border border-[#E7E1D7] dark:border-[#2C2A26] shadow-[0_32px_80px_-20px_rgba(18,17,15,0.34)] p-6 sm:p-7 text-[#1F1E1B] dark:text-[#F0ECE1] flex flex-col items-center justify-between min-h-[540px] relative overflow-hidden"
       >
         {/* Top Header */}
         <div className="w-full flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#2A2723] border border-[#EAE4D9] dark:border-[#38352F] flex items-center justify-center shrink-0 p-1 shadow-2xs">
+            <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#23211E] border border-[#E7E1D7] dark:border-[#33302B] flex items-center justify-center shrink-0 p-1.5 shadow-2xs">
               <img
                 src="/nebula-logo.png"
                 alt="Nebula AI"
@@ -475,11 +475,11 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
               />
             </div>
             <div className="flex flex-col text-left min-w-0">
-              <span className="text-[14px] font-bold tracking-tight text-[#1F1E1B] dark:text-[#F0ECE1] truncate">
+              <span className="text-[14.5px] font-bold tracking-tight text-[#1F1E1B] dark:text-[#F5F2EB] truncate">
                 Nebula Voice
               </span>
               <span className="flex items-center gap-1.5 text-[11px] font-medium text-[#736B63] dark:text-[#A39E93] truncate">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#D97736] shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                 <span className="truncate">{detectedLangLabel}</span>
               </span>
             </div>
@@ -491,17 +491,17 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
               onClose();
             }}
             aria-label="Close voice mode"
-            className="w-8 h-8 rounded-full bg-[#F3EFE6] hover:bg-[#EAE4D8] dark:bg-[#2A2723] dark:hover:bg-[#34302B] border border-[#E5DFD3] dark:border-[#38352F] flex items-center justify-center text-[#736B63] dark:text-[#A39E93] hover:text-[#1F1E1B] dark:hover:text-white transition-all cursor-pointer shrink-0"
+            className="w-8 h-8 rounded-full bg-[#F0ECE4] hover:bg-[#E6E0D6] dark:bg-[#252320] dark:hover:bg-[#312E2A] border border-[#E5DFD3] dark:border-[#33302B] flex items-center justify-center text-[#736B63] dark:text-[#A39E93] hover:text-[#1F1E1B] dark:hover:text-white transition-all cursor-pointer shrink-0"
           >
             <X size={15} />
           </button>
         </div>
 
-        {/* Sleek Segmented Language Selector */}
+        {/* Sleek Monochrome Segmented Language Selector */}
         <div
           role="tablist"
           aria-label="Voice language"
-          className="inline-flex flex-wrap items-center justify-center gap-0.5 p-1 mt-5 rounded-2xl sm:rounded-full bg-[#F3EFE6] dark:bg-[#282622] border border-[#E5DFD3] dark:border-[#38352F]"
+          className="inline-flex flex-wrap items-center justify-center gap-0.5 p-1 mt-5 rounded-2xl sm:rounded-full bg-[#F0ECE4]/90 dark:bg-[#23211E] border border-[#E5DFD3]/90 dark:border-[#322F2A]"
         >
           {VOICE_LANGUAGES.map((l) => {
             const isSelected = selectedLang === l.code;
@@ -514,32 +514,28 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
                 onClick={() => handleLanguageSelect(l)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-[#D97736] text-white font-semibold shadow-2xs'
-                    : 'text-[#736B63] dark:text-[#A39E93] hover:text-[#1F1E1B] dark:hover:text-white hover:bg-[#EAE4D8]/70 dark:hover:bg-[#322F2A] font-medium'
+                    ? 'bg-[#1F1E1B] text-white dark:bg-[#F5F2EB] dark:text-[#1F1E1B] font-semibold shadow-xs'
+                    : 'text-[#6E675F] dark:text-[#A39E93] hover:text-[#1F1E1B] dark:hover:text-white hover:bg-[#E7E1D7]/70 dark:hover:bg-[#2E2B27] font-medium'
                 }`}
               >
-                {l.code === 'auto' && <Globe size={11} className={isSelected ? 'text-white' : 'text-[#8C827A]'} />}
+                {l.code === 'auto' && (
+                  <Globe
+                    size={11}
+                    className={
+                      isSelected
+                        ? 'text-white dark:text-[#1F1E1B]'
+                        : 'text-[#8C827A] dark:text-[#8E897E]'
+                    }
+                  />
+                )}
                 <span>{l.label}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Central Open-Stage Living Nebula NB Emblem & Dual Generative Orbits */}
-        <div className="relative flex items-center justify-center my-5 h-60 w-60">
-          {/* Subtle atmospheric warm Claude terracotta backlight */}
-          <div
-            className={`absolute inset-4 rounded-full blur-3xl transition-all duration-700 pointer-events-none ${
-              status === 'listening'
-                ? 'bg-[#D97736]/20 scale-110'
-                : status === 'thinking'
-                  ? 'bg-amber-500/25 scale-115'
-                  : status === 'speaking'
-                    ? 'bg-[#E07A5F]/25 scale-120'
-                    : 'bg-[#D97736]/12 scale-100'
-            }`}
-          />
-
+        {/* Central Pure Stage: NB Monogram + Liquid Black Ball Split, Orbit & Merge (Zero Glow, Zero Rings) */}
+        <div className="relative flex items-center justify-center my-4 h-60 w-60">
           <button
             type="button"
             onClick={() => {
@@ -556,41 +552,58 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
                   ? 'Tap emblem to start talking'
                   : 'Nebula Voice Emblem'
             }
-            className="relative flex items-center justify-center w-56 h-56 bg-transparent border-0 p-0 cursor-pointer focus:outline-none"
+            className="relative flex items-center justify-center w-60 h-60 bg-transparent border-0 p-0 cursor-pointer focus:outline-none transition-transform duration-300 active:scale-95"
           >
-            <NebulaAnimatedEmblem status={status} className="w-56 h-56" />
+            <NebulaAnimatedEmblem status={status} className="w-60 h-60" />
           </button>
         </div>
 
-        {/* Status Indicator & Transcript Subtitles */}
-        <div className="w-full flex flex-col items-center text-center px-4 gap-2">
-          <div className="px-3.5 py-1.5 rounded-full bg-[#FBF3EC] dark:bg-[#2E2620] border border-[#F3D8C6] dark:border-[#4B3A2C] text-xs font-semibold uppercase tracking-wider text-[#D97736] dark:text-[#E07A5F] inline-flex items-center justify-center gap-2">
-            <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
-              {status === 'listening' && (
-                <span className="absolute inline-flex h-full w-full rounded-full bg-[#D97736] opacity-75 animate-ping" />
-              )}
-              <span
-                className={`relative inline-flex rounded-full h-2 w-2 ${
-                  status === 'listening'
-                    ? 'bg-[#D97736]'
-                    : status === 'thinking'
-                      ? 'bg-amber-500 animate-spin'
-                      : status === 'speaking'
-                        ? 'bg-[#C26224] animate-pulse'
-                        : 'bg-[#8C827A]'
-                }`}
-              />
-            </span>
+        {/* Live Acoustic Status Badge & Editorial Subtitles */}
+        <div className="w-full flex flex-col items-center text-center px-4 gap-2.5">
+          <div className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[#22201D] border border-[#E6E0D6] dark:border-[#33302B] shadow-2xs text-[11.5px] font-semibold uppercase tracking-wider text-[#1F1E1B] dark:text-[#F0ECE1] inline-flex items-center justify-center gap-2.5">
+            {status === 'listening' || status === 'speaking' ? (
+              <span className="inline-flex items-center gap-[2.5px] h-3" aria-hidden="true">
+                {[0, 0.16, 0.32, 0.12].map((delay, i) => (
+                  <span
+                    key={i}
+                    style={{ animationDelay: `${delay}s` }}
+                    className={`w-[2.5px] rounded-full nebula-eq-bar ${
+                      i === 1 || i === 2 ? 'h-3' : 'h-2'
+                    } ${
+                      status === 'listening'
+                        ? 'bg-[#FF3D1E]'
+                        : 'bg-[#1F1E1B] dark:bg-[#F5F2EB]'
+                    }`}
+                  />
+                ))}
+              </span>
+            ) : (
+              <span className="relative flex h-2 w-2 items-center justify-center shrink-0">
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    status === 'thinking'
+                      ? 'bg-[#1F1E1B] dark:bg-[#F5F2EB] animate-ping'
+                      : 'bg-[#8C827A]'
+                  }`}
+                />
+              </span>
+            )}
+
             <span>
-              {status === 'listening' ? 'Listening to you...' :
-               status === 'thinking' ? 'Nebula is thinking...' :
-               status === 'speaking' ? 'Speaking (Click orb to interrupt)...' :
-               'Tap Emblem to Start'}
+              {status === 'listening'
+                ? 'Listening to you...'
+                : status === 'thinking'
+                  ? 'Nebula is thinking...'
+                  : status === 'speaking'
+                    ? 'Speaking'
+                    : 'Tap emblem to start'}
             </span>
           </div>
 
-          <p className="text-[14px] font-medium text-[#554E46] dark:text-[#D5CFC4] line-clamp-3 min-h-[44px] leading-relaxed max-w-sm">
-            {transcript || lastAiReply.slice(0, 160) || 'Start speaking naturally — Nebula will reply automatically...'}
+          <p className="text-[14px] font-medium text-[#4A453E] dark:text-[#D5CFC4] line-clamp-3 min-h-[44px] leading-relaxed max-w-sm">
+            {transcript ||
+              lastAiReply.slice(0, 160) ||
+              'Start speaking naturally — Nebula will reply automatically...'}
           </p>
 
           {errorMessage && (
@@ -601,48 +614,54 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
           )}
         </div>
 
-        {/* Bottom Control Bar */}
-        <div className="w-full flex items-center justify-center gap-3 mt-5 pt-4 border-t border-[#EAE4D9] dark:border-[#38352F]">
-          {status === 'speaking' && (
-            <button
-              onClick={interruptSpeech}
-              className="px-4 py-2.5 rounded-full flex items-center gap-1.5 text-xs font-semibold bg-[#F3EFE6] hover:bg-[#EAE4D8] dark:bg-[#2A2723] dark:hover:bg-[#34302B] border border-[#E5DFD3] dark:border-[#38352F] text-[#1F1E1B] dark:text-white transition-all cursor-pointer"
-            >
-              <Square size={12} className="text-[#D97736] fill-[#D97736]" />
-              <span>Interrupt AI</span>
-            </button>
-          )}
-
-          <button
-            onClick={() => {
-              if (status === 'listening') {
-                if (transcriptRef.current.trim() && recognitionRef.current) {
-                  recognitionRef.current.stop();
-                } else {
-                  stopAll();
-                }
-              } else {
-                startListening();
-              }
-            }}
-            className={`px-5 py-2.5 rounded-full flex items-center gap-2 text-xs font-semibold transition-all cursor-pointer ${
-              status === 'listening'
-                ? 'bg-[#D97736] hover:bg-[#C26224] text-white shadow-md shadow-orange-950/15'
-                : 'bg-[#1F1E1B] dark:bg-[#F0ECE1] text-white dark:text-[#1F1E1B] hover:opacity-90 shadow-md'
-            }`}
-          >
-            {status === 'listening' ? (
-              <>
-                <MicOff size={15} />
-                <span>Pause Mic</span>
-              </>
-            ) : (
-              <>
-                <Mic size={15} />
-                <span>Talk Now</span>
-              </>
+        {/* Bottom Executive Control Dock */}
+        <div className="w-full flex flex-col items-center gap-2.5 mt-4 pt-4 border-t border-[#EAE4D9]/80 dark:border-[#2C2A26]">
+          <div className="flex items-center justify-center gap-2.5">
+            {status === 'speaking' && (
+              <button
+                onClick={interruptSpeech}
+                className="px-4 py-2.5 rounded-full flex items-center gap-2 text-xs font-semibold bg-white hover:bg-[#F3EFE6] dark:bg-[#252320] dark:hover:bg-[#312E2A] border border-[#E5DFD3] dark:border-[#36332E] text-[#1F1E1B] dark:text-[#F5F2EB] transition-all cursor-pointer shadow-2xs"
+              >
+                <Square size={11} className="text-[#FF3D1E] fill-[#FF3D1E]" />
+                <span>Interrupt</span>
+              </button>
             )}
-          </button>
+
+            <button
+              onClick={() => {
+                if (status === 'listening') {
+                  if (transcriptRef.current.trim() && recognitionRef.current) {
+                    recognitionRef.current.stop();
+                  } else {
+                    stopAll();
+                  }
+                } else {
+                  startListening();
+                }
+              }}
+              className="px-5 py-2.5 rounded-full flex items-center gap-2 text-xs font-semibold bg-[#1F1E1B] hover:bg-[#312F2B] dark:bg-[#F5F2EB] dark:hover:bg-white text-white dark:text-[#1F1E1B] shadow-md shadow-black/10 active:scale-95 transition-all cursor-pointer"
+            >
+              {status === 'listening' ? (
+                <>
+                  <span className="relative flex h-2 w-2 items-center justify-center">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-[#FF3D1E] opacity-75 animate-ping" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FF3D1E]" />
+                  </span>
+                  <MicOff size={14} />
+                  <span>Pause Mic</span>
+                </>
+              ) : (
+                <>
+                  <Mic size={14} />
+                  <span>Talk Now</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          <span className="text-[11px] text-[#8C827A] dark:text-[#7F7A70] tracking-tight">
+            Hands-free multilingual • Tap NB emblem anytime
+          </span>
         </div>
       </div>
     </div>
