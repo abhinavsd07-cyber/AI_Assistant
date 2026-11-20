@@ -7,30 +7,30 @@ const EMBLEM_ACCENTS: Record<
   { primaryOrb: string; secondaryOrb: string; ringGlow: string; glint: string; ringClass: string }
 > = {
   idle: {
-    primaryOrb: '#D97736',
-    secondaryOrb: '#E07A5F',
-    ringGlow: '#D97736',
-    glint: '#FDEEE2',
+    primaryOrb: '#FF3D1E',
+    secondaryOrb: '#FF6A3D',
+    ringGlow: '#FF3D1E',
+    glint: '#FFF1EE',
     ringClass: 'nebula-ring-idle',
   },
   listening: {
-    primaryOrb: '#D97736',
-    secondaryOrb: '#F59E0B',
-    ringGlow: '#E07A5F',
-    glint: '#FFF1E8',
+    primaryOrb: '#FF3D1E',
+    secondaryOrb: '#FF7A29',
+    ringGlow: '#FF5722',
+    glint: '#FFF0EB',
     ringClass: 'nebula-ring-listening',
   },
   thinking: {
-    primaryOrb: '#F59E0B',
-    secondaryOrb: '#D97736',
-    ringGlow: '#F59E0B',
-    glint: '#FEF3C7',
+    primaryOrb: '#FF7A29',
+    secondaryOrb: '#FF3D1E',
+    ringGlow: '#FF7A29',
+    glint: '#FFF8E1',
     ringClass: 'nebula-ring-thinking',
   },
   speaking: {
-    primaryOrb: '#C26224',
-    secondaryOrb: '#D97736',
-    ringGlow: '#D97736',
+    primaryOrb: '#E62E00',
+    secondaryOrb: '#FF3D1E',
+    ringGlow: '#FF3D1E',
     glint: '#FFFFFF',
     ringClass: 'nebula-ring-speaking',
   },
@@ -52,7 +52,7 @@ export const NebulaAnimatedEmblem: React.FC<{ status?: EmblemStatus; className?:
   return (
     <svg
       viewBox="-140 -140 280 280"
-      className={`${className} overflow-visible select-none pointer-events-none drop-shadow-[0_10px_24px_rgba(217,119,54,0.18)]`}
+      className={`${className} overflow-visible select-none pointer-events-none drop-shadow-[0_10px_24px_rgba(255,61,30,0.20)]`}
       aria-hidden="true"
     >
       <defs>
@@ -75,15 +75,15 @@ export const NebulaAnimatedEmblem: React.FC<{ status?: EmblemStatus; className?:
         </linearGradient>
 
         <radialGradient id={orbGrad1Id} cx="35%" cy="35%" r="65%">
-          <stop offset="0%" stopColor="#FFF7ED" />
+          <stop offset="0%" stopColor="#FFF5F2" />
           <stop offset="35%" stopColor={accent.primaryOrb} />
-          <stop offset="100%" stopColor="#9A3412" />
+          <stop offset="100%" stopColor="#B32000" />
         </radialGradient>
 
         <radialGradient id={orbGrad2Id} cx="35%" cy="35%" r="65%">
-          <stop offset="0%" stopColor="#FFFBEB" />
+          <stop offset="0%" stopColor="#FFF8F5" />
           <stop offset="40%" stopColor={accent.secondaryOrb} />
-          <stop offset="100%" stopColor="#C2410C" />
+          <stop offset="100%" stopColor="#D93800" />
         </radialGradient>
       </defs>
 
