@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { AlertCircle, CheckCircle2, ArrowRight, ShieldCheck } from 'lucide-react';
-import { NebulaAnimatedEmblem } from './NebulaAnimatedEmblem';
 import { useAuth, type ViewType } from '../context/useAuth';
 
 interface AuthLayoutProps {
@@ -56,7 +55,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       <div
         className="fixed inset-0 pointer-events-none opacity-60 select-none"
         style={{
-          backgroundImage: `radial-gradient(circle at 50% 20%, rgba(217, 119, 54, 0.07) 0%, transparent 65%)`,
+          backgroundImage: `radial-gradient(circle at 50% 20%, rgba(255, 61, 30, 0.06) 0%, transparent 65%)`,
         }}
       />
 
@@ -75,7 +74,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             <img
               src="/nebula-logo.png"
               alt="Nebula Logo"
-              className="w-full h-full object-contain drop-shadow-[0_2px_6px_rgba(217,119,54,0.22)]"
+              className="w-full h-full object-contain drop-shadow-[0_2px_6px_rgba(255,61,30,0.20)]"
             />
           </div>
           <span className="font-bold text-base tracking-tight text-[#1F1E1B]">Nebula AI</span>
@@ -84,7 +83,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
         <AuthRouteLink
           to={headerAction.view}
           href={headerAction.href}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#736B63] hover:text-[#1F1E1B] py-1.5 px-3.5 rounded-full bg-white border border-[#EAE4D9] hover:border-[#D97736]/40 hover:bg-[#FAF8F5] active:scale-95 transition-all cursor-pointer shadow-2xs no-underline"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#736B63] hover:text-[#1F1E1B] py-1.5 px-3.5 rounded-full bg-white border border-[#EAE4D9] hover:border-[#FF3D1E]/40 hover:bg-[#FAF8F5] active:scale-95 transition-all cursor-pointer shadow-2xs no-underline"
         >
           <span>{headerAction.label}</span>
           <ArrowRight size={13} />
@@ -95,10 +94,16 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-4 sm:py-6">
         <div className="w-full max-w-[410px] mx-auto flex flex-col items-center">
           <div className="w-full bg-white/95 rounded-3xl border border-[#EAE4D9] shadow-xl shadow-amber-950/[0.04] p-5 sm:p-7 flex flex-col gap-3.5">
-            {/* Brand Orb & Page Heading */}
+            {/* Primary NB Logo & Page Heading */}
             <div className="flex flex-col items-center text-center">
-              <div className="relative mb-1.5 flex items-center justify-center">
-                <NebulaAnimatedEmblem status="idle" className="w-24 h-24" />
+              <div className="relative mb-3 flex items-center justify-center">
+                <div className="w-14 h-14 flex items-center justify-center">
+                  <img
+                    src="/nebula-logo.png"
+                    alt="Nebula AI Logo"
+                    className="w-full h-full object-contain drop-shadow-[0_4px_12px_rgba(255,61,30,0.18)]"
+                  />
+                </div>
               </div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight text-[#1F1E1B]">{title}</h1>
               <p className="text-[11.5px] text-[#736B63] mt-0.5 max-w-[320px]">{subtitle}</p>

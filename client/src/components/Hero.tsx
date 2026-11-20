@@ -1,6 +1,5 @@
 import React from 'react';
 import { Code2, Compass, Lightbulb, Sparkles, ArrowUpRight, Globe } from 'lucide-react';
-import { NebulaAnimatedEmblem } from './NebulaAnimatedEmblem';
 import type { SuggestionPrompt } from '../types';
 
 interface HeroProps {
@@ -42,11 +41,17 @@ const SUGGESTIONS: SuggestionPrompt[] = [
 export const Hero: React.FC<HeroProps> = ({ onSelectSuggestion }) => {
   return (
     <div className="@container my-auto flex flex-col items-center justify-center px-4 sm:px-6 py-6 md:py-8 max-w-3xl mx-auto w-full min-w-0 text-center">
-      {/* Floating Nebula NB Emblem with Dual Generative Orbits */}
-      <div className="relative mb-3 flex items-center justify-center group cursor-pointer">
-        <NebulaAnimatedEmblem
-          status="idle"
-          className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 transition-transform duration-300 group-hover:scale-105"
+      {/* Primary Nebula NB Brand Logo */}
+      <div className="relative mb-5 flex items-center justify-center group cursor-pointer select-none">
+        <img
+          src="/nebula-logo.png"
+          alt="Nebula AI"
+          className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(255,61,30,0.14)] dark:hidden transition-transform duration-300 group-hover:scale-105"
+        />
+        <img
+          src="/nebula-logo-dark.png"
+          alt="Nebula AI"
+          className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(255,61,30,0.22)] hidden dark:block transition-transform duration-300 group-hover:scale-105"
         />
       </div>
 

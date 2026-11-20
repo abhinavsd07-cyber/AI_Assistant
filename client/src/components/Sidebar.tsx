@@ -549,12 +549,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <img
                 src="/nebula-logo.png"
                 alt="Nebula AI"
-                className="w-6 h-6 object-contain shrink-0 drop-shadow-[0_1px_3px_rgba(217,119,54,0.18)] dark:hidden"
+                className="w-6 h-6 object-contain shrink-0 drop-shadow-[0_1px_3px_rgba(255,61,30,0.18)] dark:hidden"
               />
               <img
                 src="/nebula-logo-dark.png"
                 alt="Nebula AI"
-                className="w-6 h-6 object-contain shrink-0 drop-shadow-[0_1px_3px_rgba(217,119,54,0.28)] hidden dark:block"
+                className="w-6 h-6 object-contain shrink-0 drop-shadow-[0_1px_3px_rgba(255,61,30,0.28)] hidden dark:block"
               />
               <span className="font-bold text-sm text-[#1F1E1B] dark:text-white tracking-tight">
                 Nebula AI
