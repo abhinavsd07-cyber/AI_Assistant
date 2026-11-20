@@ -625,8 +625,8 @@ async function renderImageBuffer(prompt, options = {}) {
       });
       clearTimeout(timeoutId);
 
-      if (res.status === 402 || res.status === 429) {
-        let retryAfterSec = 45;
+      if (res.status === 402 || res.status === 429 || res.status === 503) {
+        let retryAfterSec = res.status === 503 ? 10 : 45;
         try {
           const errText = await res.text();
           const m = errText.match(/retry\s+after\s+(\d+)s/i);
@@ -645,10 +645,6 @@ async function renderImageBuffer(prompt, options = {}) {
           rateLimited: true,
           retryAfterSec,
         };
-      }
-      if (res.status === 503 && attempt === 0) {
-        await new Promise((r) => setTimeout(r, 1800));
-        continue;
       }
       if (res.ok) {
         const ct = res.headers.get("content-type") || "";
@@ -826,6 +822,9 @@ async function generateAndUploadImage(input, options = {}) {
     }
   }
 
+  let fallbackAiRender = null;
+  let fallbackAiCheck = null;
+
   // Strategy 2: Generative AI Visual Pipeline + Strict Gemini Vision Prompt Audit & Auto-Retry
   if (!cdnUrl) {
     const renderOpts = { ...options, negativePrompt };
@@ -882,6 +881,11 @@ async function generateAndUploadImage(input, options = {}) {
         }
       }
 
+      if (chosenRender.buffer && !chosenCheck.isErrorOrCorrupted) {
+        fallbackAiRender = chosenRender;
+        fallbackAiCheck = chosenCheck;
+      }
+
       const rejected =
         chosenCheck.isErrorOrCorrupted ||
         (!chosenCheck.matchesPrompt &&
@@ -900,8 +904,8 @@ async function generateAndUploadImage(input, options = {}) {
     }
   }
 
-  // If the free image engine hit its cooldown, DO NOT swap in an unrelated web photo — report clearly!
-  if (!cdnUrl && rateLimited) {
+  // If the free image engine hit its cooldown/503 busy limit, DO NOT return a black poster or random photo — report clearly!
+  if (!cdnUrl && rateLimited && !fallbackAiRender) {
     return {
       cdnUrl: null,
       cleanSubject,
@@ -920,8 +924,8 @@ async function generateAndUploadImage(input, options = {}) {
     };
   }
 
-  // Strategy 3: Strict verified real-photo fallback ONLY when not rate-limited and NOT creative studio mismatch
-  if (!cdnUrl && !studioMode) {
+  // Strategy 3: Strict Vision-verified real-photo fallback (only accepted if matchesPrompt===true & score>=6)
+  if (!cdnUrl && !rateLimited) {
     try {
       const photoQuery = isRealEntity ? cleanSubject : toCleanPhotoQuery(cleanSubject);
       const fallbackCandidates = await searchHighResCandidates(photoQuery);
@@ -934,6 +938,37 @@ async function generateAndUploadImage(input, options = {}) {
     } catch (fallbackErr) {
       console.warn("⚠️ Visual fallback upload warning:", fallbackErr.message);
     }
+  }
+
+  // Never discard a real, non-corrupted AI render in favor of a blank black SVG placeholder card!
+  if (!cdnUrl && fallbackAiRender?.buffer) {
+    const b64Mime = fallbackAiRender.mimeType || "image/jpeg";
+    const dataUri = `data:${b64Mime};base64,${fallbackAiRender.buffer.toString("base64")}`;
+    cdnUrl = await uploadToCloudinary(dataUri, "nebula_ai/generated");
+    if (cdnUrl) {
+      generationSource = fallbackAiRender.source;
+      qualityCheck = toQualityCheckSummary(fallbackAiCheck, qualityCheck.retried);
+    }
+  }
+
+  // In FLUX Studio, never return a fake black SVG text poster — report a clean retryable error instead
+  if (!cdnUrl && studioMode) {
+    return {
+      cdnUrl: null,
+      cleanSubject,
+      cleanPrompt: cleanSubject,
+      expandedPrompt,
+      negativePrompt,
+      isRealEntity,
+      didAutoCorrect,
+      detectedIssues,
+      reasoningSummary,
+      generationSource: "pollinations-classic-free",
+      hasDedicatedFlux: engineStatus.hasDedicatedFlux,
+      rateLimited: true,
+      retryAfterSec: 12,
+      qualityCheck,
+    };
   }
 
   // Strategy 4: Offline-safe custom SVG artwork poster (never returns unrelated random stock photos)
