@@ -1100,11 +1100,24 @@ app.post("/api/chat", requireAuth, chatLimiter, async (req, res) => {
 
     const trimmedMsg = (message || "").trim();
 
-    // AI ML Intent Classification & Image Generation Pipeline
-    // Auto-detects image generation requests even with heavy typos, slang, Manglish, or /image command
+    // AI ML Intent Classification & Context-Aware Image Generation Pipeline
+    // Resolves follow-up requests ("please generate image", "show his photo") from recent chat history
     let imageIntent = null;
     if (isImageGen || isImagePrompt(trimmedMsg)) {
-      imageIntent = await classifyUserIntent(trimmedMsg);
+      let contextHistory = Array.isArray(history) ? history : [];
+      if (contextHistory.length === 0 && isMongoConnected && sessionId && req.user) {
+        try {
+          const existingSession = await ChatSession.findOne({ sessionId, userId: req.user._id })
+            .select("messages")
+            .lean();
+          if (Array.isArray(existingSession?.messages)) {
+            contextHistory = existingSession.messages.slice(-8);
+          }
+        } catch {
+          // ignore lookup failure
+        }
+      }
+      imageIntent = await classifyUserIntent(trimmedMsg, { history: contextHistory });
     }
 
     if (imageIntent && (isImageGen || imageIntent.isImage)) {
@@ -1113,6 +1126,16 @@ app.post("/api/chat", requireAuth, chatLimiter, async (req, res) => {
       res.setHeader("Connection", "keep-alive");
       res.setHeader("X-Accel-Buffering", "no");
       res.socket?.setNoDelay(true);
+
+      if (imageIntent.needsClarification) {
+        const askText =
+          imageIntent.clarificationQuestion ||
+          "Sure! What would you like me to generate an image of? Please tell me the person, object, or scene.";
+        res.write(`data: ${JSON.stringify({ chunk: askText, fullText: askText })}\n\n`);
+        res.write(`data: ${JSON.stringify({ done: true, model: "nebula-visual-clarify" })}\n\n`);
+        res.end();
+        return;
+      }
 
       const targetSubject = imageIntent.cleanSubject || trimmedMsg;
       res.write(`data: ${JSON.stringify({ chunk: `Generating visual for **${targetSubject}**...\n\n` })}\n\n`);

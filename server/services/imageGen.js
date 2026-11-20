@@ -27,7 +27,7 @@ function isImagePrompt(text) {
   if (/^\/(?:image|img)\b/i.test(t)) return true;
 
   // Direct image/creation keywords & typos
-  const hasImageKeywords = /(?:img|imag|pict|pik|foto|phot|drw|draw|pain|gener|creat|mak|varakk|padam|chithr|wallpaper|ചിത്രം|ഫോട്ടോ|പടം|വര)/i.test(t);
+  const hasImageKeywords = /(?:img|imag|pict|pic\b|pics\b|pik|foto|phot|drw|draw|sketch|pain|gener|creat|mak|render|visualiz|varakk|padam|chithr|wallpaper|ചിത്രം|ഫോട്ടോ|പടം|വര)/i.test(t);
   if (hasImageKeywords) return true;
 
   // Visual scene / character / vehicle / art descriptors without explicit question words
@@ -198,10 +198,31 @@ function toGeminiAspectRatio(width, height) {
   return "1:1";
 }
 
+function formatRecentChatContext(history) {
+  if (!Array.isArray(history) || history.length === 0) return "";
+  const recent = history
+    .slice(-8)
+    .map((m) => {
+      if (!m || typeof m !== "object") return null;
+      const roleRaw = String(m.sender || m.role || "").toLowerCase();
+      const role = roleRaw === "assistant" || roleRaw === "model" ? "Assistant" : "User";
+      const rawText = String(m.text || m.content || "")
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, "[image]")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!rawText) return null;
+      return `- ${role}: ${rawText.slice(0, 320)}`;
+    })
+    .filter(Boolean);
+  if (recent.length === 0) return "";
+  return `Recent Conversation History (oldest to newest):\n${recent.join("\n")}\n\n`;
+}
+
 /**
- * Strict Subject-Faithful Intent Reasoner & Prompt Conditioner
- * Translates Malayalam/Manglish & fixes typos while keeping EVERY user-requested object, color,
- * accessory, action, and setting front-and-center so the diffusion model generates EXACTLY what was asked.
+ * Strict Subject-Faithful & Context-Aware Intent Reasoner & Prompt Conditioner
+ * Resolves follow-up image requests (e.g. "please generate image" after asking about Mohanlal)
+ * using recent conversation history, translates Malayalam/Manglish & fixes typos, and keeps
+ * EVERY requested object, color, accessory, action, and setting front-and-center.
  */
 async function classifyUserIntent(userText, options = {}) {
   if (!userText || typeof userText !== "string") {
@@ -215,6 +236,9 @@ async function classifyUserIntent(userText, options = {}) {
       didAutoCorrect: false,
       detectedIssues: [],
       reasoningSummary: "",
+      resolvedFromHistory: false,
+      needsClarification: false,
+      clarificationQuestion: "",
     };
   }
 
@@ -223,7 +247,7 @@ async function classifyUserIntent(userText, options = {}) {
   const rawClean = trimmed.replace(/^\/(?:image|img)\s*/i, "").trim();
   const studioMode = Boolean(options.studioMode);
   const stylePresetKey = STYLE_PRESET_GUIDES[options.stylePreset] ? options.stylePreset : "auto";
-  const wordCount = rawClean.split(/\s+/).filter(Boolean).length;
+  const historyBlock = studioMode ? "" : formatRecentChatContext(options.history);
 
   const fallbackResult = {
     isImage: explicit || studioMode || isImagePrompt(trimmed),
@@ -235,6 +259,9 @@ async function classifyUserIntent(userText, options = {}) {
     didAutoCorrect: false,
     detectedIssues: [],
     reasoningSummary: "",
+    resolvedFromHistory: false,
+    needsClarification: false,
+    clarificationQuestion: "",
   };
 
   const ai = getAi();
@@ -244,42 +271,51 @@ async function classifyUserIntent(userText, options = {}) {
     const modeRules = studioMode
       ? `1. isImage: always true.
 2. cleanSubject: Concise faithful summary (max 14 words) that PRESERVES EVERY requested object, color, accessory, action, and setting. NEVER omit requested details like sunglasses, clothing, colors, or actions.
-3. isRealEntity: true ONLY if the ENTIRE input is literally just a real celebrity/person's name with NO scene, clothing, action, or creative description (3 words or fewer). False for everything else.`
-      : `1. isImage: true if the user wants to see, draw, generate, or create an image/photo/picture/visual. False if asking for conversation, facts, coding, or explanations.
-2. cleanSubject: Corrected faithful description (max 14 words) preserving EVERY requested object, color, accessory, action, and setting.
-3. isRealEntity: true ONLY if the user simply asks for a plain portrait/photo of a real living celebrity or public figure (e.g., "Mohanlal photo", "Mammootty picture") with NO custom creative scene, action, or style. False for all cars, animals, landscapes, objects, and creative scenes.`;
+3. isRealEntity: true ONLY if the ENTIRE input is literally just a real celebrity/person's name with NO scene, clothing, action, or creative description (4 words or fewer). False for everything else.`
+      : `1. isImage: true if the user wants to see, draw, generate, or create an image/photo/picture/visual. False if asking for conversation, facts, coding, or explanations (even if chat history exists).
+2. CONTEXT RESOLUTION (CRITICAL):
+   - If the user asks to generate/create/show an image WITHOUT naming a new subject (e.g., "please generate image", "generate a picture", "show his photo", "make an image of this", "ഒരു ഫോട്ടോ ഉണ്ടാക്കൂ", "അവന്റെ ചിത്രം കാണിക്കൂ") OR uses a pronoun ("him", "her", "it", "this", "that", "them"), you MUST identify the active person/entity/topic from the Recent Conversation History and use THAT as the subject! Set "resolvedFromHistory": true.
+   - If the user modifies the prior subject (e.g., "now make him wear sunglasses on a beach", "make it at night in anime style"), MERGE the prior subject from history with the new modification, set "resolvedFromHistory": true, and set "isRealEntity": false.
+   - If the user explicitly names a brand-new subject (e.g., "generate a red Ferrari"), use ONLY the new subject and set "resolvedFromHistory": false.
+   - If the user asks to generate an image ("please generate image", "draw something") AND there is NO concrete visual subject in either the current message OR the Recent Conversation History, set "needsClarification": true and write a short polite "clarificationQuestion" (in the user's language) asking what subject they want to generate — NEVER invent a random unrelated subject!
+3. cleanSubject: Corrected faithful subject (max 14 words) preserving EVERY requested object, color, accessory, action, and setting. IMPORTANT: When isRealEntity is true (a plain portrait of a real celebrity/person), keep cleanSubject strictly to just their name (e.g. "Mohanlal", "Mammootty") with NO extra biography words!
+4. isRealEntity: true ONLY if the final resolved visual request is simply a plain portrait/photo of a real living or famous celebrity/public figure (e.g., "Mohanlal", "Mammootty", "Lionel Messi") with NO custom creative scene, fictional action, or stylized alteration. False for cars, animals, landscapes, objects, and custom creative scenes.`;
 
     const styleDirective = STYLE_PRESET_GUIDES[stylePresetKey];
 
-    const systemPrompt = `You are a Strict Prompt-Faithful Visual Conditioner for Nebula AI.
-Your #1 rule is FIDELITY: the generated image MUST depict EXACTLY what the user asked for — never replace, drop, or bury their requested subject, accessories, colors, actions, or setting!
+    const systemPrompt = `You are a Strict Context-Aware & Prompt-Faithful Visual Conditioner for Nebula AI.
+Your #1 rule is LOGICAL FIDELITY: understand WHO or WHAT the user wants drawn (including from prior chat turns!) and depict EXACTLY that — never drop requested details and never hallucinate an unrelated subject!
 - Translate Malayalam/Manglish or broken grammar accurately into plain, literal English.
 - Fix typos and shorthand abbreviations (e.g., "drinkng cofe" -> "drinking coffee", "lptop" -> "laptop", "mhnlal" -> "Mohanlal", "cypbpunk cr in nyt" -> "cyberpunk car at night").
-- Put the user's EXACT subject, colors, accessories, and action FIRST in expandedPrompt with concrete visual clarity (e.g., "wearing red sunglasses" -> "clearly wearing bright red sunglasses over its eyes").
-- Keep expandedPrompt CONCISE and LITERAL: **14 to 26 words total**. Do NOT write long cinematography essays or invent unrequested objects/people/backgrounds that distract diffusion models from the user's subject!
+- Put the resolved subject, colors, accessories, and action FIRST in expandedPrompt with concrete visual clarity.
+- Keep expandedPrompt CONCISE and LITERAL: **14 to 26 words total**. Do NOT write long cinematography essays or invent unrequested objects/people/backgrounds.
 - Style cue (${stylePresetKey}): ${styleDirective} Only add 3 to 6 subtle lighting/sharpness words at the end.
 - Avoid buzzwords ("8k", "4k", "uhd", "masterpiece", "octane render"). NEVER add unrequested sci-fi, neon, or fantasy elements.
 
 ${modeRules}
-4. didAutoCorrect: boolean — true if you fixed typos, translated Malayalam/Manglish, expanded shorthand, or fixed a physical contradiction.
-5. detectedIssues: array of 0 to 3 ultra-short phrases of what was fixed (empty [] if input was already clear).
-6. reasoningSummary: 1 short sentence confirming the exact visual subject and setting to render.
-7. expandedPrompt: Crisp, literal, subject-first visual prompt (14 to 26 words) preserving 100% of user-requested objects, colors, accessories, actions, and location, ending with 3–6 words of lighting/focus.
-8. negativePrompt: 5 to 8 comma-separated defects to avoid for this scene.
+5. didAutoCorrect: boolean — true if you fixed typos, translated Malayalam/Manglish, expanded shorthand, resolved context from history, or fixed a physical contradiction.
+6. detectedIssues: array of 0 to 3 ultra-short phrases of what was fixed/resolved (empty [] if input was already clear).
+7. reasoningSummary: 1 short sentence confirming the exact visual subject and setting to render.
+8. expandedPrompt: Crisp, literal, subject-first visual prompt (14 to 26 words) preserving 100% of user-requested objects, colors, accessories, actions, and location, ending with 3–6 words of lighting/focus.
+9. negativePrompt: 5 to 8 comma-separated defects to avoid for this scene.
+10. resolvedFromHistory: boolean — true if the subject came from Recent Conversation History.
+11. needsClarification: boolean — true ONLY when isImage is true yet neither the prompt nor history specifies what to draw.
+12. clarificationQuestion: string — short polite question asking what to generate when needsClarification is true, else "".
 
 Output ONLY valid JSON matching this schema:
-{"isImage": boolean, "cleanSubject": string, "isRealEntity": boolean, "didAutoCorrect": boolean, "detectedIssues": string[], "reasoningSummary": string, "expandedPrompt": string, "negativePrompt": string}`;
+{"isImage": boolean, "cleanSubject": string, "isRealEntity": boolean, "didAutoCorrect": boolean, "detectedIssues": string[], "reasoningSummary": string, "expandedPrompt": string, "negativePrompt": string, "resolvedFromHistory": boolean, "needsClarification": boolean, "clarificationQuestion": string}`;
 
     const res = await ai.models.generateContent({
       model: "gemini-3.5-flash-lite",
-      contents: `${systemPrompt}\n\nUser input: "${trimmed}"`,
+      contents: `${systemPrompt}\n\n${historyBlock}Current user message: "${trimmed}"`,
     });
 
     const parsed = parseJsonObject(res.text);
     if (!parsed) return fallbackResult;
 
     const subject = (parsed.cleanSubject || rawClean).trim();
-    const groundedExpanded = normalizeVisualPrompt(parsed.expandedPrompt || rawClean) || rawClean;
+    const subjectWordCount = subject.split(/\s+/).filter(Boolean).length;
+    const groundedExpanded = normalizeVisualPrompt(parsed.expandedPrompt || subject || rawClean) || rawClean;
     const issuesList = Array.isArray(parsed.detectedIssues)
       ? parsed.detectedIssues.filter((x) => typeof x === "string" && x.trim()).slice(0, 3)
       : [];
@@ -289,16 +325,23 @@ Output ONLY valid JSON matching this schema:
         : DEFAULT_NEGATIVE_PROMPT
     );
 
+    const needsClarification = !studioMode && Boolean(parsed.needsClarification);
+    const clarificationQuestion =
+      typeof parsed.clarificationQuestion === "string" ? parsed.clarificationQuestion.trim() : "";
+
     return {
       isImage: explicit || studioMode || Boolean(parsed.isImage),
       cleanSubject: subject,
       cleanPrompt: subject,
-      isRealEntity: wordCount >= 5 ? false : Boolean(parsed.isRealEntity),
+      isRealEntity: studioMode && subjectWordCount >= 5 ? false : Boolean(parsed.isRealEntity),
       expandedPrompt: groundedExpanded,
       negativePrompt: customNeg,
       didAutoCorrect: Boolean(parsed.didAutoCorrect || issuesList.length > 0),
       detectedIssues: issuesList,
       reasoningSummary: typeof parsed.reasoningSummary === "string" ? parsed.reasoningSummary.trim() : "",
+      resolvedFromHistory: Boolean(parsed.resolvedFromHistory),
+      needsClarification,
+      clarificationQuestion,
     };
   } catch (err) {
     console.warn("⚠️ ML Intent Classification fallback:", err.message);
