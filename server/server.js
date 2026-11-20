@@ -1008,6 +1008,17 @@ app.post("/api/flux/workflow", requireAuth, chatLimiter, async (req, res) => {
     });
     const totalLatencyMs = Date.now() - workflowStart;
 
+    if (result.rateLimited && !result.cdnUrl) {
+      const waitSec = result.retryAfterSec || 40;
+      return res.status(429).json({
+        success: false,
+        rateLimited: true,
+        retryAfterSec: waitSec,
+        expandedPrompt: result.expandedPrompt,
+        error: `Free image generator cooldown active — please wait ${waitSec}s and click Run Workflow again (or add a free HF_TOKEN in server/.env for instant unlimited FLUX.1).`,
+      });
+    }
+
     if (isMongoConnected && req.user) {
       Promise.all([
         User.findByIdAndUpdate(req.user._id, {
@@ -1107,7 +1118,17 @@ app.post("/api/chat", requireAuth, chatLimiter, async (req, res) => {
       res.write(`data: ${JSON.stringify({ chunk: `Generating visual for **${targetSubject}**...\n\n` })}\n\n`);
 
       try {
-        const { cdnUrl, cleanPrompt } = await generateAndUploadImage(imageIntent);
+        const genRes = await generateAndUploadImage(imageIntent);
+        const { cdnUrl, cleanPrompt, rateLimited, retryAfterSec } = genRes;
+
+        if (rateLimited && !cdnUrl) {
+          const waitSec = retryAfterSec || 40;
+          const coolMsg = `⏳ The free image engine is on a brief cooldown (**${waitSec}s** remaining). Please try your prompt again in ${waitSec} seconds—or configure a free \`HF_TOKEN\` in \`server/.env\` for instant unlimited FLUX.1 renders.`;
+          res.write(`data: ${JSON.stringify({ chunk: coolMsg, fullText: coolMsg })}\n\n`);
+          res.write(`data: ${JSON.stringify({ done: true, model: "nebula-visual-cooldown" })}\n\n`);
+          res.end();
+          return;
+        }
 
         const replyMarkdown =
           `Here is your generated visual for **${cleanPrompt}**:\n\n` +

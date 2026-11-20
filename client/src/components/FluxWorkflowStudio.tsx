@@ -53,7 +53,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
   const [height, setHeight] = useState(1024);
   const [sampler, setSampler] = useState('Euler FlowMatch');
   const [scheduler, setScheduler] = useState('Simple');
-  const [stylePreset, setStylePreset] = useState<string>('photorealistic');
+  const [stylePreset, setStylePreset] = useState<string>('auto');
 
   const [isRunning, setIsRunning] = useState(false);
   const [activeStep, setActiveStep] = useState<number>(0);

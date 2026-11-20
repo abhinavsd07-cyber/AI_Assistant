@@ -115,20 +115,20 @@ function parseJsonObject(rawText = "") {
 }
 
 /**
- * Style preset art-direction profiles for FLUX / Diffusion studio conditioning.
+ * Concise, subject-safe style preset cues (never overpowering the user's actual objects/actions).
  */
 const STYLE_PRESET_GUIDES = {
-  auto: "Match the natural artistic medium implied by the user's request with crisp composition, lifelike textures, and balanced lighting.",
-  photorealistic: "Documentary editorial photograph captured on a full-frame 50mm lens, authentic natural textures, realistic skin/material micro-detail, balanced dynamic range, subtle shallow depth of field.",
-  cinematic: "Anamorphic widescreen cinema still, atmospheric volumetric depth, motivated key and rim lighting, subtle filmic color grading, dramatic framing.",
-  "product-studio": "Commercial studio product photography on clean architectural stone or matte backdrop, crisp softbox specular highlights, precision reflections, zero clutter.",
-  architecture: "Architectural Digest editorial photography, straight vertical perspective lines, warm natural sunlight casting crisp shadows across glass, timber, and stone.",
-  "concept-art": "High-craft digital concept art painting with rich environmental storytelling, cohesive color palette, crisp silhouette readability, atmospheric perspective.",
-  "minimal-illustration": "Clean contemporary editorial illustration with refined geometric forms, harmonious muted palette, crisp negative space, gallery poster feel.",
+  auto: "Match the natural medium implied by the prompt without adding extra unrequested scenery.",
+  photorealistic: "Natural candid photograph, realistic textures, crisp focus, balanced daylight.",
+  cinematic: "Cinematic film still, natural dramatic lighting, shallow depth of field.",
+  "product-studio": "Clean commercial studio product photograph, softbox lighting, minimal backdrop.",
+  architecture: "Crisp architectural photograph, straight vertical lines, warm natural light.",
+  "concept-art": "Clean detailed digital concept art illustration, cohesive colors, clear focal subject.",
+  "minimal-illustration": "Clean modern editorial illustration, crisp shapes, minimal background.",
 };
 
 const DEFAULT_NEGATIVE_PROMPT =
-  "blurry, out of focus, distorted anatomy, deformed hands, extra fingers, text overlay, watermark, signature, logo, low resolution, jpeg artifacts, oversaturated, plastic artificial skin, cluttered background";
+  "blurry, out of focus, distorted anatomy, deformed hands, extra fingers, text overlay, watermark, signature, logo, low resolution, artifacts";
 
 let geminiImageQuotaBlockedUntil = 0;
 
@@ -164,7 +164,7 @@ function getImageEngineStatus() {
 }
 
 /**
- * Removes noisy buzzword clutter while preserving authentic photographic & art-direction descriptors.
+ * Removes noisy buzzword clutter while preserving every user-requested subject, color, and attribute.
  */
 function normalizeVisualPrompt(rawText = "") {
   return String(rawText)
@@ -172,6 +172,21 @@ function normalizeVisualPrompt(rawText = "") {
     .replace(/\s*,\s*,+/g, ", ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function deduplicateCsv(str = "") {
+  const seen = new Set();
+  return String(str)
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => {
+      if (!s) return false;
+      const key = s.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .join(", ");
 }
 
 function toGeminiAspectRatio(width, height) {
@@ -184,9 +199,9 @@ function toGeminiAspectRatio(width, height) {
 }
 
 /**
- * ML Logical Intent Reasoner, Auto-Mistake Detector & Art-Director Prompt Conditioning Engine
- * Fixes spelling mistakes, Manglish/Malayalam, abbreviations, and physical/spatial contradictions
- * while elevating prompts into vivid, studio-grade diffusion descriptions.
+ * Strict Subject-Faithful Intent Reasoner & Prompt Conditioner
+ * Translates Malayalam/Manglish & fixes typos while keeping EVERY user-requested object, color,
+ * accessory, action, and setting front-and-center so the diffusion model generates EXACTLY what was asked.
  */
 async function classifyUserIntent(userText, options = {}) {
   if (!userText || typeof userText !== "string") {
@@ -228,29 +243,29 @@ async function classifyUserIntent(userText, options = {}) {
   try {
     const modeRules = studioMode
       ? `1. isImage: always true.
-2. cleanSubject: Short core subject label (max 8 words).
-3. isRealEntity: true ONLY if the entire input is just a named real celebrity/person (4 words or fewer, with no architectural, product, lighting, or scene instructions). False for all architecture, interiors, landscapes, products, and creative scenes.`
+2. cleanSubject: Concise faithful summary (max 14 words) that PRESERVES EVERY requested object, color, accessory, action, and setting. NEVER omit requested details like sunglasses, clothing, colors, or actions.
+3. isRealEntity: true ONLY if the ENTIRE input is literally just a real celebrity/person's name with NO scene, clothing, action, or creative description (3 words or fewer). False for everything else.`
       : `1. isImage: true if the user wants to see, draw, generate, or create an image/photo/picture/visual. False if asking for conversation, facts, coding, or explanations.
-2. cleanSubject: Corrected, normalized subject/entity (fixing spelling mistakes and Manglish/phonetic typos).
-3. isRealEntity: true if asking for a photo/portrait of a real living celebrity, politician, famous landmark, or real car model WITHOUT bespoke creative scene instructions. False otherwise.`;
+2. cleanSubject: Corrected faithful description (max 14 words) preserving EVERY requested object, color, accessory, action, and setting.
+3. isRealEntity: true ONLY if the user simply asks for a plain portrait/photo of a real living celebrity or public figure (e.g., "Mohanlal photo", "Mammootty picture") with NO custom creative scene, action, or style. False for all cars, animals, landscapes, objects, and creative scenes.`;
 
     const styleDirective = STYLE_PRESET_GUIDES[stylePresetKey];
 
-    const systemPrompt = `You are a Master Visual Art-Director & Diffusion Prompt Architect for Nebula AI (FLUX.1 / Gemini Image Studio).
-Your job is to understand what the user truly wants to see, fix any mistakes automatically, and craft a studio-grade visual prompt that produces crisp, coherent, gallery-quality renders:
-- Translate Malayalam/Manglish or broken grammar cleanly into precise English.
-- Fix all typos and shorthand abbreviations accurately (e.g., "drinkng cofe" -> "drinking coffee", "lptop" -> "laptop", "ofice" -> "office", "mdy" -> "moody lighting", "bicyle" -> "bicycle", "mhnlal" -> "Mohanlal"). Preserve EVERY intentional mood, color, clothing, or setting detail!
-- Resolve logical/physical contradictions naturally unless explicitly surreal (e.g., "drinking coffee on laptop" -> seated at a warm wooden desk holding a ceramic coffee mug beside an open laptop; vague one-word input -> compose a striking, natural foreground subject with rich context and motivated lighting).
-- Structure expandedPrompt with 4 clear visual layers: (1) concrete focal subject, posture & surface materials, (2) framing & camera angle (e.g., eye-level medium shot, 50mm/85mm shallow depth of field), (3) specific directional lighting & shadows/reflections, (4) cohesive environment & natural color harmony.
-- Style direction to follow: ${styleDirective}
-- Avoid empty buzzword soup ("8k", "4k", "uhd", "masterpiece", "octane render", "trending on artstation"). NEVER inject unrequested sci-fi, neon, or fantasy elements unless asked.
+    const systemPrompt = `You are a Strict Prompt-Faithful Visual Conditioner for Nebula AI.
+Your #1 rule is FIDELITY: the generated image MUST depict EXACTLY what the user asked for — never replace, drop, or bury their requested subject, accessories, colors, actions, or setting!
+- Translate Malayalam/Manglish or broken grammar accurately into plain, literal English.
+- Fix typos and shorthand abbreviations (e.g., "drinkng cofe" -> "drinking coffee", "lptop" -> "laptop", "mhnlal" -> "Mohanlal", "cypbpunk cr in nyt" -> "cyberpunk car at night").
+- Put the user's EXACT subject, colors, accessories, and action FIRST in expandedPrompt with concrete visual clarity (e.g., "wearing red sunglasses" -> "clearly wearing bright red sunglasses over its eyes").
+- Keep expandedPrompt CONCISE and LITERAL: **14 to 26 words total**. Do NOT write long cinematography essays or invent unrequested objects/people/backgrounds that distract diffusion models from the user's subject!
+- Style cue (${stylePresetKey}): ${styleDirective} Only add 3 to 6 subtle lighting/sharpness words at the end.
+- Avoid buzzwords ("8k", "4k", "uhd", "masterpiece", "octane render"). NEVER add unrequested sci-fi, neon, or fantasy elements.
 
 ${modeRules}
-4. didAutoCorrect: boolean — true if you fixed typos, expanded abbreviations/shorthand, translated Malayalam/Manglish, or logically resolved an unclear/contradictory scene.
-5. detectedIssues: array of 0 to 3 ultra-short phrases describing what mistake/unclear logic was corrected (empty [] if input was already clear and error-free).
-6. reasoningSummary: 1 crisp sentence explaining the coherent visual scene and photographic direction inferred.
-7. expandedPrompt: Rich, vivid, unambiguous art-directed visual description (28 to 52 words) optimized for FLUX/Diffusion: exact visible subject, materials, camera framing, directional lighting, atmosphere, and background depth.
-8. negativePrompt: 6 to 12 comma-separated defect terms to avoid specifically for this scene (e.g., blurry, extra fingers, text overlay, watermark, distorted reflections).
+4. didAutoCorrect: boolean — true if you fixed typos, translated Malayalam/Manglish, expanded shorthand, or fixed a physical contradiction.
+5. detectedIssues: array of 0 to 3 ultra-short phrases of what was fixed (empty [] if input was already clear).
+6. reasoningSummary: 1 short sentence confirming the exact visual subject and setting to render.
+7. expandedPrompt: Crisp, literal, subject-first visual prompt (14 to 26 words) preserving 100% of user-requested objects, colors, accessories, actions, and location, ending with 3–6 words of lighting/focus.
+8. negativePrompt: 5 to 8 comma-separated defects to avoid for this scene.
 
 Output ONLY valid JSON matching this schema:
 {"isImage": boolean, "cleanSubject": string, "isRealEntity": boolean, "didAutoCorrect": boolean, "detectedIssues": string[], "reasoningSummary": string, "expandedPrompt": string, "negativePrompt": string}`;
@@ -268,16 +283,17 @@ Output ONLY valid JSON matching this schema:
     const issuesList = Array.isArray(parsed.detectedIssues)
       ? parsed.detectedIssues.filter((x) => typeof x === "string" && x.trim()).slice(0, 3)
       : [];
-    const customNeg =
+    const customNeg = deduplicateCsv(
       typeof parsed.negativePrompt === "string" && parsed.negativePrompt.trim()
         ? `${parsed.negativePrompt.trim()}, watermark, text overlay, logo`
-        : DEFAULT_NEGATIVE_PROMPT;
+        : DEFAULT_NEGATIVE_PROMPT
+    );
 
     return {
       isImage: explicit || studioMode || Boolean(parsed.isImage),
       cleanSubject: subject,
       cleanPrompt: subject,
-      isRealEntity: studioMode && wordCount >= 5 ? false : Boolean(parsed.isRealEntity),
+      isRealEntity: wordCount >= 5 ? false : Boolean(parsed.isRealEntity),
       expandedPrompt: groundedExpanded,
       negativePrompt: customNeg,
       didAutoCorrect: Boolean(parsed.didAutoCorrect || issuesList.length > 0),
@@ -291,8 +307,8 @@ Output ONLY valid JSON matching this schema:
 }
 
 /**
- * Uses Gemini Vision multimodal inspection to verify a rendered image matches the intended prompt
- * and catches corrupted error banners, ghost limbs, or off-subject hallucinations.
+ * Uses Gemini Vision multimodal inspection to strictly verify EVERY requested subject, accessory,
+ * color, and action from the user's prompt actually appears in the rendered image.
  */
 async function inspectGeneratedImage(imgBuffer, mimeType, targetPrompt, cleanSubject) {
   const ai = getAi();
@@ -317,14 +333,21 @@ async function inspectGeneratedImage(imgBuffer, mimeType, targetPrompt, cleanSub
             data: imgBuffer.toString("base64"),
           },
         },
-        `Inspect this generated image strictly against the intended user subject ("${cleanSubject}") and scene ("${targetPrompt}").
-Return ONLY valid JSON:
+        `Strictly audit whether this image accurately depicts EVERY key element requested in the user's prompt.
+Intended subject: "${cleanSubject}"
+Full prompt: "${targetPrompt}"
+
+Rules:
+- Set "isErrorOrCorrupted": true if it is an error banner, rate-limit message, blank/garbled image, or heavily broken anatomy.
+- Set "matchesPrompt": false if ANY major requested object, person, animal, accessory (e.g. sunglasses, hat), color, action, or location is MISSING or replaced by something different.
+- Set "qualityScore": integer 1 to 10 (must be <= 5 if matchesPrompt is false).
+- Return ONLY valid JSON:
 {
   "isErrorOrCorrupted": boolean,
   "matchesPrompt": boolean,
   "qualityScore": integer 1 to 10,
-  "issues": "short summary of distortion, error text, watermark banner, or mismatch, or 'none'",
-  "refinedPrompt": "if qualityScore < 6 or matchesPrompt is false, write a simpler clearer 12-18 word visual prompt that avoids this failure; otherwise empty string"
+  "issues": "short summary of any missing prompt element, mismatch, distortion, or 'none'",
+  "refinedPrompt": "if matchesPrompt is false or qualityScore < 7, write an ultra-literal 14-20 word visual prompt placing the missing elements first; otherwise empty string"
 }`,
       ],
     });
@@ -551,11 +574,11 @@ async function renderImageBuffer(prompt, options = {}) {
     }
   }
 
-  // Tier 5: Pollinations Pro Authenticated Gateway (gen.pollinations.ai — Real FLUX / Z-Image, Zero Watermark)
+  // Tier 5: Pollinations Pro Authenticated Gateway (gen.pollinations.ai — Real FLUX / Z-Image, Zero Watermark, enhance=false to preserve exact prompt)
   const encodedPrompt = encodeURIComponent(prompt);
   if (process.env.POLLINATIONS_API_KEY) {
     const proModel = isDevQuality ? "flux" : "zimage";
-    const pollProUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?width=${width}&height=${height}&model=${proModel}&nologo=true&enhance=true&seed=${seed}&negative_prompt=${encodeURIComponent(negativePrompt)}`;
+    const pollProUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?width=${width}&height=${height}&model=${proModel}&nologo=true&enhance=false&seed=${seed}&negative_prompt=${encodeURIComponent(negativePrompt)}`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 28000);
     try {
@@ -587,11 +610,11 @@ async function renderImageBuffer(prompt, options = {}) {
     }
   }
 
-  // Tier 6: Free Classic Public Fallback (enhance=true for higher fidelity + single clean backoff retry on 503)
-  const classicUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&model=flux&nologo=true&enhance=true&seed=${seed}`;
+  // Tier 6: Free Classic Public Fallback (enhance=false so Pollinations never rewrites/drifts from user's prompt)
+  const classicUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&model=flux&nologo=true&enhance=false&seed=${seed}`;
   for (let attempt = 0; attempt < 2; attempt++) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 22000);
+    const timeoutId = setTimeout(() => controller.abort(), 24000);
     try {
       const res = await fetch(classicUrl, {
         signal: controller.signal,
@@ -603,10 +626,28 @@ async function renderImageBuffer(prompt, options = {}) {
       clearTimeout(timeoutId);
 
       if (res.status === 402 || res.status === 429) {
-        return { buffer: null, mimeType: "", source: "pollinations-classic-free", rateLimited: true };
+        let retryAfterSec = 45;
+        try {
+          const errText = await res.text();
+          const m = errText.match(/retry\s+after\s+(\d+)s/i);
+          if (m) retryAfterSec = Math.max(1, Math.min(60, Number(m[1])));
+        } catch {
+          // keep default
+        }
+        if (attempt === 0 && retryAfterSec <= 12) {
+          await new Promise((r) => setTimeout(r, (retryAfterSec + 1) * 1000));
+          continue;
+        }
+        return {
+          buffer: null,
+          mimeType: "",
+          source: "pollinations-classic-free",
+          rateLimited: true,
+          retryAfterSec,
+        };
       }
       if (res.status === 503 && attempt === 0) {
-        await new Promise((r) => setTimeout(r, 1500));
+        await new Promise((r) => setTimeout(r, 1800));
         continue;
       }
       if (res.ok) {
@@ -706,7 +747,12 @@ async function uploadFirstCandidate(candidates, folder = "nebula_ai/generated", 
       if (targetPrompt) {
         check = await inspectGeneratedImage(buf, ct, targetPrompt, cleanSubject || targetPrompt);
         const watermarkFlag = /watermark|stock\s*logo|shutterstock|alamy|getty|westend/i.test(check.issues || "");
-        if (check.isErrorOrCorrupted || watermarkFlag || (!check.matchesPrompt && (check.qualityScore || 0) <= 4)) {
+        if (
+          check.isErrorOrCorrupted ||
+          watermarkFlag ||
+          !check.matchesPrompt ||
+          (typeof check.qualityScore === "number" && check.qualityScore < 6)
+        ) {
           continue;
         }
       }
@@ -762,8 +808,10 @@ async function generateAndUploadImage(input, options = {}) {
   let cdnUrl = null;
   let generationSource = "offline-svg-card";
   let qualityCheck = toQualityCheckSummary(null, false);
+  let rateLimited = false;
+  let retryAfterSec = 0;
 
-  // Strategy 1: Authentic portraits / real celebrities when requested directly
+  // Strategy 1: Authentic portraits / real celebrities ONLY when user simply asks for a plain portrait
   if (isRealEntity) {
     try {
       const entityCandidates = await searchHighResCandidates(`${cleanSubject} portrait photo`);
@@ -778,12 +826,16 @@ async function generateAndUploadImage(input, options = {}) {
     }
   }
 
-  // Strategy 2: Generative AI Visual Pipeline + Gemini Vision Self-Check & Auto-Retry
+  // Strategy 2: Generative AI Visual Pipeline + Strict Gemini Vision Prompt Audit & Auto-Retry
   if (!cdnUrl) {
     const renderOpts = { ...options, negativePrompt };
     const attempt1 = await renderImageBuffer(expandedPrompt, renderOpts);
     let chosenRender = attempt1;
     let chosenCheck = null;
+    if (attempt1.rateLimited) {
+      rateLimited = true;
+      retryAfterSec = attempt1.retryAfterSec || 45;
+    }
 
     if (attempt1.buffer) {
       chosenCheck = await inspectGeneratedImage(
@@ -799,14 +851,14 @@ async function generateAndUploadImage(input, options = {}) {
         !chosenCheck.matchesPrompt ||
         (typeof chosenCheck.qualityScore === "number" && chosenCheck.qualityScore < retryThreshold);
 
-      // Avoid double-hitting the 45s IP rate limit on the classic free fallback unless image is actually broken
+      // Only retry immediately on dedicated/non-throttled engines (classic free enforces 45s per IP)
       const shouldRetry =
         needsRetry &&
         (engineStatus.hasDedicatedFlux ||
           (!attempt1.rateLimited && chosenRender.source !== "pollinations-classic-free"));
 
       if (shouldRetry) {
-        const retryPrompt = chosenCheck.refinedPrompt || `${cleanSubject}, editorial photography, natural lighting, crisp detail`;
+        const retryPrompt = chosenCheck.refinedPrompt || `${cleanSubject}, clear natural lighting, sharp focus`;
         const attempt2 = await renderImageBuffer(retryPrompt, {
           ...renderOpts,
           seed: Math.floor(Math.random() * 1000000),
@@ -834,7 +886,7 @@ async function generateAndUploadImage(input, options = {}) {
         chosenCheck.isErrorOrCorrupted ||
         (!chosenCheck.matchesPrompt &&
           typeof chosenCheck.qualityScore === "number" &&
-          chosenCheck.qualityScore <= 4);
+          chosenCheck.qualityScore <= 5);
 
       if (!rejected && chosenRender.buffer) {
         const b64Mime = chosenRender.mimeType || "image/jpeg";
@@ -848,8 +900,28 @@ async function generateAndUploadImage(input, options = {}) {
     }
   }
 
-  // Strategy 3: Grounded high-resolution photography fallback if generator fails verification or rate-limits
-  if (!cdnUrl) {
+  // If the free image engine hit its cooldown, DO NOT swap in an unrelated web photo — report clearly!
+  if (!cdnUrl && rateLimited) {
+    return {
+      cdnUrl: null,
+      cleanSubject,
+      cleanPrompt: cleanSubject,
+      expandedPrompt,
+      negativePrompt,
+      isRealEntity,
+      didAutoCorrect,
+      detectedIssues,
+      reasoningSummary,
+      generationSource: "pollinations-classic-free",
+      hasDedicatedFlux: engineStatus.hasDedicatedFlux,
+      rateLimited: true,
+      retryAfterSec,
+      qualityCheck,
+    };
+  }
+
+  // Strategy 3: Strict verified real-photo fallback ONLY when not rate-limited and NOT creative studio mismatch
+  if (!cdnUrl && !studioMode) {
     try {
       const photoQuery = isRealEntity ? cleanSubject : toCleanPhotoQuery(cleanSubject);
       const fallbackCandidates = await searchHighResCandidates(photoQuery);
@@ -905,6 +977,8 @@ async function generateAndUploadImage(input, options = {}) {
     reasoningSummary,
     generationSource,
     hasDedicatedFlux: engineStatus.hasDedicatedFlux,
+    rateLimited: false,
+    retryAfterSec: 0,
     qualityCheck,
   };
 }
