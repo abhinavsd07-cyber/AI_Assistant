@@ -926,25 +926,26 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                       </span>
                     </div>
                   )}
-
-                  {/* Bottom Resolution & Verification Overlay */}
-                  {!isRunning && (
-                    <div className="absolute bottom-3 left-3 right-3 px-3.5 py-2 rounded-xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-md flex items-center justify-between gap-2 text-xs">
-                      <span className="text-emerald-700 font-extrabold flex items-center gap-1.5 whitespace-nowrap">
-                        <Zap size={14} className="text-emerald-600" /> {(lastLatencyMs / 1000).toFixed(2)}s ({width}×{height})
-                      </span>
-                      <span className="text-slate-700 font-bold truncate">
-                        {generationSource === 'curated-fallback-photo'
-                          ? 'Photo Fallback • CDN ✓'
-                          : generationSource === 'offline-svg-card'
-                            ? 'Safe Poster Fallback'
-                            : qualityCheck?.checked && typeof qualityCheck.score === 'number'
-                              ? `${qualityCheck.matchesPrompt ? 'Vision' : 'Partial Match'} ${qualityCheck.score}/10${qualityCheck.retried ? ' (Refined)' : ''} • CDN ✓`
-                              : 'Cloudinary CDN ✓'}
-                      </span>
-                    </div>
-                  )}
                 </div>
+
+                {/* Clean Render Telemetry Bar (Below Image — Zero Visual Obstruction) */}
+                {!isRunning && (
+                  <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between flex-wrap gap-x-3 gap-y-1 text-[11.5px]">
+                    <span className="text-emerald-700 font-bold flex items-center gap-1.5 whitespace-nowrap">
+                      <Zap size={13} className="text-emerald-600 shrink-0" />
+                      {(lastLatencyMs / 1000).toFixed(2)}s • {width}×{height}
+                    </span>
+                    <span className="text-slate-600 font-semibold whitespace-nowrap">
+                      {generationSource === 'curated-fallback-photo'
+                        ? 'Photo Fallback • CDN ✓'
+                        : generationSource === 'offline-svg-card'
+                          ? 'Safe Poster Fallback'
+                          : qualityCheck?.checked && typeof qualityCheck.score === 'number'
+                            ? `${qualityCheck.matchesPrompt ? 'Vision' : 'Partial Match'} ${qualityCheck.score}/10${qualityCheck.retried ? ' (Refined)' : ''} • CDN ✓`
+                            : 'Cloudinary CDN ✓'}
+                    </span>
+                  </div>
+                )}
 
                 {/* Output Node Action Buttons */}
                 <div className="grid grid-cols-3 gap-2.5">
