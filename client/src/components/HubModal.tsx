@@ -158,10 +158,10 @@ export const HubModal: React.FC<HubModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-[#181818] border border-gray-200 dark:border-[#2E2E2E] rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[86vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="bg-white dark:bg-[#181818] border border-gray-200 dark:border-[#2E2E2E] rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90dvh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-[#262626]">
+        <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-100 dark:border-[#262626]">
           <div className="flex items-center gap-2.5">
             {activeView === 'library' ? (
               <>
@@ -202,7 +202,7 @@ export const HubModal: React.FC<HubModalProps> = ({
         </div>
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto space-y-6">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-5 sm:space-y-6">
           {activeView === 'library' ? (
             <>
               {/* Generated Images Section */}

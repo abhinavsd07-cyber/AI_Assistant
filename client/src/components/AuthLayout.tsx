@@ -51,7 +51,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   const [legalModal, setLegalModal] = useState<'terms' | 'privacy' | null>(null);
 
   return (
-    <div className="min-h-screen w-full flex flex-col justify-between bg-[#FAF8F5] text-[#1F1E1B] relative overflow-x-hidden selection:bg-[#F6D7C3] selection:text-[#7A2E14]">
+    <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden flex flex-col justify-between bg-[#FAF8F5] text-[#1F1E1B] relative selection:bg-[#F6D7C3] selection:text-[#7A2E14]">
       <div
         className="fixed inset-0 pointer-events-none opacity-60 select-none"
         style={{

@@ -86,18 +86,19 @@ export const TopBar: React.FC<TopBarProps> = ({
   }, []);
 
   return (
-    <div className="relative z-30 flex items-center justify-between px-3 md:px-6 h-13 border-b border-[#EAE4D9] dark:border-[#2D2A26] bg-[#FAF8F5] dark:bg-[#1A1916] text-[#1F1E1B] dark:text-[#F0ECE1]">
+    <div className="relative z-30 flex items-center justify-between gap-1.5 sm:gap-2 px-2 sm:px-3 md:px-6 h-13 shrink-0 border-b border-[#EAE4D9] dark:border-[#2D2A26] bg-[#FAF8F5] dark:bg-[#1A1916] text-[#1F1E1B] dark:text-[#F0ECE1] min-w-0">
       {/* Left Model Selector & Mobile Trigger */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2 min-w-0">
         <button
           onClick={onToggleMobileSidebar}
-          className="md:hidden text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          aria-label="Open navigation sidebar"
+          className="md:hidden text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0"
         >
           <Menu size={18} />
         </button>
 
         {/* Model Selector Dropdown (Clean Typography — No Redundant Logo) */}
-        <div className="relative">
+        <div className="relative min-w-0">
           {(() => {
             const activeModel = models.find((m) => m.id === selectedModel);
             const primaryLabel =
@@ -122,20 +123,20 @@ export const TopBar: React.FC<TopBarProps> = ({
             return (
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-[#EAE4D8]/70 dark:hover:bg-[#252525] text-sm font-semibold text-[#1F1E1B] dark:text-[#F0ECE1] transition-colors cursor-pointer"
+                className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1.5 rounded-xl hover:bg-[#EAE4D8]/70 dark:hover:bg-[#252525] text-sm font-semibold text-[#1F1E1B] dark:text-[#F0ECE1] transition-colors cursor-pointer min-w-0 max-w-full"
               >
-                <span className="text-[15px] font-bold tracking-tight text-[#1F1E1B] dark:text-white">
+                <span className="text-[14px] sm:text-[15px] font-bold tracking-tight text-[#1F1E1B] dark:text-white shrink-0">
                   {primaryLabel}
                 </span>
-                <span className="text-[14px] font-semibold text-gray-500 dark:text-gray-400 truncate max-w-[140px]">
+                <span className="text-[13px] sm:text-[14px] font-semibold text-gray-500 dark:text-gray-400 truncate max-w-[68px] sm:max-w-[140px]">
                   {secondaryLabel}
                 </span>
                 {isPro && (
-                  <span className="px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[9px] font-extrabold uppercase tracking-wider shadow-xs">
+                  <span className="px-1 sm:px-1.5 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-wider shadow-xs shrink-0">
                     PRO
                   </span>
                 )}
-                <ChevronDown size={14} className={`text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={14} className={`text-gray-500 shrink-0 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
             );
           })()}
@@ -147,7 +148,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 onClick={() => setIsDropdownOpen(false)} 
               />
               
-              <div className="absolute left-0 mt-2 w-72 rounded-2xl bg-white dark:bg-[#252320] border border-[#EAE4D9] dark:border-[#38352F] shadow-xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute left-0 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl bg-white dark:bg-[#252320] border border-[#EAE4D9] dark:border-[#38352F] shadow-xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100">
                 <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider flex items-center justify-between">
                   <span>Model Engine</span>
                   <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold lowercase text-[10px]">
@@ -192,7 +193,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-1.5 md:gap-2">
+      <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0">
         {/* Share Chat Button */}
         {onShareChat && (
           <button
@@ -201,7 +202,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               setIsShareCopied(true);
               setTimeout(() => setIsShareCopied(false), 2000);
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-[#222222] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#2C2C2C] text-xs font-semibold transition-all cursor-pointer"
+            className="flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-gray-100 dark:bg-[#222222] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#2C2C2C] text-xs font-semibold transition-all cursor-pointer shrink-0"
             title="Copy Public Shareable Chat Link"
           >
             {isShareCopied ? (
@@ -222,10 +223,10 @@ export const TopBar: React.FC<TopBarProps> = ({
         {onOpenVoiceMode && (
           <button
             onClick={onOpenVoiceMode}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F4F4F5] dark:bg-[#222226] text-[#1F1E1B] dark:text-[#F0ECE1] hover:bg-[#EAEAEF] dark:hover:bg-[#2C2C32] border border-[#E4E4E7] dark:border-[#323238] text-xs font-semibold transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-[#F4F4F5] dark:bg-[#222226] text-[#1F1E1B] dark:text-[#F0ECE1] hover:bg-[#EAEAEF] dark:hover:bg-[#2C2C32] border border-[#E4E4E7] dark:border-[#323238] text-xs font-semibold transition-colors cursor-pointer shrink-0"
             title="Open Hands-Free Voice Conversation"
           >
-            <Mic size={13.5} className="text-zinc-600 dark:text-zinc-300" />
+            <Mic size={14} className="text-zinc-600 dark:text-zinc-300" />
             <span className="hidden sm:inline">Voice Mode</span>
           </button>
         )}
@@ -233,17 +234,17 @@ export const TopBar: React.FC<TopBarProps> = ({
         {/* Dark / Light Mode Toggle */}
         <button
           onClick={onToggleTheme}
-          className="p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+          className="p-1.5 sm:p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer shrink-0"
           title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
-          {theme === 'dark' ? <Sun size={17} className="text-zinc-300" /> : <Moon size={17} />}
+          {theme === 'dark' ? <Sun size={16} className="text-zinc-300" /> : <Moon size={16} />}
         </button>
 
         {/* Share / Actions Menu */}
         <div className="relative">
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="flex items-center justify-center w-8 h-8 rounded-xl hover:bg-[#EAE4D8]/70 dark:hover:bg-[#252525] text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+            className="flex items-center justify-center w-8 h-8 rounded-xl hover:bg-[#EAE4D8]/70 dark:hover:bg-[#252525] text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors cursor-pointer shrink-0"
             title="Options & Export"
           >
             <MoreHorizontal size={17} />
@@ -256,7 +257,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 onClick={() => setIsMenuOpen(false)} 
               />
               
-              <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-[#252320] border border-[#EAE4D9] dark:border-[#38352F] shadow-xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100 text-xs text-[#1F1E1B] dark:text-[#F0ECE1]">
+              <div className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-1.5rem)] rounded-2xl bg-white dark:bg-[#252320] border border-[#EAE4D9] dark:border-[#38352F] shadow-xl p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100 text-xs text-[#1F1E1B] dark:text-[#F0ECE1]">
                 <div className="px-3 py-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
                   Export Conversation
                 </div>

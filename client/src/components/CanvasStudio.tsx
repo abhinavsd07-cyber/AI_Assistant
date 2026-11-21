@@ -883,8 +883,8 @@ json.dumps(__nebula_plots__)
         activeDrag ? 'transition-none select-none' : 'transition-all duration-300'
       } ${
         isFullscreen
-          ? 'fixed inset-0 w-screen h-screen z-50'
-          : 'fixed inset-0 z-50 w-full h-full lg:relative lg:inset-auto lg:z-40 lg:shrink-0 canvas-panel-width'
+          ? 'fixed inset-0 w-full h-[100dvh] z-50'
+          : 'fixed inset-0 z-50 w-full h-[100dvh] lg:relative lg:inset-auto lg:h-full lg:z-40 lg:shrink-0 canvas-panel-width'
       }`}
     >
       {/* Full-viewport pointer shield while sliding to avoid iframe / chat mouse capture */}
@@ -950,13 +950,13 @@ json.dumps(__nebula_plots__)
       )}
 
       {/* Top Studio Control Bar */}
-      <div className="relative flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-[#1B1B1B]">
+      <div className="relative flex flex-wrap items-center justify-between gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 border-b border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-[#1B1B1B]">
         <div className="flex items-center gap-2 min-w-0">
           <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#F4F4F5] dark:bg-[#242428] border border-gray-200 dark:border-[#323238] text-gray-700 dark:text-gray-200 shrink-0">
             <Sparkles size={16} />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate max-w-[160px] sm:max-w-[240px]">
+            <span className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate max-w-[130px] sm:max-w-[240px]">
               {title}
             </span>
             <select

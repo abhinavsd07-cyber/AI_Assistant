@@ -15,13 +15,21 @@
   }
   html, body, #root {
     height: 100%;
+    height: 100dvh;
     width: 100%;
+    max-width: 100vw;
     margin: 0;
     padding: 0;
     overflow: hidden;
+    overscroll-behavior: none;
     background-color: #FAF8F5;
     color: #1F1E1B;
     transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .markdown-content {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   html.dark, html.dark body, html.dark #root {
     background-color: #1F1E1B;

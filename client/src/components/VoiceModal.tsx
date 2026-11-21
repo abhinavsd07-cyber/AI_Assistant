@@ -454,7 +454,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 dark:bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
       <style>{`
         @keyframes nebulaVoiceEqPulse {
           0%, 100% { transform: scaleY(0.35); opacity: 0.7; }
@@ -464,7 +464,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
       <div
         onClick={(e) => e.stopPropagation()}
         style={{ borderRadius: '28px' }}
-        className="w-full max-w-[460px] rounded-[28px] bg-[#FAF8F5] dark:bg-[#1F1E1B] border border-[#EAE4D9] dark:border-[#38352F] shadow-2xl p-6 sm:p-7 text-[#1F1E1B] dark:text-[#F0ECE1] flex flex-col items-center justify-between min-h-[530px] relative overflow-hidden"
+        className="w-full max-w-[460px] max-h-[92dvh] overflow-y-auto rounded-[28px] bg-[#FAF8F5] dark:bg-[#1F1E1B] border border-[#EAE4D9] dark:border-[#38352F] shadow-2xl p-4 sm:p-7 text-[#1F1E1B] dark:text-[#F0ECE1] flex flex-col items-center justify-between sm:min-h-[530px] relative"
       >
         {/* Top Header */}
         <div className="w-full flex items-center justify-between gap-3">
@@ -542,7 +542,7 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
         </div>
 
         {/* Central Pure Stage: NB Monogram + 60fps Liquid Black Ball Split, Orbit & Merge (Zero Glow, Zero Rings) */}
-        <div className="relative flex items-center justify-center my-4 h-60 w-60">
+        <div className="relative flex items-center justify-center my-2 sm:my-4 h-44 w-44 sm:h-60 sm:w-60 shrink-0">
           <button
             type="button"
             onClick={() => {
@@ -559,9 +559,9 @@ export const VoiceModal: React.FC<VoiceModalProps> = ({ isOpen, onClose, onSendM
                   ? 'Tap emblem to start talking'
                   : 'Nebula Voice Emblem'
             }
-            className="relative flex items-center justify-center w-60 h-60 bg-transparent border-0 p-0 cursor-pointer focus:outline-none transition-transform duration-300 active:scale-95"
+            className="relative flex items-center justify-center w-44 h-44 sm:w-60 sm:h-60 bg-transparent border-0 p-0 cursor-pointer focus:outline-none transition-transform duration-300 active:scale-95"
           >
-            <NebulaAnimatedEmblem status={status} className="w-60 h-60" />
+            <NebulaAnimatedEmblem status={status} className="w-44 h-44 sm:w-60 sm:h-60" />
           </button>
         </div>
 

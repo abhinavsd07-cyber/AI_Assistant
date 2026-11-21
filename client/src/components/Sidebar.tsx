@@ -520,11 +520,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside
         className={`
           fixed md:static top-0 left-0 bottom-0 z-50
-          ${isCollapsedDesktop ? 'md:hidden' : 'w-[260px] shrink-0 border-r border-[#E5DFD3] dark:border-[#2D2A26]'}
+          ${isCollapsedDesktop ? 'md:hidden' : 'w-[260px] max-w-[85vw] shrink-0 border-r border-[#E5DFD3] dark:border-[#2D2A26]'}
           bg-[#F3EFE6] dark:bg-[#181715] flex flex-col justify-between
           transition-all duration-200 ease-in-out
-          ${isOpenMobile ? 'translate-x-0 w-[260px]' : '-translate-x-full md:translate-x-0'}
-          h-full select-none
+          ${isOpenMobile ? 'translate-x-0 w-[260px] max-w-[85vw]' : '-translate-x-full md:translate-x-0'}
+          h-[100dvh] md:h-full select-none
         `}
       >
         {/* Top Action Bar (Nebula AI Brand + ChatGPT Controls) */}

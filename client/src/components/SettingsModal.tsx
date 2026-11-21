@@ -362,10 +362,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-3xl bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2C2C2C] shadow-2xl p-6 text-[#0D0D0D] dark:text-[#ECECEC] flex flex-col gap-4 relative overflow-hidden"
+        className="w-full max-w-md max-h-[92dvh] rounded-3xl bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2C2C2C] shadow-2xl p-4 sm:p-6 text-[#0D0D0D] dark:text-[#ECECEC] flex flex-col gap-3.5 sm:gap-4 relative overflow-hidden"
       >
         {/* Modal Header */}
         <div className="flex items-center justify-between pb-1 border-b border-[#E5E5E5] dark:border-[#2C2C2C]">

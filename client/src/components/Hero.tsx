@@ -40,40 +40,40 @@ const SUGGESTIONS: SuggestionPrompt[] = [
 
 export const Hero: React.FC<HeroProps> = ({ onSelectSuggestion }) => {
   return (
-    <div className="@container my-auto flex flex-col items-center justify-center px-4 sm:px-6 py-6 md:py-8 max-w-3xl mx-auto w-full min-w-0 text-center">
+    <div className="@container my-auto flex flex-col items-center justify-center px-3.5 sm:px-6 py-4 sm:py-6 md:py-8 max-w-3xl mx-auto w-full min-w-0 text-center">
       {/* Primary Nebula NB Brand Logo */}
-      <div className="relative mb-5 flex items-center justify-center group cursor-pointer select-none">
+      <div className="relative mb-3.5 sm:mb-5 flex items-center justify-center group cursor-pointer select-none">
         <img
           src="/nebula-logo.png"
           alt="Nebula AI"
-          className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(255,61,30,0.14)] dark:hidden transition-transform duration-300 group-hover:scale-105"
+          className="w-14 h-14 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(255,61,30,0.14)] dark:hidden transition-transform duration-300 group-hover:scale-105"
         />
         <img
           src="/nebula-logo-dark.png"
           alt="Nebula AI"
-          className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(255,61,30,0.22)] hidden dark:block transition-transform duration-300 group-hover:scale-105"
+          className="w-14 h-14 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(255,61,30,0.22)] hidden dark:block transition-transform duration-300 group-hover:scale-105"
         />
       </div>
 
       {/* Main Heading */}
-      <h1 className="text-2xl sm:text-[28px] md:text-[32px] font-semibold tracking-[-0.025em] leading-tight text-[#1F1E1B] dark:text-[#F0ECE1] mb-2 text-balance w-full">
+      <h1 className="text-[21px] sm:text-[28px] md:text-[32px] font-semibold tracking-[-0.025em] leading-tight text-[#1F1E1B] dark:text-[#F0ECE1] mb-1.5 sm:mb-2 text-balance w-full">
         Welcome to your cognitive copilot
       </h1>
 
       {/* Subtitle */}
-      <p className="text-[13.5px] sm:text-[14.5px] text-[#736B63] dark:text-[#A39E93] max-w-lg mx-auto mb-7 leading-relaxed font-normal text-pretty">
+      <p className="text-[13px] sm:text-[14.5px] text-[#736B63] dark:text-[#A39E93] max-w-lg mx-auto mb-5 sm:mb-7 leading-relaxed font-normal text-pretty">
         I am Nebula. Ask me to write, code, plan, generate visuals, or explore any idea.
       </p>
 
       {/* Suggestion Cards — balanced 3-up executive grid with centered headers */}
-      <div className="grid grid-cols-1 @lg:grid-cols-3 gap-3 w-full min-w-0">
+      <div className="grid grid-cols-1 @lg:grid-cols-3 gap-2.5 sm:gap-3 w-full min-w-0">
         {SUGGESTIONS.map((item) => {
           const IconComponent = SUGGESTION_ICONS[item.icon] || Sparkles;
           return (
             <button
               key={item.id}
               onClick={() => onSelectSuggestion(item.prompt)}
-              className="group relative flex flex-col items-center justify-start w-full min-w-0 overflow-hidden p-4 sm:p-5 rounded-2xl text-center
+              className="group relative flex flex-col items-center justify-start w-full min-w-0 overflow-hidden p-3.5 sm:p-5 rounded-2xl text-center
                 bg-white dark:bg-[#252320] hover:bg-[#FAF8F5] dark:hover:bg-[#2D2A26]
                 border border-[#EAE4D9] dark:border-[#38352F] hover:border-[#D97736]/50 dark:hover:border-[#D97736]/50
                 shadow-[0_1px_2px_rgba(217,119,54,0.04)] hover:shadow-[0_10px_24px_-8px_rgba(217,119,54,0.12)] dark:hover:shadow-[0_10px_24px_-8px_rgba(0,0,0,0.45)]

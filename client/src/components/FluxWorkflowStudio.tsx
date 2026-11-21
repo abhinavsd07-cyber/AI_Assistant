@@ -339,17 +339,17 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#0F172A] dark:text-[#F0ECE1] flex flex-col overflow-hidden select-none transition-colors duration-200"
+      className="fixed inset-0 z-50 h-[100dvh] w-full bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#0F172A] dark:text-[#F0ECE1] flex flex-col overflow-hidden select-none transition-colors duration-200"
       style={{
         fontFamily:
           "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       }}
     >
       {/* Top Clean Light Studio Header Bar (100% Responsive, Zero Wrapping) */}
-      <div className="min-h-[48px] bg-white border-b border-slate-200 px-3 sm:px-5 py-1.5 flex items-center justify-between gap-2 shrink-0 z-30 shadow-2xs">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs min-w-0">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shrink-0">
+      <div className="min-h-[48px] bg-white border-b border-slate-200 px-2.5 sm:px-5 py-1.5 flex items-center justify-between gap-2 shrink-0 z-30 shadow-2xs">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs min-w-0">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center shrink-0">
               <img
                 src="/nebula-logo.png"
                 alt="Nebula AI Logo"
@@ -357,7 +357,7 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
               />
             </div>
             <div className="flex items-center gap-2 min-w-0">
-              <span className="text-sm sm:text-[15px] font-extrabold tracking-tight text-slate-900 truncate">
+              <span className="text-[13px] sm:text-[15px] font-extrabold tracking-tight text-slate-900 truncate">
                 Nebula FLUX.1 Studio
               </span>
               <span className="hidden sm:inline-block text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-slate-900 text-white font-semibold whitespace-nowrap shrink-0">
@@ -401,14 +401,15 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
           <button
             onClick={() => handleRunWorkflow()}
             disabled={isRunning}
-            className={`flex items-center gap-1.5 px-3.5 sm:px-5 py-2 rounded-xl font-bold text-xs whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+            className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-xl font-bold text-xs whitespace-nowrap transition-all cursor-pointer shrink-0 ${
               isRunning
                 ? 'bg-red-50 text-[#B92B2D] cursor-wait border border-red-200'
                 : 'bg-[#D9383A] hover:bg-[#B92B2D] text-white shadow-md shadow-red-600/15 active:scale-95'
             }`}
           >
             <Play size={13} fill="currentColor" className="shrink-0" />
-            <span>{isRunning ? 'Running Pipeline...' : 'Run Workflow'}</span>
+            <span className="sm:hidden">{isRunning ? 'Running...' : 'Run'}</span>
+            <span className="hidden sm:inline">{isRunning ? 'Running Pipeline...' : 'Run Workflow'}</span>
           </button>
 
           <button

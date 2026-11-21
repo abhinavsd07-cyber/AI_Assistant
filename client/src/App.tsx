@@ -760,7 +760,7 @@ export const App: React.FC = () => {
 
   if (isAuthLoading) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#1F1E1B] dark:text-[#F0ECE1] gap-3">
+      <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#1F1E1B] dark:text-[#F0ECE1] gap-3">
         <div className="relative flex items-center justify-center">
           <img
             src="/nebula-logo.png"
@@ -799,7 +799,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="h-screen w-screen flex overflow-hidden bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#1F1E1B] dark:text-[#F0ECE1] transition-colors duration-200">
+    <div className="h-[100dvh] w-full flex overflow-hidden bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#1F1E1B] dark:text-[#F0ECE1] transition-colors duration-200">
       {/* Left Sidebar */}
       <Sidebar
         currentSessionId={currentSessionId}
@@ -863,7 +863,7 @@ export const App: React.FC = () => {
         {/* Center Stage: Hero Welcome Screen OR Chat Message Thread + Split-Screen Canvas */}
         <div className="flex-1 flex min-h-0 min-w-0 overflow-hidden relative">
           <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative">
-            <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain min-h-0 flex flex-col">
               {messages.length === 0 ? (
                 <Hero onSelectSuggestion={(prompt) => handleSendMessage(prompt, false, null)} />
               ) : (
