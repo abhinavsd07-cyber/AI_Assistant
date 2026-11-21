@@ -74,10 +74,18 @@ Respond ONLY with valid JSON array:
 [{"category": "identity"|"preference"|"project"|"skill"|"fact", "key": "short_key", "value": "concise_fact"}]
 If no permanent facts exist, output []`;
 
-    const res = await ai.models.generateContent({
-      model: "gemini-3.5-flash-lite",
-      contents: prompt,
-    });
+    let res = null;
+    for (const model of ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-2.5-flash"]) {
+      try {
+        res = await ai.models.generateContent({ model, contents: prompt });
+        break;
+      } catch (modelErr) {
+        if (!/503|UNAVAILABLE|429|high demand|overloaded|404/i.test(String(modelErr?.message || ""))) {
+          throw modelErr;
+        }
+      }
+    }
+    if (!res) return;
 
     const rawText = res.text?.trim() || "[]";
     const stripped = rawText.replace(/^```(?:json)?\s*|\s*```$/gi, "").trim();

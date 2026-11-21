@@ -1233,7 +1233,7 @@ app.post("/api/chat", requireAuth, chatLimiter, async (req, res) => {
     let candidateModels = [];
 
     if (isReasoning) {
-      candidateModels = ["gemini-3.8-flash", "gemini-3.5-flash"];
+      candidateModels = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-2.5-flash"];
     } else {
       let preferred = requestedModel;
       if (!preferred || (typeof preferred === "string" && (preferred.startsWith("ollama:") || preferred.includes("1.5"))) || preferred === "Nebula 4.0e" || preferred === "gemini-3.8-flash") {
@@ -1243,6 +1243,7 @@ app.post("/api/chat", requireAuth, chatLimiter, async (req, res) => {
         preferred,
         "gemini-3.5-flash-lite",
         "gemini-3.5-flash",
+        "gemini-2.5-flash",
       ];
     }
     // Deduplicate

@@ -202,6 +202,27 @@ function toGeminiAspectRatio(width, height) {
   return "1:1";
 }
 
+const TEXT_AND_VISION_MODELS = [
+  "gemini-3.5-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-2.5-flash",
+];
+
+async function generateContentWithFallback(ai, contents) {
+  let lastErr = null;
+  for (const model of TEXT_AND_VISION_MODELS) {
+    try {
+      return await ai.models.generateContent({ model, contents });
+    } catch (err) {
+      lastErr = err;
+      const msg = String(err?.message || "");
+      const isTransient = /503|UNAVAILABLE|429|RESOURCE_EXHAUSTED|high demand|overloaded|not found|404/i.test(msg);
+      if (!isTransient) throw err;
+    }
+  }
+  throw lastErr || new Error("All Gemini fallback models unavailable");
+}
+
 function formatRecentChatContext(history) {
   if (!Array.isArray(history) || history.length === 0) return "";
   const recent = history
@@ -312,10 +333,10 @@ ${modeRules}
 Output ONLY valid JSON matching this schema:
 {"isImage": boolean, "cleanSubject": string, "isRealEntity": boolean, "didAutoCorrect": boolean, "detectedIssues": string[], "reasoningSummary": string, "expandedPrompt": string, "negativePrompt": string, "resolvedFromHistory": boolean, "needsClarification": boolean, "clarificationQuestion": string, "isStylizedArt": boolean}`;
 
-    const res = await ai.models.generateContent({
-      model: "gemini-3.5-flash-lite",
-      contents: `${systemPrompt}\n\n${historyBlock}Current user message: "${trimmed}"`,
-    });
+    const res = await generateContentWithFallback(
+      ai,
+      `${systemPrompt}\n\n${historyBlock}Current user message: "${trimmed}"`
+    );
 
     const parsed = parseJsonObject(res.text);
     if (!parsed) return fallbackResult;
@@ -382,9 +403,7 @@ async function inspectGeneratedImage(imgBuffer, mimeType, targetPrompt, cleanSub
   }
 
   try {
-    const resp = await ai.models.generateContent({
-      model: "gemini-3.5-flash-lite",
-      contents: [
+    const resp = await generateContentWithFallback(ai, [
         {
           inlineData: {
             mimeType: mimeType || "image/jpeg",
@@ -407,8 +426,7 @@ Rules:
   "issues": "short summary of any logical, anatomical, angle, medium, or subject mismatch, or 'none'",
   "refinedPrompt": "if matchesPrompt is false or qualityScore < 7, write a crisp 18-28 word POSITIVE-ONLY physically grounded prompt explicitly fixing the logical error (e.g. 'four tall yellow-and-black cylindrical smokestack chimneys, long black steel hull, full horizontal side profile' — NEVER use words like 'no sails' in positive prompts); otherwise empty string"
 }`,
-      ],
-    });
+      ]);
 
     const parsed = parseJsonObject(resp.text);
     if (!parsed) {
