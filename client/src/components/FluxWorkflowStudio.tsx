@@ -1016,8 +1016,10 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
                     <span className="text-slate-600 font-semibold whitespace-nowrap">
                       {(() => {
                         const engineLabel =
-                          generationSource === 'huggingface-flux'
-                            ? 'FLUX.1 Official'
+                          generationSource === 'huggingface-flux-dev'
+                            ? 'FLUX.1-Dev Official'
+                            : generationSource === 'huggingface-flux'
+                              ? 'FLUX.1-Schnell Official'
                             : generationSource === 'cloudflare-flux'
                               ? 'Cloudflare FLUX.1'
                               : generationSource === 'together-flux'

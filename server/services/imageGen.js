@@ -444,17 +444,77 @@ Rules:
 }
 
 /**
+ * Calls an official Black Forest Labs FLUX.1 Hugging Face Space via Gradio's official REST API
+ * using the user's HF_TOKEN (Zero Watermark, 1024px+ official FLUX.1-schnell / FLUX.1-dev).
+ */
+async function callOfficialFluxSpace(spaceUrl, dataPayload, hfToken, timeoutMs = 42000) {
+  const authHeaders = { Authorization: `Bearer ${hfToken}` };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const callRes = await fetch(`${spaceUrl}/gradio_api/call/infer`, {
+      method: "POST",
+      signal: controller.signal,
+      headers: { ...authHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({ data: dataPayload }),
+    });
+    if (!callRes.ok) {
+      clearTimeout(timer);
+      return null;
+    }
+    const callJson = await callRes.json();
+    const eventId = callJson?.event_id;
+    if (!eventId) {
+      clearTimeout(timer);
+      return null;
+    }
+
+    const streamRes = await fetch(`${spaceUrl}/gradio_api/call/infer/${eventId}`, {
+      signal: controller.signal,
+      headers: authHeaders,
+    });
+    if (!streamRes.ok) {
+      clearTimeout(timer);
+      return null;
+    }
+    const streamText = await streamRes.text();
+    if (/event:\s*error/i.test(streamText)) {
+      clearTimeout(timer);
+      console.warn(`⚠️ FLUX Space (${spaceUrl}) returned error event:`, streamText.slice(-220));
+      return null;
+    }
+    const urlMatch = streamText.match(/"url"\s*:\s*"([^"]+)"/);
+    if (!urlMatch || !urlMatch[1]) {
+      clearTimeout(timer);
+      return null;
+    }
+
+    const imgRes = await fetch(urlMatch[1], { signal: controller.signal, headers: authHeaders });
+    clearTimeout(timer);
+    if (!imgRes.ok) return null;
+    const ct = (imgRes.headers.get("content-type") || "image/webp").split(";")[0];
+    const buf = Buffer.from(await imgRes.arrayBuffer());
+    if (buf.length < 5000) return null;
+    return { buffer: buf, mimeType: ct };
+  } catch (err) {
+    clearTimeout(timer);
+    console.warn(`⚠️ Official FLUX Space (${spaceUrl}) warning:`, err.message);
+    return null;
+  }
+}
+
+/**
  * Generates raw image bytes via the best configured official diffusion / native image backend:
- * 1) Hugging Face Official Inference Router — FLUX.1-dev / FLUX.1-schnell (HF_TOKEN, watermark-free)
+ * 1) Official Black Forest Labs FLUX.1-dev / FLUX.1-schnell via Hugging Face (HF_TOKEN, watermark-free)
  * 2) Cloudflare Workers AI — @cf/black-forest-labs/flux-1-schnell (CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID)
  * 3) Together AI — FLUX.1-schnell / FLUX.1.1-pro (TOGETHER_API_KEY)
  * 4) Google Native Gemini Image Generation — gemini-3.1-flash-image / gemini-2.5-flash-image (GEMINI_API_KEY, cached 429 cooldown)
  * 5) Pollinations Pro Authenticated Gateway — gen.pollinations.ai FLUX / Z-Image (POLLINATIONS_API_KEY)
- * 6) Pollinations Classic Free Public Fallback — image.pollinations.ai with enhance=true + clean 503 backoff
+ * 6) Pollinations Classic Free Public Fallback — image.pollinations.ai (enhance=false)
  */
 async function renderImageBuffer(prompt, options = {}) {
-  const width = Math.min(Math.max(Number(options.width) || 1024, 512), 1536);
-  const height = Math.min(Math.max(Number(options.height) || 1024, 512), 1536);
+  const width = Math.round(Math.min(Math.max(Number(options.width) || 1024, 512), 1280) / 16) * 16;
+  const height = Math.round(Math.min(Math.max(Number(options.height) || 1024, 512), 1280) / 16) * 16;
   const steps = Math.min(Math.max(Number(options.steps) || 4, 1), 32);
   const cfg = Math.min(Math.max(Number(options.cfg) || 3.5, 1), 10);
   const unetModel = String(options.unetModel || options.model || "");
@@ -462,49 +522,88 @@ async function renderImageBuffer(prompt, options = {}) {
   const seed = Number.isInteger(options.seed) ? options.seed : Math.floor(Math.random() * 1000000);
   const isDevQuality = /dev|pro|ultra|hq/i.test(unetModel);
 
-  // Tier 1: Official Black Forest Labs FLUX.1 via Hugging Face Inference Router (Zero Watermark)
+  // Tier 1: Official Black Forest Labs FLUX.1 via Hugging Face (Zero Watermark, Free HF_TOKEN + PRO Router)
   if (process.env.HF_TOKEN) {
-    const hfModel = isDevQuality
-      ? "black-forest-labs/FLUX.1-dev"
-      : "black-forest-labs/FLUX.1-schnell";
+    const hfToken = process.env.HF_TOKEN;
+
+    // 1A: Official Black Forest Labs FLUX.1 ZeroGPU Spaces (works on free HF_TOKEN accounts!)
+    if (isDevQuality) {
+      const devRes = await callOfficialFluxSpace(
+        "https://black-forest-labs-flux-1-dev.hf.space",
+        [prompt, seed, false, width, height, cfg, Math.min(Math.max(steps, 20), 28)],
+        hfToken,
+        45000
+      );
+      if (devRes) {
+        return { buffer: devRes.buffer, mimeType: devRes.mimeType, source: "huggingface-flux-dev", rateLimited: false };
+      }
+    }
+
+    const schnellRes = await callOfficialFluxSpace(
+      "https://black-forest-labs-flux-1-schnell.hf.space",
+      [prompt, seed, false, width, height, Math.min(Math.max(steps, 4), 8)],
+      hfToken,
+      36000
+    );
+    if (schnellRes) {
+      return { buffer: schnellRes.buffer, mimeType: schnellRes.mimeType, source: "huggingface-flux", rateLimited: false };
+    }
+
+    // 1B: Hugging Face Inference Providers Router (fal-ai FLUX — automatically active for HF PRO / paid credits)
+    const falModelPath = isDevQuality ? "fal-ai/fal-ai/flux/dev" : "fal-ai/fal-ai/flux/schnell";
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 32000);
     try {
-      const res = await fetch(`https://router.huggingface.co/hf-inference/models/${hfModel}`, {
+      const res = await fetch(`https://router.huggingface.co/${falModelPath}`, {
         method: "POST",
         signal: controller.signal,
         headers: {
-          Authorization: `Bearer ${process.env.HF_TOKEN}`,
+          Authorization: `Bearer ${hfToken}`,
           "Content-Type": "application/json",
-          Accept: "image/jpeg",
         },
         body: JSON.stringify({
-          inputs: prompt,
-          parameters: {
-            width,
-            height,
-            num_inference_steps: isDevQuality ? Math.max(steps, 22) : Math.min(Math.max(steps, 4), 8),
-            guidance_scale: isDevQuality ? Math.max(cfg, 3.5) : cfg,
-            ...(isDevQuality ? { negative_prompt: negativePrompt } : {}),
-          },
+          prompt,
+          image_size: { width, height },
+          num_inference_steps: isDevQuality ? Math.max(steps, 22) : Math.min(Math.max(steps, 4), 8),
+          ...(isDevQuality ? { guidance_scale: Math.max(cfg, 3.5) } : {}),
         }),
       });
       clearTimeout(timer);
 
       if (res.ok) {
-        const ct = res.headers.get("content-type") || "image/jpeg";
-        if (ct.includes("image")) {
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("application/json")) {
+          const data = await res.json();
+          const imgUrl = data?.images?.[0]?.url;
+          if (imgUrl) {
+            const imgRes = await fetch(imgUrl);
+            if (imgRes.ok) {
+              const buf = Buffer.from(await imgRes.arrayBuffer());
+              if (buf.length > 5000) {
+                return {
+                  buffer: buf,
+                  mimeType: (imgRes.headers.get("content-type") || "image/jpeg").split(";")[0],
+                  source: isDevQuality ? "huggingface-flux-dev" : "huggingface-flux",
+                  rateLimited: false,
+                };
+              }
+            }
+          }
+        } else if (ct.includes("image")) {
           const buf = Buffer.from(await res.arrayBuffer());
           if (buf.length > 5000) {
-            return { buffer: buf, mimeType: ct.split(";")[0], source: "huggingface-flux", rateLimited: false };
+            return {
+              buffer: buf,
+              mimeType: ct.split(";")[0],
+              source: isDevQuality ? "huggingface-flux-dev" : "huggingface-flux",
+              rateLimited: false,
+            };
           }
         }
-      } else if (res.status === 429) {
-        console.warn("⚠️ Hugging Face rate limit reached, falling back cleanly.");
       }
     } catch (hfErr) {
       clearTimeout(timer);
-      console.warn("⚠️ Hugging Face FLUX warning:", hfErr.message);
+      console.warn("⚠️ Hugging Face FLUX router warning:", hfErr.message);
     }
   }
 
