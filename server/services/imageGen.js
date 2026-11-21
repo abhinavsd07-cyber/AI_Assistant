@@ -522,11 +522,54 @@ async function renderImageBuffer(prompt, options = {}) {
   const seed = Number.isInteger(options.seed) ? options.seed : Math.floor(Math.random() * 1000000);
   const isDevQuality = /dev|pro|ultra|hq/i.test(unetModel);
 
-  // Tier 1: Official Black Forest Labs FLUX.1 via Hugging Face (Zero Watermark, Free HF_TOKEN + PRO Router)
+  // Tier 1: Cloudflare Workers AI Official FLUX.1-schnell (10,000 free neurons/day ≈ 150-200 HD images/day, Zero Watermark, ~2-4s)
+  if (process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ACCOUNT_ID) {
+    const cfSteps = Math.min(Math.max(steps, 4), 8);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 28000);
+    try {
+      const res = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
+        {
+          method: "POST",
+          signal: controller.signal,
+          headers: {
+            Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ prompt, steps: cfSteps }),
+        }
+      );
+      clearTimeout(timer);
+      if (res.ok) {
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("application/json")) {
+          const payload = await res.json();
+          const b64 = payload?.result?.image;
+          if (b64) {
+            const buf = Buffer.from(b64, "base64");
+            if (buf.length > 5000) {
+              return { buffer: buf, mimeType: "image/jpeg", source: "cloudflare-flux", rateLimited: false };
+            }
+          }
+        } else if (ct.includes("image")) {
+          const buf = Buffer.from(await res.arrayBuffer());
+          if (buf.length > 5000) {
+            return { buffer: buf, mimeType: ct.split(";")[0], source: "cloudflare-flux", rateLimited: false };
+          }
+        }
+      }
+    } catch (cfErr) {
+      clearTimeout(timer);
+      console.warn("⚠️ Cloudflare FLUX warning:", cfErr.message);
+    }
+  }
+
+  // Tier 2: Official Black Forest Labs FLUX.1 via Hugging Face (Zero Watermark, Free HF_TOKEN + PRO Router)
   if (process.env.HF_TOKEN) {
     const hfToken = process.env.HF_TOKEN;
 
-    // 1A: Official Black Forest Labs FLUX.1 ZeroGPU Spaces (works on free HF_TOKEN accounts!)
+    // 2A: Official Black Forest Labs FLUX.1 ZeroGPU Spaces (free daily quota on HF_TOKEN)
     if (isDevQuality) {
       const devRes = await callOfficialFluxSpace(
         "https://black-forest-labs-flux-1-dev.hf.space",
@@ -549,7 +592,7 @@ async function renderImageBuffer(prompt, options = {}) {
       return { buffer: schnellRes.buffer, mimeType: schnellRes.mimeType, source: "huggingface-flux", rateLimited: false };
     }
 
-    // 1B: Hugging Face Inference Providers Router (fal-ai FLUX — automatically active for HF PRO / paid credits)
+    // 2B: Hugging Face Inference Providers Router (fal-ai FLUX — automatically active for HF PRO / paid credits)
     const falModelPath = isDevQuality ? "fal-ai/fal-ai/flux/dev" : "fal-ai/fal-ai/flux/schnell";
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 32000);
@@ -604,49 +647,6 @@ async function renderImageBuffer(prompt, options = {}) {
     } catch (hfErr) {
       clearTimeout(timer);
       console.warn("⚠️ Hugging Face FLUX router warning:", hfErr.message);
-    }
-  }
-
-  // Tier 2: Cloudflare Workers AI Official FLUX.1-schnell (Free daily tier, Zero Watermark)
-  if (process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ACCOUNT_ID) {
-    const cfSteps = Math.min(Math.max(steps, 4), 8);
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 28000);
-    try {
-      const res = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
-        {
-          method: "POST",
-          signal: controller.signal,
-          headers: {
-            Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ prompt, steps: cfSteps }),
-        }
-      );
-      clearTimeout(timer);
-      if (res.ok) {
-        const ct = res.headers.get("content-type") || "";
-        if (ct.includes("application/json")) {
-          const payload = await res.json();
-          const b64 = payload?.result?.image;
-          if (b64) {
-            const buf = Buffer.from(b64, "base64");
-            if (buf.length > 5000) {
-              return { buffer: buf, mimeType: "image/jpeg", source: "cloudflare-flux", rateLimited: false };
-            }
-          }
-        } else if (ct.includes("image")) {
-          const buf = Buffer.from(await res.arrayBuffer());
-          if (buf.length > 5000) {
-            return { buffer: buf, mimeType: ct.split(";")[0], source: "cloudflare-flux", rateLimited: false };
-          }
-        }
-      }
-    } catch (cfErr) {
-      clearTimeout(timer);
-      console.warn("⚠️ Cloudflare FLUX warning:", cfErr.message);
     }
   }
 
@@ -1003,11 +1003,13 @@ async function generateAndUploadImage(input, options = {}) {
         cleanSubject
       );
 
+      const isHfZeroGpu = chosenRender.source === "huggingface-flux" || chosenRender.source === "huggingface-flux-dev";
       const retryThreshold = engineStatus.hasDedicatedFlux ? 7 : 6;
-      const needsRetry =
-        chosenCheck.isErrorOrCorrupted ||
-        !chosenCheck.matchesPrompt ||
-        (typeof chosenCheck.qualityScore === "number" && chosenCheck.qualityScore < retryThreshold);
+      const needsRetry = isHfZeroGpu
+        ? chosenCheck.isErrorOrCorrupted || !chosenCheck.matchesPrompt
+        : chosenCheck.isErrorOrCorrupted ||
+          !chosenCheck.matchesPrompt ||
+          (typeof chosenCheck.qualityScore === "number" && chosenCheck.qualityScore < retryThreshold);
 
       // Only retry immediately on dedicated/non-throttled engines (classic free enforces 45s per IP)
       const shouldRetry =
