@@ -760,7 +760,10 @@ export const App: React.FC = () => {
 
   if (isAuthLoading) {
     return (
-      <div className="h-[100dvh] w-full flex flex-col items-center justify-center bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#1F1E1B] dark:text-[#F0ECE1] gap-3">
+      <div
+        style={{ height: 'var(--app-height, 100dvh)' }}
+        className="fixed inset-x-0 top-0 w-full flex flex-col items-center justify-center bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#1F1E1B] dark:text-[#F0ECE1] gap-3"
+      >
         <div className="relative flex items-center justify-center">
           <img
             src="/nebula-logo.png"
@@ -799,7 +802,10 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="h-[100dvh] w-full flex overflow-hidden bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#1F1E1B] dark:text-[#F0ECE1] transition-colors duration-200">
+    <div
+      style={{ height: 'var(--app-height, 100dvh)' }}
+      className="fixed inset-x-0 top-0 w-full flex overflow-hidden bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#1F1E1B] dark:text-[#F0ECE1] transition-colors duration-200"
+    >
       {/* Left Sidebar */}
       <Sidebar
         currentSessionId={currentSessionId}
@@ -878,7 +884,7 @@ export const App: React.FC = () => {
             </div>
 
             {/* Bottom Floating Chat Input with Vision, Documents & Speech */}
-            <div className="flex-shrink-0">
+            <div className="shrink-0 z-20 bg-[#FAF8F5] dark:bg-[#1F1E1B] pt-1">
               <ChatInput
                 onSendMessage={handleSendMessage}
                 isLoading={isLoading}

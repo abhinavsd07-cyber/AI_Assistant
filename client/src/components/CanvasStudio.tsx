@@ -883,8 +883,8 @@ json.dumps(__nebula_plots__)
         activeDrag ? 'transition-none select-none' : 'transition-all duration-300'
       } ${
         isFullscreen
-          ? 'fixed inset-0 w-full h-[100dvh] z-50'
-          : 'fixed inset-0 z-50 w-full h-[100dvh] lg:relative lg:inset-auto lg:h-full lg:z-40 lg:shrink-0 canvas-panel-width'
+          ? 'fixed inset-x-0 top-0 w-full h-[var(--app-height,100dvh)] z-50'
+          : 'fixed inset-x-0 top-0 z-50 w-full h-[var(--app-height,100dvh)] lg:relative lg:inset-auto lg:h-full lg:z-40 lg:shrink-0 canvas-panel-width'
       }`}
     >
       {/* Full-viewport pointer shield while sliding to avoid iframe / chat mouse capture */}

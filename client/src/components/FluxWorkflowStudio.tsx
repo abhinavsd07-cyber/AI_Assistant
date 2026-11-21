@@ -339,8 +339,9 @@ export const FluxWorkflowStudio: React.FC<FluxWorkflowStudioProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 h-[100dvh] w-full bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#0F172A] dark:text-[#F0ECE1] flex flex-col overflow-hidden select-none transition-colors duration-200"
+      className="fixed inset-x-0 top-0 z-50 w-full bg-[#FAF8F5] dark:bg-[#1F1E1B] text-[#0F172A] dark:text-[#F0ECE1] flex flex-col overflow-hidden select-none transition-colors duration-200"
       style={{
+        height: 'var(--app-height, 100dvh)',
         fontFamily:
           "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       }}
